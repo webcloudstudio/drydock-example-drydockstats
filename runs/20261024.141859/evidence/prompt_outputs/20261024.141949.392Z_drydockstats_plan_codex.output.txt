@@ -1,0 +1,82 @@
+=== BEGIN ARTIFACT TOPOLOGY.md ===
+## Declarations
+
+## story log-intake
+summary:      Parse execution records, skip invalid and duplicate lines, and apply filters.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-LogIntake.md
+covers:       INTAKE-001, INTAKE-002
+accepts:      st-004, st-006
+context:      sources/llm_sample.jsonl
+context_roles: |
+  sources/llm_sample.jsonl: asset
+stack:        go.md, common.md
+provides:     log parsing, record validation, duplicate detection, target and date filtering
+instructions: |
+  Implement JSON Lines intake, validation, skipped-line counting and warnings, exact Target filtering, and inclusive date filtering. Keep skipped counts independent of report filters.
+acceptance:   yes
+
+## story report-generation
+summary:      Aggregate and format the six CSV reports.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Reports.md
+covers:       REPORT-001, REPORT-002, REPORT-003, REPORT-004, REPORT-005
+accepts:      st-005, st-007
+depends:      log-intake
+context:      sources/llm_sample.jsonl
+context_roles: |
+  sources/llm_sample.jsonl: asset
+stack:        go.md, common.md
+provides:     summary, commands, targets, models, daily, failures CSV reports
+consumes:     log parsing, record validation, duplicate detection, target and date filtering
+instructions: |
+  Implement the six CSV reports from filtered records, with the specified totals, ordering, formatting, model selection, and empty-result behavior. Derive every value from the supplied log.
+acceptance:   yes
+
+## story cli-delivery
+summary:      Deliver and verify the command-line interface, test runner, and full conformance gate.
+type:         service
+kind:         test harness
+phase:        1
+implements:   FEATURE-CLI.md
+covers:       CLI-001, CLI-002
+accepts:      st-001, st-002, st-003, st-008
+depends:      log-intake, report-generation
+context:      sources/INSTRUCTIONS.md, sources/run.sh, sources/llm_sample.jsonl
+context_roles: |
+  sources/INSTRUCTIONS.md: author intent
+  sources/run.sh: conformance harness
+  sources/llm_sample.jsonl: asset
+stack:        go.md, common.md
+provides:     ./cmd/ddkstat, bin/test.sh
+consumes:     log parsing, record validation, duplicate detection, target and date filtering, summary, commands, targets, models, daily, failures CSV reports
+instructions: |
+  Implement argument handling, report dispatch, standard error diagnostics, conventional exit codes, and the Go test runner. Add focused automated tests for parsing, filtering, reports, and CLI behavior.
+  
+  As the terminal story, run the complete supplied grader and ensure it passes.
+acceptance:   yes
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT DECISIONS.json ===
+[
+  {
+    "id": "Q-001",
+    "type": "choice",
+    "severity": "material",
+    "blueprint": "FEATURE-CLI.md",
+    "story": "cli-delivery",
+    "title": "Malformed input response contract",
+    "description": "The source specifies usage and operational exit codes, while malformed and duplicate log lines must be skipped without failing. A particular diagnostic wording is not prescribed; use one warning line per skipped nonblank input line and a single diagnostic line for command-level failures.",
+    "options": [
+      {
+        "value": "conventional",
+        "label": "Conventional exit codes and concise diagnostics"
+      }
+    ],
+    "system_choice": "Use exit code 2 for malformed invocations, exit code 1 for unreadable logs, and exit code 0 when processing succeeds despite skipped lines. Write concise diagnostics to standard error and no standard output on command-level errors."
+  }
+]
+=== END ARTIFACT

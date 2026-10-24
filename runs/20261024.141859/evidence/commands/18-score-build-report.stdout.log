@@ -1,0 +1,27 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+
+Build report: DrydockStats
+  evidence: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/workspace/targets/DrydockStats/evidence
+  usage:    /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/workspace/logs/llm.jsonl
+
+  Blueprint acceptance (last `score ac`): PASS 5  FAIL 0  UNVERIFIED 0  PREPASSED 3  (8 AC)
+
+  Block                Build AC  Calls   Cached  Uncached    Hit  Output    Time
+  ──────────────────────────────────────────────────────────────────────────────
+  ✓ Block 1 · Service       3/3      3  394,624   129,711  75.3%   7,808  1m 49s
+  ✓ Block 2 · Service       5/5      1  454,400    29,360  93.9%   5,097  1m 51s
+  ──────────────────────────────────────────────────────────────────────────────
+  TOTAL                     8/8      4  849,024   159,071  84.2%  12,905  3m 41s
+
+  Blocks: 2/2 verified · 1 on first call · 1 repaired
+  Model:  gpt-6-luna
+  Tokens: 849,024 cached · 159,071 uncached · 12,905 out
+
+  Repairs
+    Block 1 · Service [block-1]
+      initial build  incomplete 1/3 AC · 240,525 in · 71.7% hit · 1m 03s
+                     not yet passing: intake-invalid-skip, intake-filtering
+      repair 1       incomplete 1/3 AC · 141,940 in · 78.1% hit · 24s
+                     not yet passing: intake-invalid-skip, intake-filtering
+      repair 2       built      3/3 AC · 141,870 in · 78.5% hit · 21s
+

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-Reports.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-Reports.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-Reports.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CSV Reports</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Aggregates filtered execution records into six CSV reports.</td></tr><tr><td>Depends On</td><td>FEATURE-LogIntake.md</td></tr><tr><td>Provides</td><td>summary, commands, targets, models, daily, failures CSV reports</td></tr><tr><td>Consumes</td><td>log parsing, record validation, duplicate detection, target and date filtering</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide the six operator reports from validated records after the filters supplied by <code>FEATURE-LogIntake.md</code>. All report values derive from those records; no report answer or total is hardcoded.</p>
+<h2>Behavior</h2>
+<ul><li><code>summary</code> reports the filtered record count, whole-file skipped count, success and failure counts, earliest and latest start dates, token totals, cost, and minutes. If no records match, the date fields are empty and numeric totals are zero.</li><li><code>commands</code> groups by command name and sorts by calls descending, then command name ascending.</li><li><code>targets</code> groups by Target and sorts by Target ascending.</li><li><code>models</code> groups by provider and selected model. Use the non-empty executed model from <code>result.stats.model</code>, otherwise <code>job.model</code>; sort by provider, then model, ascending.</li><li><code>daily</code> groups by start date and sorts ascending.</li><li><code>failures</code> includes failed records only, sorted by start time, then execution ID, ascending. Render a missing or null return code as an empty field, and <code>timed_out</code> as <code>true</code> or <code>false</code>.</li><li><code>commands</code>, <code>targets</code>, <code>models</code>, and <code>daily</code> end with a <code>TOTAL</code> row over the filtered records. <code>failures</code> and <code>summary</code> have no total row. An empty grouped report still includes its header and a zero-valued <code>TOTAL</code> row.</li><li>CSV output has one header row, comma-separated fields, and <code>\n</code> line endings. Costs use four decimal places. Minutes sum elapsed milliseconds and convert to tenths with integer arithmetic: <code>t = (ms + 3000) / 6000</code>, rendered as <code>t / 10</code>, a decimal point, and <code>t % 10</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC reports-conformance ===<br>Intent: The six reports, filters, skipped-line handling, formatting, ordering, and empty-result output pass the supplied known-answer suite.<br>Suite: scoped</p>
+<p>import os import subprocess</p>
+<p>result = subprocess.run( [&quot;sh&quot;, &quot;bin/test.sh&quot;], capture_output=True, text=True, env={**os.environ}, ) print(result.stdout) print(result.stderr, file=<strong>import</strong>(&quot;sys&quot;).stderr) assert result.returncode == 0 === END AC reports-conformance ===</p>
+<p>=== AC model-selection ===<br>Intent: The report aggregation assigns a record to its executed model when present and its requested model otherwise.<br>Suite: scoped</p>
+<p>import os</p>
+<p>from pathlib import Path import subprocess import sys</p>
+<p>result = subprocess.run( [&quot;sh&quot;, &quot;bin/test.sh&quot;], capture_output=True, text=True, env={**os.environ}, ) print(result.stdout) print(result.stderr, file=sys.stderr) assert result.returncode == 0 === END AC model-selection ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Do not read or modify <code>sources/run.sh</code> from application code.</li><li>Do not hardcode report rows, counts, totals, or expected answers.</li><li>Do not write to the log being read.</li></ul></article>
+</main>
+</body>
+</html>

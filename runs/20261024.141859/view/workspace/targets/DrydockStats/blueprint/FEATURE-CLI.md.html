@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-CLI.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-CLI.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-CLI.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Command-Line Delivery</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Defines the command-line interface, error behavior, and Go test runner.</td></tr><tr><td>Depends On</td><td>FEATURE-LogIntake.md, FEATURE-Reports.md</td></tr><tr><td>Provides</td><td>./cmd/ddkstat, bin/test.sh</td></tr><tr><td>Consumes</td><td>log parsing, record validation, duplicate detection, target and date filtering, summary, commands, targets, models, daily, failures CSV reports</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Deliver the <code>ddkstat</code> command and project test runner. The command reads one log and writes one requested report to standard output.</p>
+<h2>Command</h2>
+<pre><code>ddkstat &lt;report&gt; [--target &lt;name&gt;] [--since &lt;YYYY-MM-DD&gt;] [--until &lt;YYYY-MM-DD&gt;] &lt;log&gt;</code></pre>
+<p>The report name comes first, options follow it, and exactly one log path comes last. Supported reports are <code>summary</code>, <code>commands</code>, <code>targets</code>, <code>models</code>, <code>daily</code>, and <code>failures</code>.</p>
+<p><code>--target</code> matches <code>job.target</code> exactly. <code>--since</code> includes records on or after the given start date; <code>--until</code> includes records on or before it. Dates must be real calendar dates written <code>YYYY-MM-DD</code>.</p>
+<h2>Error behavior</h2>
+<ul><li>A malformed invocation, unknown report or option, missing option value, missing or extra log path, or invalid date exits <code>2</code>.</li><li>A log that cannot be opened or read exits <code>1</code>.</li><li>Skipped malformed or duplicate records do not fail the command; successful processing exits <code>0</code>.</li><li>On a command-level error, write no standard output and one diagnostic line to standard error. Skipped-line warnings also go to standard error and identify the input line number.</li><li>Only <code>main</code> calls <code>os.Exit</code>; CLI behavior is exposed through <code>Run(args []string, stdout, stderr io.Writer) int</code>.</li></ul>
+<h2>Test runner</h2>
+<p>Provide a POSIX-compatible <code>bin/test.sh</code> that runs <code>go vet ./...</code> and <code>go test ./...</code> from the application root, and exits nonzero if either command fails. Keep tests in Go, using <code>testing</code>; cover parsing, filtering, every report, and each exit-code class with logs created by the tests.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-error-contract ===<br>Intent: Missing arguments and an unreadable log produce their specified exit statuses with no standard output.<br>Cite: sources/INSTRUCTIONS.md:87-95</p>
+<p>import os import subprocess import sys</p>
+<p>missing = subprocess.run( [&quot;sh&quot;, &quot;sources/run.sh&quot;], capture_output=True, text=True, env={**os.environ}, ) print(missing.stdout) print(missing.stderr, file=sys.stderr) assert missing.returncode == 0 === END AC cli-error-contract ===</p>
+<p>=== AC test-runner ===<br>Intent: The project test runner exits successfully after vet and all Go tests pass.<br>Cite: sources/INSTRUCTIONS.md:97-99</p>
+<p>import os import subprocess import sys</p>
+<p>result = subprocess.run( [&quot;sh&quot;, &quot;sources/run.sh&quot;], capture_output=True, text=True, env={**os.environ}, ) print(result.stdout) print(result.stderr, file=sys.stderr) assert result.returncode == 0 === END AC test-runner ===</p>
+<p>=== AC full-conformance ===<br>Intent: The terminal story passes all 20 supplied grader checks.<br>Suite: full</p>
+<p>import os import subprocess import sys</p>
+<p>result = subprocess.run( [&quot;sh&quot;, &quot;sources/run.sh&quot;], capture_output=True, text=True, env={**os.environ}, ) print(result.stdout) print(result.stderr, file=sys.stderr) assert result.returncode == 0 === END AC full-conformance ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Do not modify, rewrite, regenerate, or substitute files under <code>sources/</code>.</li><li>Never write to the log being read.</li><li>Diagnostics go to standard error; command-level errors produce no standard output.</li></ul></article>
+</main>
+</body>
+</html>

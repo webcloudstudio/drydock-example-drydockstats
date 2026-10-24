@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.142119.545Z_drydockstats_lineage_attribute_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.142119.545Z_drydockstats_lineage_attribute_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.142119.545Z_drydockstats_lineage_attribute_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>&lt;requirement name=&quot;build-main-package&quot; stories=&quot;cli-delivery&quot;&gt;
+if ! (cd &quot;$APP&quot; &amp;&amp; go build -o &quot;$BIN&quot; ./cmd/ddkstat); then
+    echo &quot;error: go build ./cmd/ddkstat failed at the application root $APP.&quot; &gt;&amp;2
+    echo &quot;The deliverable is a Go module whose main package is ./cmd/ddkstat.&quot; &gt;&amp;2
+    exit 1
+fi
+&lt;/requirement&gt;
+&lt;requirement name=&quot;verify-reports-and-exit-codes&quot; stories=&quot;cli-delivery&quot;&gt;
+# Builds ./cmd/ddkstat with `go build` and compares every report&#x27;s exit code and standard output
+over the supplied sample log with the known answer below. Standard error is never compared.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;generate-six-reports&quot; stories=&quot;report-generation&quot;&gt;
+# ── A. Every report over the whole sample ───────────────────────────────────────────────
+&lt;/requirement&gt;
+&lt;requirement name=&quot;filter-reports&quot; stories=&quot;log-intake,report-generation&quot;&gt;
+# ── B. Filters ───────────────────────────────────────────────────────────────────────────
+&lt;/requirement&gt;
+&lt;requirement name=&quot;handle-no-match-filters&quot; stories=&quot;log-intake,report-generation&quot;&gt;
+# ── C. A filter that matches nothing ─────────────────────────────────────────────────────
+&lt;/requirement&gt;
+&lt;requirement name=&quot;handle-operational-failures&quot; stories=&quot;cli-delivery&quot;&gt;
+# ── E. Operational failures ──────────────────────────────────────────────────────────────
+&lt;/requirement&gt;
+&lt;requirement name=&quot;handle-usage-errors&quot; stories=&quot;cli-delivery&quot;&gt;
+# ── U. Usage errors ──────────────────────────────────────────────────────────────────────
+&lt;/requirement&gt;
+&lt;unattached story=&quot;log-intake&quot;/&gt;</pre></article>
+</main>
+</body>
+</html>

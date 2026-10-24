@@ -1,0 +1,49 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+  ✓ PASS        [1/8]  intake-duplicate-skip  log-intake         FEATURE-LogIntake.md
+  ✓ PASS        [2/8]  intake-invalid-skip    log-intake         FEATURE-LogIntake.md
+  ✓ PASS        [3/8]  intake-filtering       log-intake         FEATURE-LogIntake.md
+  ✓ PASS        [4/8]  reports-conformance    report-generation  FEATURE-Reports.md
+  ✓ PASS        [5/8]  model-selection        report-generation  FEATURE-Reports.md
+  ✓ PASS        [6/8]  cli-error-contract     cli-delivery       FEATURE-CLI.md
+  ✓ PASS        [7/8]  test-runner            cli-delivery       FEATURE-CLI.md
+  ✓ PASS        [8/8]  full-conformance       cli-delivery       FEATURE-CLI.md
+
+Acceptance verification: DrydockStats  (2026-10-24T14:28:06+00:00)
+  PASS 5   FAIL 0   UNVERIFIED 0   PREPASSED 3   (8 AC)
+
+  ~ PREPASSED   intake-duplicate-skip  log-intake         FEATURE-LogIntake.md
+  ✓ PASS        intake-invalid-skip    log-intake         FEATURE-LogIntake.md
+  ✓ PASS        intake-filtering       log-intake         FEATURE-LogIntake.md
+  ~ PREPASSED   reports-conformance    report-generation  FEATURE-Reports.md
+  ~ PREPASSED   model-selection        report-generation  FEATURE-Reports.md
+  ✓ PASS        cli-error-contract     cli-delivery       FEATURE-CLI.md
+  ✓ PASS        test-runner            cli-delivery       FEATURE-CLI.md
+  ✓ PASS        full-conformance       cli-delivery       FEATURE-CLI.md
+
+  ~ PREPASSED   intake-duplicate-skip
+        intent: The parser skips a repeated execution ID, retains the first record, and reports one skipped line.
+        green at this block's baseline too, before its code existed — confirm the criterion exercises the story's work
+
+  ~ PREPASSED   reports-conformance
+        intent: The six reports, filters, skipped-line handling, formatting, ordering, and empty-result output pass the supplied known-answer suite.
+        green at this block's baseline too, before its code existed — confirm the criterion exercises the story's work
+
+  ~ PREPASSED   model-selection
+        intent: The report aggregation assigns a record to its executed model when present and its requested model otherwise.
+        green at this block's baseline too, before its code existed — confirm the criterion exercises the story's work
+
+  Run `drydock score ac DrydockStats --full` for untruncated output per failure.
+
+
+  Proof coverage: 5 of 8 criteria are proof — green here, and observed red before the work that turned them green.
+    3 are not. Each names a story whose acceptance did not test it.
+
+    PREPASSED  intake-duplicate-skip  log-intake  FEATURE-LogIntake.md
+               green before its block built
+    PREPASSED  reports-conformance  report-generation  FEATURE-Reports.md
+               green before its block built
+    PREPASSED  model-selection  report-generation  FEATURE-Reports.md
+               green before its block built
+
+Soundings: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/workspace/targets/DrydockStats/SOUNDINGS.md
+Target - committed project workspace git store

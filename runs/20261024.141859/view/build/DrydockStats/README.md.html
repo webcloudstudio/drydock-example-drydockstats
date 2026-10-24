@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/DrydockStats/README.md</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/DrydockStats/README.md</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../build/DrydockStats/README.md">Raw file</a></div></header>
+<article class="doc"><h1>drydock DrydockStats Uat Case</h1>
+<p>Drydock uat - DrydockStats builds a Go reporter for Drydock&#x27;s own LLM execution log (logs/llm.jsonl). The source is an original brief: read JSON Lines, skip malformed and duplicate records without failing, and write six CSV reports (summary, commands, targets, models, daily, failures) with Target and date filters. The supplied grader, sources/run.sh, builds ./cmd/ddkstat with go build and runs 20 checks of exit code and output against a 37-line synthetic sample with known totals. Standard library only, no database. Run with drydock uat DrydockStats. Source Repo: none, the brief is original to this kit.</p>
+<h2>Intent</h2>
+<p>Build a command-line reporter for Drydock&#x27;s LLM execution log, the Go executable <code>./cmd/ddkstat</code>, as described in <code>sources/INSTRUCTIONS.md</code>. It reads a JSON Lines log, skips malformed and duplicate lines without failing, and writes six CSV reports (summary, commands, targets, models, daily, failures), each narrowed by optional Target and date filters.</p>
+<p>Correctness is measured by <code>sources/run.sh</code>: it builds the executable with <code>go build</code> and makes 20 checks of exit code and standard output against <code>sources/llm_sample.jsonl</code>. The goal is every check passing. The finished tool also runs against a real <code>logs/llm.jsonl</code>.</p>
+<h2>What It Does</h2>
+<p>Deliver the <code>ddkstat</code> command and project test runner. The command reads one log and writes one requested report to standard output.</p>
+<p>Provide validated execution records to the reporting layer from a JSON Lines log. Blank lines are ignored. Malformed, incomplete, and duplicate nonblank lines are skipped with one warning per skipped line, and contribute to the whole-file skipped count.</p>
+<p>Provide the six operator reports from validated records after the filters supplied by <code>FEATURE-LogIntake.md</code>. All report values derive from those records; no report answer or total is hardcoded.</p>
+<h2>Stack</h2>
+<p>Go</p>
+<h2>Verification</h2>
+<pre><code>bash bin/test.sh</code></pre>
+<h2>Next Steps</h2>
+<ul><li>Complete the first-run checks above.</li><li>Run <code>bash bin/test.sh</code> before making release or deployment changes.</li></ul></article>
+</main>
+</body>
+</html>

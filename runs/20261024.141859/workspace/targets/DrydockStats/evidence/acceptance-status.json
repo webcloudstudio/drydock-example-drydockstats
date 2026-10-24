@@ -1,0 +1,60 @@
+{
+  "criteria": {
+    "cli-error-contract": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "08eb8539ef1b3a1cbdfd0172dd2090b83b0e81556aaeed9eeca607f0375060fd",
+      "updated_at": "2026-10-24T14:24:58+00:00",
+      "detail": ""
+    },
+    "full-conformance": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "a745db6bae77338bbe5f5707f5706b69bfb9c1a86d509f05c8be7df058539d87",
+      "updated_at": "2026-10-24T14:24:58+00:00",
+      "detail": ""
+    },
+    "intake-duplicate-skip": {
+      "status": "PREBUILD_PASSES",
+      "error_code": "empty-tree",
+      "code_sha256": "e04ab9cd61cf217a16ebfbacaf348a233d73fae246b405fba3643f877b89f41c",
+      "updated_at": "2026-10-24T14:22:18+00:00",
+      "detail": ""
+    },
+    "intake-filtering": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "f68e7aec19aeec2d6a0e27b07a3bf7806813b0314da944e6c2f60ee10bfd6848",
+      "updated_at": "2026-10-24T14:22:18+00:00",
+      "detail": ""
+    },
+    "intake-invalid-skip": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "b68d607f6ec2af2fea2fffa982e32e5e6d8ba033bee1f5f1db967c1f1799af79",
+      "updated_at": "2026-10-24T14:22:18+00:00",
+      "detail": ""
+    },
+    "model-selection": {
+      "status": "VALID",
+      "error_code": "existing-behavior",
+      "code_sha256": "bf74d812294cfd1a7c7c44ed6b09f58c37b15a86b5f04d2ae5741f18d87a60f5",
+      "updated_at": "2026-10-24T14:24:58+00:00",
+      "detail": ""
+    },
+    "reports-conformance": {
+      "status": "VALID",
+      "error_code": "existing-behavior",
+      "code_sha256": "9a799a59711e5df90b786edba187b91320a8e8959fafe775df84aefb9de13935",
+      "updated_at": "2026-10-24T14:24:58+00:00",
+      "detail": ""
+    },
+    "test-runner": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "a745db6bae77338bbe5f5707f5706b69bfb9c1a86d509f05c8be7df058539d87",
+      "updated_at": "2026-10-24T14:24:58+00:00",
+      "detail": ""
+    }
+  }
+}

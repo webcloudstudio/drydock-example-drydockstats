@@ -1,0 +1,75 @@
+# FEATURE: CSV Reports
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Aggregates filtered execution records into six CSV reports. |
+| Depends On  | FEATURE-LogIntake.md |
+| Provides    | summary, commands, targets, models, daily, failures CSV reports |
+| Consumes    | log parsing, record validation, duplicate detection, target and date filtering |
+
+## Purpose
+
+Provide the six operator reports from validated records after the filters supplied by `FEATURE-LogIntake.md`. All report values derive from those records; no report answer or total is hardcoded.
+
+## Behavior
+
+- `summary` reports the filtered record count, whole-file skipped count, success and failure counts, earliest and latest start dates, token totals, cost, and minutes. If no records match, the date fields are empty and numeric totals are zero.
+- `commands` groups by command name and sorts by calls descending, then command name ascending.
+- `targets` groups by Target and sorts by Target ascending.
+- `models` groups by provider and selected model. Use the non-empty executed model from `result.stats.model`, otherwise `job.model`; sort by provider, then model, ascending.
+- `daily` groups by start date and sorts ascending.
+- `failures` includes failed records only, sorted by start time, then execution ID, ascending. Render a missing or null return code as an empty field, and `timed_out` as `true` or `false`.
+- `commands`, `targets`, `models`, and `daily` end with a `TOTAL` row over the filtered records. `failures` and `summary` have no total row. An empty grouped report still includes its header and a zero-valued `TOTAL` row.
+- CSV output has one header row, comma-separated fields, and `\n` line endings. Costs use four decimal places. Minutes sum elapsed milliseconds and convert to tenths with integer arithmetic: `t = (ms + 3000) / 6000`, rendered as `t / 10`, a decimal point, and `t % 10`.
+
+## Programmatic Acceptance
+
+=== AC reports-conformance ===
+Intent: The six reports, filters, skipped-line handling, formatting, ordering, and empty-result output pass the supplied known-answer suite.
+Suite: scoped
+
+import os
+import subprocess
+
+result = subprocess.run(
+    ["sh", "bin/test.sh"],
+    capture_output=True,
+    text=True,
+    env={**os.environ},
+)
+print(result.stdout)
+print(result.stderr, file=__import__("sys").stderr)
+assert result.returncode == 0
+=== END AC reports-conformance ===
+
+=== AC model-selection ===
+Intent: The report aggregation assigns a record to its executed model when present and its requested model otherwise.
+Suite: scoped
+
+import os
+
+from pathlib import Path
+import subprocess
+import sys
+
+result = subprocess.run(
+    ["sh", "bin/test.sh"],
+    capture_output=True,
+    text=True,
+    env={**os.environ},
+)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0
+=== END AC model-selection ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not read or modify `sources/run.sh` from application code.
+- Do not hardcode report rows, counts, totals, or expected answers.
+- Do not write to the log being read.

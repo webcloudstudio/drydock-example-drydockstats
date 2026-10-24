@@ -1,0 +1,16 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Next: drydock build DrydockStats
+
+Blueprint: DrydockStats
+Target: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/workspace/targets/DrydockStats
+Rows: <state> <type>  <Name>  [<id>]   — pass [<id>] to --step
+
+Block: Build Block 1 · Service  [block-1]   — 0/1 stories complete
+  [pending] story  Parse execution records, skip invalid and duplicate lines, and apply filters.  [log-intake]  <- next
+
+Block: Build Block 2 · Service  [block-2]   — 0/2 stories complete
+  [pending] story  Aggregate and format the six CSV reports.  [report-generation]
+  [pending] story  Deliver and verify the command-line interface, test runner, and full conformance gate.  [cli-delivery]
+
+Steps: 3 total — 0 done, 0 built (await verify), 0 in review, 3 pending, 0 blocked by questions, 0 failed (0% complete)
+Buildable now: block-1

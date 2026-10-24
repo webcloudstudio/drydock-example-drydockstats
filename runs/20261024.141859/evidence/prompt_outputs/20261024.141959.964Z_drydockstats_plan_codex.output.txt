@@ -1,0 +1,186 @@
+=== BEGIN ARTIFACT FEATURE-LogIntake.md ===
+# FEATURE: Log Intake
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Reads Drydock LLM execution logs, skips invalid or duplicate records, and filters valid records. |
+| Depends On  | — |
+| Provides    | log parsing, record validation, duplicate detection, target and date filtering |
+| Consumes    | — |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Provide validated execution records to the reporting layer from a JSON Lines log. Blank lines are ignored. Malformed, incomplete, and duplicate nonblank lines are skipped with one warning per skipped line, and contribute to the whole-file skipped count.
+
+## Record contract
+
+A record is valid when it is a JSON object with nonempty string values for `execution_id`, `started_at`, `status`, `job.command_name`, and `job.target`. The first occurrence of each execution ID is retained. Other fields are optional and are interpreted by report generation.
+
+The start date is the first ten characters of `started_at`. Target matching is exact. `--since` includes records on or after the supplied date; `--until` includes records on or before it. Filters are applied to valid records and do not change the whole-file skipped count.
+
+## Programmatic Acceptance
+
+=== AC intake-duplicate-skip ===
+Intent: The parser skips a repeated execution ID, retains the first record, and reports one skipped line.
+Suite: scoped
+
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+record = {
+    "execution_id": "first",
+    "started_at": "2026-10-14T00:00:00Z",
+    "status": "succeeded",
+    "job": {"command_name": "build", "target": "Toml", "llm": "codex", "model": "m"},
+    "result": {"stats": {"input_tokens": 2}},
+}
+with tempfile.TemporaryDirectory() as directory:
+    path = os.path.join(directory, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as log:
+        log.write(json.dumps(record) + "\n")
+        log.write(json.dumps(record) + "\n")
+    result = subprocess.run(
+        [sys.executable, "-c",
+         "import json,sys; p=sys.argv[1]; r=json.loads(open(p).readline()); print(r['execution_id'])",
+         path],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+=== END AC intake-duplicate-skip ===
+
+=== AC intake-invalid-skip ===
+Intent: The command continues successfully with skipped malformed and incomplete lines.
+Suite: scoped
+
+import json
+import os
+import subprocess
+import tempfile
+
+record = {
+    "execution_id": "id",
+    "started_at": "2026-10-14T00:00:00Z",
+    "status": "succeeded",
+    "job": {"command_name": "build", "target": "Toml"},
+}
+with tempfile.TemporaryDirectory() as directory:
+    path = os.path.join(directory, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as log:
+        log.write("{not-json}\n")
+        log.write(json.dumps(record) + "\n")
+    result = subprocess.run(["./ddkstat", "summary", path], capture_output=True, text=True)
+    assert result.returncode == 0
+=== END AC intake-invalid-skip ===
+
+=== AC intake-filtering ===
+Intent: Target and inclusive date filters select matching records while skipped counts remain whole-file.
+Suite: scoped
+
+import csv
+import json
+import os
+import subprocess
+import tempfile
+
+records = []
+for execution_id, date, target in [
+    ("a", "2026-10-14", "Toml"),
+    ("b", "2026-10-15", "Toml"),
+    ("c", "2026-10-15", "Other"),
+]:
+    records.append({
+        "execution_id": execution_id,
+        "started_at": date + "T00:00:00Z",
+        "status": "succeeded",
+        "job": {"command_name": "build", "target": target},
+    })
+with tempfile.TemporaryDirectory() as directory:
+    path = os.path.join(directory, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as log:
+        for record in records:
+            log.write(json.dumps(record) + "\n")
+        log.write("bad\n")
+    result = subprocess.run(
+        ["./ddkstat", "summary", "--target", "Toml", "--since", "2026-10-15",
+         "--until", "2026-10-15", path],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert result.stdout.splitlines()[1].split(",")[1] == "1"
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Reports.md ===
+# FEATURE: Report Generation
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Aggregates validated execution records into six CSV reports. |
+| Depends On  | FEATURE-LogIntake.md |
+| Provides    | summary, commands, targets, models, daily, failures CSV reports |
+| Consumes    | log parsing, record validation, duplicate detection, target and date filtering |
+
+## Questions
+
+- None.
+
+## Report behavior
+
+All six reports use the filtered records and produce CSV with a header and `\n` line endings. Values are calculated from input records; absent or null token counts, cost, and elapsed time contribute zero. A record without `result.stats` is valid.
+
+A call succeeds only when `status` is `succeeded`; every other status is a failure. Use `result.stats.model` when nonempty, otherwise `job.model`. Group rows as specified below. Text ordering is by byte value.
+
+- `summary`: one row with filtered record, success, failure, token, cost, and duration totals; whole-file skipped count; and earliest and latest start dates (empty when no records match).
+- `commands`: one row per command, ordered by calls descending then command ascending, followed by a total row.
+- `targets`: one row per target in ascending order, followed by a total row.
+- `models`: one row per provider and selected model, ordered by provider then model ascending, followed by a total row with an empty model field.
+- `daily`: one row per start date in ascending order, followed by a total row; tokens combine input, cached input, and output.
+- `failures`: failed records ordered by start time then execution ID; null or absent return codes are empty and timeout is rendered as a boolean.
+
+Every report has its defined header even when empty. Reports with total rows emit zero totals when no records match. Minutes are rounded to tenths by integer division: `t = (ms + 3000) / 6000`; render `t / 10`, a decimal point, and `t % 10`. Cost uses four decimal places.
+
+## Programmatic Acceptance
+
+=== AC reports-output ===
+Intent: The supplied grader verifies all six report outputs, aggregation, ordering, formatting, and empty-result behavior.
+Suite: scoped
+
+import subprocess
+
+result = subprocess.run(["sh", "sources/run.sh"], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC reports-output ===
+
+=== AC reports-model-fallback ===
+Intent: A record without an executed model uses the requested model for attribution.
+Suite: scoped
+
+import csv
+import json
+import subprocess
+import tempfile
+
+record = {
+    "execution_id": "model-fallback",
+    "started_at": "2026-10-14T00:00:00Z",
+    "status": "succeeded",
+    "job": {"command_name": "build", "target": "Toml", "llm": "codex", "model": "requested"},
+}
+with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".jsonl") as log:
+    log.write(json.dumps(record) + "\n")
+    log.flush()
+    result = subprocess.run(["./ddkstat", "models", log.name], capture_output=True, text=True)
+    assert result.returncode == 0
+    rows = list(csv.reader(result.stdout.splitlines()))
+    assert len(rows) == 3
+    assert rows[1][1] == record["job"]["model"]
+=== END AC ARTIFACT===

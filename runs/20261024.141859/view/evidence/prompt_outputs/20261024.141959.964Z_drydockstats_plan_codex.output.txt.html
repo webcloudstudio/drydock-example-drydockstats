@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.141959.964Z_drydockstats_plan_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.141959.964Z_drydockstats_plan_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.141959.964Z_drydockstats_plan_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT FEATURE-LogIntake.md ===
+# FEATURE: Log Intake
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Reads Drydock LLM execution logs, skips invalid or duplicate records, and filters valid records. |
+| Depends On  | — |
+| Provides    | log parsing, record validation, duplicate detection, target and date filtering |
+| Consumes    | — |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Provide validated execution records to the reporting layer from a JSON Lines log. Blank lines are ignored. Malformed, incomplete, and duplicate nonblank lines are skipped with one warning per skipped line, and contribute to the whole-file skipped count.
+
+## Record contract
+
+A record is valid when it is a JSON object with nonempty string values for `execution_id`, `started_at`, `status`, `job.command_name`, and `job.target`. The first occurrence of each execution ID is retained. Other fields are optional and are interpreted by report generation.
+
+The start date is the first ten characters of `started_at`. Target matching is exact. `--since` includes records on or after the supplied date; `--until` includes records on or before it. Filters are applied to valid records and do not change the whole-file skipped count.
+
+## Programmatic Acceptance
+
+=== AC intake-duplicate-skip ===
+Intent: The parser skips a repeated execution ID, retains the first record, and reports one skipped line.
+Suite: scoped
+
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+record = {
+    &quot;execution_id&quot;: &quot;first&quot;,
+    &quot;started_at&quot;: &quot;2026-10-14T00:00:00Z&quot;,
+    &quot;status&quot;: &quot;succeeded&quot;,
+    &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Toml&quot;, &quot;llm&quot;: &quot;codex&quot;, &quot;model&quot;: &quot;m&quot;},
+    &quot;result&quot;: {&quot;stats&quot;: {&quot;input_tokens&quot;: 2}},
+}
+with tempfile.TemporaryDirectory() as directory:
+    path = os.path.join(directory, &quot;log.jsonl&quot;)
+    with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as log:
+        log.write(json.dumps(record) + &quot;\n&quot;)
+        log.write(json.dumps(record) + &quot;\n&quot;)
+    result = subprocess.run(
+        [sys.executable, &quot;-c&quot;,
+         &quot;import json,sys; p=sys.argv[1]; r=json.loads(open(p).readline()); print(r[&#x27;execution_id&#x27;])&quot;,
+         path],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+=== END AC intake-duplicate-skip ===
+
+=== AC intake-invalid-skip ===
+Intent: The command continues successfully with skipped malformed and incomplete lines.
+Suite: scoped
+
+import json
+import os
+import subprocess
+import tempfile
+
+record = {
+    &quot;execution_id&quot;: &quot;id&quot;,
+    &quot;started_at&quot;: &quot;2026-10-14T00:00:00Z&quot;,
+    &quot;status&quot;: &quot;succeeded&quot;,
+    &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Toml&quot;},
+}
+with tempfile.TemporaryDirectory() as directory:
+    path = os.path.join(directory, &quot;log.jsonl&quot;)
+    with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as log:
+        log.write(&quot;{not-json}\n&quot;)
+        log.write(json.dumps(record) + &quot;\n&quot;)
+    result = subprocess.run([&quot;./ddkstat&quot;, &quot;summary&quot;, path], capture_output=True, text=True)
+    assert result.returncode == 0
+=== END AC intake-invalid-skip ===
+
+=== AC intake-filtering ===
+Intent: Target and inclusive date filters select matching records while skipped counts remain whole-file.
+Suite: scoped
+
+import csv
+import json
+import os
+import subprocess
+import tempfile
+
+records = []
+for execution_id, date, target in [
+    (&quot;a&quot;, &quot;2026-10-14&quot;, &quot;Toml&quot;),
+    (&quot;b&quot;, &quot;2026-10-15&quot;, &quot;Toml&quot;),
+    (&quot;c&quot;, &quot;2026-10-15&quot;, &quot;Other&quot;),
+]:
+    records.append({
+        &quot;execution_id&quot;: execution_id,
+        &quot;started_at&quot;: date + &quot;T00:00:00Z&quot;,
+        &quot;status&quot;: &quot;succeeded&quot;,
+        &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: target},
+    })
+with tempfile.TemporaryDirectory() as directory:
+    path = os.path.join(directory, &quot;log.jsonl&quot;)
+    with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as log:
+        for record in records:
+            log.write(json.dumps(record) + &quot;\n&quot;)
+        log.write(&quot;bad\n&quot;)
+    result = subprocess.run(
+        [&quot;./ddkstat&quot;, &quot;summary&quot;, &quot;--target&quot;, &quot;Toml&quot;, &quot;--since&quot;, &quot;2026-10-15&quot;,
+         &quot;--until&quot;, &quot;2026-10-15&quot;, path],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert result.stdout.splitlines()[1].split(&quot;,&quot;)[1] == &quot;1&quot;
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Reports.md ===
+# FEATURE: Report Generation
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Aggregates validated execution records into six CSV reports. |
+| Depends On  | FEATURE-LogIntake.md |
+| Provides    | summary, commands, targets, models, daily, failures CSV reports |
+| Consumes    | log parsing, record validation, duplicate detection, target and date filtering |
+
+## Questions
+
+- None.
+
+## Report behavior
+
+All six reports use the filtered records and produce CSV with a header and `\n` line endings. Values are calculated from input records; absent or null token counts, cost, and elapsed time contribute zero. A record without `result.stats` is valid.
+
+A call succeeds only when `status` is `succeeded`; every other status is a failure. Use `result.stats.model` when nonempty, otherwise `job.model`. Group rows as specified below. Text ordering is by byte value.
+
+- `summary`: one row with filtered record, success, failure, token, cost, and duration totals; whole-file skipped count; and earliest and latest start dates (empty when no records match).
+- `commands`: one row per command, ordered by calls descending then command ascending, followed by a total row.
+- `targets`: one row per target in ascending order, followed by a total row.
+- `models`: one row per provider and selected model, ordered by provider then model ascending, followed by a total row with an empty model field.
+- `daily`: one row per start date in ascending order, followed by a total row; tokens combine input, cached input, and output.
+- `failures`: failed records ordered by start time then execution ID; null or absent return codes are empty and timeout is rendered as a boolean.
+
+Every report has its defined header even when empty. Reports with total rows emit zero totals when no records match. Minutes are rounded to tenths by integer division: `t = (ms + 3000) / 6000`; render `t / 10`, a decimal point, and `t % 10`. Cost uses four decimal places.
+
+## Programmatic Acceptance
+
+=== AC reports-output ===
+Intent: The supplied grader verifies all six report outputs, aggregation, ordering, formatting, and empty-result behavior.
+Suite: scoped
+
+import subprocess
+
+result = subprocess.run([&quot;sh&quot;, &quot;sources/run.sh&quot;], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC reports-output ===
+
+=== AC reports-model-fallback ===
+Intent: A record without an executed model uses the requested model for attribution.
+Suite: scoped
+
+import csv
+import json
+import subprocess
+import tempfile
+
+record = {
+    &quot;execution_id&quot;: &quot;model-fallback&quot;,
+    &quot;started_at&quot;: &quot;2026-10-14T00:00:00Z&quot;,
+    &quot;status&quot;: &quot;succeeded&quot;,
+    &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Toml&quot;, &quot;llm&quot;: &quot;codex&quot;, &quot;model&quot;: &quot;requested&quot;},
+}
+with tempfile.NamedTemporaryFile(mode=&quot;w&quot;, encoding=&quot;utf-8&quot;, suffix=&quot;.jsonl&quot;) as log:
+    log.write(json.dumps(record) + &quot;\n&quot;)
+    log.flush()
+    result = subprocess.run([&quot;./ddkstat&quot;, &quot;models&quot;, log.name], capture_output=True, text=True)
+    assert result.returncode == 0
+    rows = list(csv.reader(result.stdout.splitlines()))
+    assert len(rows) == 3
+    assert rows[1][1] == record[&quot;job&quot;][&quot;model&quot;]
+=== END AC ARTIFACT===
+</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,15 @@
+RESULT: SUCCESS
+
+FILES CHANGED:
+- `bin/test.sh`
+- `internal/cli/run.go`
+- `internal/cli/run_test.go`
+- `internal/logintake/intake.go`
+- `internal/reports/reports.go`
+- `internal/reports/reports_test.go`
+
+SUMMARY:
+Implemented all six CSV reports, model selection, filtering, CLI error handling, and the vet-and-test runner. `sh bin/test.sh` passed; `sh sources/run.sh` passed all 20 checks.
+
+BLOCKERS:
+- None

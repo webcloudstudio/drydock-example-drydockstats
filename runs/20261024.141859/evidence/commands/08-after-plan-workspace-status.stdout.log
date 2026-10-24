@@ -1,0 +1,16 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Drydock status — workspace
+
+Target: DrydockStats
+   Phase:     Implement
+   State:     3 pending
+   Detail:    3 imported · 3 authored · metadata planned
+   Analysis:  Ready · 9 stories · 0 questions · 0 blockers
+   Plan:      3 pending
+   Next Step: drydock build DrydockStats  (frontier: Parse execution records, skip invalid and duplicate lines, and apply filters.)
+   10-24:     ✅  drydock build status DrydockStats
+   10-24:     ✅  drydock plan verify DrydockStats
+   10-24:     ✅  drydock plan DrydockStats --override
+   10-24:     ✅  drydock analyze DrydockStats
+   10-24:     ✅  drydock import DrydockStats /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/sources --format markdown
+

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>inputs/COMPASS.md</title>
+<link rel="stylesheet" href="../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Project document</div><h1>inputs/COMPASS.md</h1><div class="filenav"><a href="../../index.html">&larr; Report</a><a href="../../inputs/COMPASS.md">Raw file</a></div></header>
+<article class="doc"><h1>COMPASS: DrydockStats</h1>
+<h2>Compass</h2>
+<p>Build a command-line reporter for Drydock&#x27;s LLM execution log, the Go executable <code>./cmd/ddkstat</code>, as described in <code>sources/INSTRUCTIONS.md</code>. It reads a JSON Lines log, skips malformed and duplicate lines without failing, and writes six CSV reports (summary, commands, targets, models, daily, failures), each narrowed by optional Target and date filters.</p>
+<p>Correctness is measured by <code>sources/run.sh</code>: it builds the executable with <code>go build</code> and makes 20 checks of exit code and standard output against <code>sources/llm_sample.jsonl</code>. The goal is every check passing. The finished tool also runs against a real <code>logs/llm.jsonl</code>.</p>
+<h2>Constraints</h2>
+<ul><li>Implement in Go 1.22 or newer with the standard library only. No third-party modules.</li><li>The application root is a Go module; the executable&#x27;s main package is <code>./cmd/ddkstat</code>.</li><li>Parsing the log, aggregating, and formatting are separate, unit-tested functions.</li><li>Diagnostics go to standard error and are never compared.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Do not modify, rewrite, regenerate, or substitute any file under <code>sources/</code>.</li><li>Do not read <code>sources/run.sh</code> from application code, and do not hardcode a report row, a count,</li></ul>
+<p>or a total. Every value comes from the log being read.</p>
+<ul><li>Never write to the log being read.</li></ul>
+<h2>Verification Protocol</h2>
+<div class="scroll"><table><thead><tr><th>Story kind</th><th>Command</th><th>Asserts</th></tr></thead><tbody><tr><td>Every behavioral story</td><td><code>sh bin/test.sh</code></td><td>exit <code>0</code></td></tr><tr><td>Terminal story (once, last)</td><td><code>sh sources/run.sh</code></td><td>exit <code>0</code></td></tr></tbody></table></div></article>
+</main>
+</body>
+</html>

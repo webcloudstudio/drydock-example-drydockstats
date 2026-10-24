@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/LINEAGE.json</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/LINEAGE.json</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/DrydockStats/LINEAGE.json">Raw file</a></div></header>
+<article class="doc"><pre>{
+  &quot;version&quot;: 1,
+  &quot;import&quot;: {
+    &quot;root&quot;: &quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/sources&quot;,
+    &quot;format&quot;: &quot;markdown&quot;
+  },
+  &quot;sources&quot;: {
+    &quot;INSTRUCTIONS.md&quot;: {
+      &quot;state&quot;: &quot;current&quot;,
+      &quot;versions&quot;: [
+        {
+          &quot;commit&quot;: &quot;f2cf8b9&quot;,
+          &quot;date&quot;: &quot;2026-10-24&quot;,
+          &quot;hash&quot;: &quot;26e9f16d1cb531d7ebbc324cdfa9a03e31fcf317e285018fb385409111cdc3cc&quot;,
+          &quot;release&quot;: &quot;&quot;,
+          &quot;state&quot;: &quot;consumed&quot;,
+          &quot;via&quot;: &quot;plan&quot;,
+          &quot;ticket&quot;: null,
+          &quot;requirements&quot;: [
+            {
+              &quot;name&quot;: &quot;build-go-cli&quot;,
+              &quot;text&quot;: &quot;Implement in Go 1.22 or newer using only the standard library. The application root is a Go\nmodule, and its executable is the main package at `./cmd/ddkstat`. Tests run under `go test`.&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-delivery&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;run-scoring-harness&quot;,
+              &quot;text&quot;: &quot;`sources/run.sh` is the scoring entry point. Drydock runs it with `sh sources/run.sh` from the completed application root and takes its exit code and output as the score.&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-delivery&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;preserve-scoring-assets&quot;,
+              &quot;text&quot;: &quot;These files are the exam. Do not modify, rewrite, regenerate, or substitute them:&quot;,
+              &quot;stories&quot;: [
+                &quot;log-intake&quot;,
+                &quot;report-generation&quot;,
+                &quot;cli-delivery&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;parse-and-filter-records&quot;,
+              &quot;text&quot;: &quot;The reporter reads only these and ignores every other field:&quot;,
+              &quot;stories&quot;: [
+                &quot;log-intake&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;skip-invalid-lines&quot;,
+              &quot;text&quot;: &quot;1. **Blank lines** are ignored and not counted.\n2. **Skipped lines.** A line is skipped when it is not a JSON object, when any of `execution_id`,\n  `started_at`, `status`, `job.command_name`, or `job.target` is absent or not a non-empty\n  string, or when its `execution_id` already appeared on an earlier line. The first occurrence of\n  an `execution_id` is kept. Each skipped line writes one warning to standard error naming its\n  line number. Skipping never changes the exit code.&quot;,
+              &quot;stories&quot;: [
+                &quot;log-intake&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;handle-missing-statistics&quot;,
+              &quot;text&quot;: &quot;3. **Missing numbers.** An absent or `null` token count, cost, or duration counts as zero. A\n  record with no `result.stats` object at all is still a record.\n4. **Model.** A record&#x27;s model is `result.stats.model` when present and non-empty, otherwise\n  `job.model`.&quot;,
+              &quot;stories&quot;: [
+                &quot;log-intake&quot;,
+                &quot;report-generation&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;classify-failed-calls&quot;,
+              &quot;text&quot;: &quot;5. **Failed.** A record is failed when `status` is not `succeeded`.&quot;,
+              &quot;stories&quot;: [
+                &quot;log-intake&quot;,
+                &quot;report-generation&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;filter-reports&quot;,
+              &quot;text&quot;: &quot;6. **Filters** apply to every report. The `skipped` count in `summary` counts skipped lines in the\n  whole file regardless of filters.&quot;,
+              &quot;stories&quot;: [
+                &quot;log-intake&quot;,
+                &quot;report-generation&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;format-report-metrics&quot;,
+              &quot;text&quot;: &quot;7. **Minutes.** A minutes column is the group&#x27;s summed `elapsed_ms` written in tenths of a minute:\n  `t = (ms + 3000) / 6000` in integer division, written as `t / 10`, a `.`, and `t % 10`.\n  `95000` ms is `1.6`.\n8. **Cost.** A cost column is the group&#x27;s summed `cost_usd` written with exactly four decimal\n  places, as Go&#x27;s `%.4f` writes a `float64`.\n9. **Ordering.** Text is compared by byte value.&quot;,
+              &quot;stories&quot;: [
+                &quot;report-generation&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;csv-report-output&quot;,
+              &quot;text&quot;: &quot;Every report writes CSV to standard output: one header row, then data rows, comma-separated, `\\n`\nline endings. Every report except `summary` and `failures` ends with a `TOTAL` row over all\nfiltered records. When no record matches, a report writes its header and, where it has one, a\n`TOTAL` row of zeros (`0.0` minutes, `0.0000` cost).&quot;,
+              &quot;stories&quot;: [
+                &quot;report-generation&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;implement-six-reports&quot;,
+              &quot;text&quot;: &quot;| Report | Header | Rows |\n|---|---|---|\n| `summary` | `records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes` | One row. `first` and `last` are the earliest and latest start dates, empty when no record matches. |\n| `commands` | `command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes` | One per command, by calls descending, then command ascending. Then `TOTAL,\u2026`. |\n| `targets` | `target,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd,minutes` | One per Target, by Target ascending. Then `TOTAL,\u2026`. |\n| `models` | `provider,model,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd` | One per provider and model pair, by provider then model ascending. Then `TOTAL,,\u2026`. |\n| `daily` | `date,calls,failed,tokens,minutes` | One per start date, ascending. `tokens` is input plus cached plus output. Then `TOTAL,\u2026`. |\n| `failures` | `started_at,target,command,model,returncode,timed_out` | One per failed record, by `started_at` then `execution_id` ascending. `returncode` is empty when `null` or absent. `timed_out` is `true` or `false`. |&quot;,
+              &quot;stories&quot;: [
+                &quot;report-generation&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;handle-cli-errors&quot;,
+              &quot;text&quot;: &quot;A failing command writes nothing to standard output and one diagnostic line to standard error.&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-delivery&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;exit-codes&quot;,
+              &quot;text&quot;: &quot;| Code | Meaning |\n|---|---|\n| `0` | Success, including a log with skipped lines or no matching records. |\n| `1` | Operational failure: the log cannot be opened or read. |\n| `2` | Usage error: unknown report or option, missing option value, invalid date, missing or extra log path. |&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-delivery&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;test-suite&quot;,
+              &quot;text&quot;: &quot;The completed application provides a POSIX-compatible `bin/test.sh` that runs `go vet ./...` and `go test ./...` from the application root and exits zero only when both pass.&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-delivery&quot;
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    &quot;llm_sample.jsonl&quot;: {
+      &quot;state&quot;: &quot;current&quot;,
+      &quot;versions&quot;: [
+        {
+          &quot;commit&quot;: &quot;f2cf8b9&quot;,
+          &quot;date&quot;: &quot;2026-10-24&quot;,
+          &quot;hash&quot;: &quot;19a092d921393ca299df3dbdb1b65370649bda5aaea44c2fe4f7f1080cc5f217&quot;,
+          &quot;release&quot;: &quot;&quot;,
+          &quot;state&quot;: &quot;consumed&quot;,
+          &quot;via&quot;: &quot;plan&quot;,
+          &quot;ticket&quot;: null,
+          &quot;requirements&quot;: [
+            {
+              &quot;name&quot;: &quot;parse-execution-records&quot;,
+              &quot;text&quot;: &quot;{\&quot;schema_version\&quot;:1,\&quot;execution_id\&quot;:\&quot;20261014.063754.176Z-00bfbe21\&quot;,\&quot;started_at\&quot;:\&quot;2026-10-14T06:37:54.176Z\&quot;,\&quot;status\&quot;:\&quot;succeeded\&quot;,\&quot;job\&quot;:{\&quot;command_name\&quot;:\&quot;import_compass\&quot;,\&quot;target\&quot;:\&quot;ReadingList\&quot;,\&quot;llm\&quot;:\&quot;claude\&quot;,\&quot;model\&quot;:\&quot;haiku\&quot;},\&quot;prompt\&quot;:{\&quot;bytes\&quot;:191082},\&quot;result\&quot;:{\&quot;returncode\&quot;:0,\&quot;timed_out\&quot;:false,\&quot;stats\&quot;:{\&quot;cached_input_tokens\&quot;:263315,\&quot;elapsed_ms\&quot;:54872,\&quot;input_tokens\&quot;:843,\&quot;output_tokens\&quot;:7751,\&quot;turns\&quot;:16,\&quot;cost_usd\&quot;:0.0659295,\&quot;model\&quot;:\&quot;claude-haiku-5-5\&quot;}}}&quot;,
+              &quot;stories&quot;: [
+                &quot;log-intake&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;aggregate-and-format-reports&quot;,
+              &quot;text&quot;: &quot;{\&quot;schema_version\&quot;:1,\&quot;execution_id\&quot;:\&quot;20261014.063754.176Z-00bfbe21\&quot;,\&quot;started_at\&quot;:\&quot;2026-10-14T06:37:54.176Z\&quot;,\&quot;status\&quot;:\&quot;succeeded\&quot;,\&quot;job\&quot;:{\&quot;command_name\&quot;:\&quot;import_compass\&quot;,\&quot;target\&quot;:\&quot;ReadingList\&quot;,\&quot;llm\&quot;:\&quot;claude\&quot;,\&quot;model\&quot;:\&quot;haiku\&quot;},\&quot;prompt\&quot;:{\&quot;bytes\&quot;:191082},\&quot;result\&quot;:{\&quot;returncode\&quot;:0,\&quot;timed_out\&quot;:false,\&quot;stats\&quot;:{\&quot;cached_input_tokens\&quot;:263315,\&quot;elapsed_ms\&quot;:54872,\&quot;input_tokens\&quot;:843,\&quot;output_tokens\&quot;:7751,\&quot;turns\&quot;:16,\&quot;cost_usd\&quot;:0.0659295,\&quot;model\&quot;:\&quot;claude-haiku-5-5\&quot;}}&quot;,
+              &quot;stories&quot;: [
+                &quot;report-generation&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;command-line-delivery-and-conformance&quot;,
+              &quot;text&quot;: &quot;{\&quot;schema_version\&quot;:1,\&quot;execution_id\&quot;:\&quot;20261014.063754.176Z-00bfbe21\&quot;,\&quot;started_at\&quot;:\&quot;2026-10-14T06:37:54.176Z\&quot;,\&quot;status\&quot;:\&quot;succeeded\&quot;,\&quot;job\&quot;:{\&quot;command_name\&quot;:\&quot;import_compass\&quot;,\&quot;target\&quot;:\&quot;ReadingList\&quot;,\&quot;llm\&quot;:\&quot;claude\&quot;,\&quot;model\&quot;:\&quot;haiku\&quot;},\&quot;prompt\&quot;:{\&quot;bytes\&quot;:191082},\&quot;result\&quot;:{\&quot;returncode\&quot;:0,\&quot;timed_out\&quot;:false,\&quot;stats\&quot;:{\&quot;cached_input_tokens\&quot;:263315,\&quot;elapsed_ms\&quot;:54872,\&quot;input_tokens\&quot;:843,\&quot;output_tokens\&quot;:7751,\&quot;turns\&quot;:16,\&quot;cost_usd\&quot;:0.0659295,\&quot;model\&quot;:\&quot;claude-haiku-5-5\&quot;}}&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-delivery&quot;
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    &quot;run.sh&quot;: {
+      &quot;state&quot;: &quot;current&quot;,
+      &quot;versions&quot;: [
+        {
+          &quot;commit&quot;: &quot;f2cf8b9&quot;,
+          &quot;date&quot;: &quot;2026-10-24&quot;,
+          &quot;hash&quot;: &quot;0cc2ee483269886e4d61e5bfdbefec2419121f8a49a10ef33f182f855ba889d3&quot;,
+          &quot;release&quot;: &quot;&quot;,
+          &quot;state&quot;: &quot;consumed&quot;,
+          &quot;via&quot;: &quot;plan&quot;,
+          &quot;ticket&quot;: null,
+          &quot;requirements&quot;: [
+            {
+              &quot;name&quot;: &quot;build-main-package&quot;,
+              &quot;text&quot;: &quot;if ! (cd \&quot;$APP\&quot; &amp;&amp; go build -o \&quot;$BIN\&quot; ./cmd/ddkstat); then\n    echo \&quot;error: go build ./cmd/ddkstat failed at the application root $APP.\&quot; &gt;&amp;2\n    echo \&quot;The deliverable is a Go module whose main package is ./cmd/ddkstat.\&quot; &gt;&amp;2\n    exit 1\nfi&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-delivery&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;verify-reports-and-exit-codes&quot;,
+              &quot;text&quot;: &quot;# Builds ./cmd/ddkstat with `go build` and compares every report&#x27;s exit code and standard output\nover the supplied sample log with the known answer below. Standard error is never compared.&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-delivery&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;generate-six-reports&quot;,
+              &quot;text&quot;: &quot;# \u2500\u2500 A. Every report over the whole sample \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500&quot;,
+              &quot;stories&quot;: [
+                &quot;report-generation&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;filter-reports&quot;,
+              &quot;text&quot;: &quot;# \u2500\u2500 B. Filters \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500&quot;,
+              &quot;stories&quot;: [
+                &quot;log-intake&quot;,
+                &quot;report-generation&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;handle-no-match-filters&quot;,
+              &quot;text&quot;: &quot;# \u2500\u2500 C. A filter that matches nothing \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500&quot;,
+              &quot;stories&quot;: [
+                &quot;log-intake&quot;,
+                &quot;report-generation&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;handle-operational-failures&quot;,
+              &quot;text&quot;: &quot;# \u2500\u2500 E. Operational failures \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-delivery&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;handle-usage-errors&quot;,
+              &quot;text&quot;: &quot;# \u2500\u2500 U. Usage errors \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-delivery&quot;
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+</pre></article>
+</main>
+</body>
+</html>

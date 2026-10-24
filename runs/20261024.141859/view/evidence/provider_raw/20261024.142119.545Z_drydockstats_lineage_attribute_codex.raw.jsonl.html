@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/provider_raw/20261024.142119.545Z_drydockstats_lineage_attribute_codex.raw.jsonl</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/provider_raw/20261024.142119.545Z_drydockstats_lineage_attribute_codex.raw.jsonl</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/provider_raw/20261024.142119.545Z_drydockstats_lineage_attribute_codex.raw.jsonl">Raw file</a></div></header>
+<article class="doc"><pre>{&quot;type&quot;:&quot;thread.started&quot;,&quot;thread_id&quot;:&quot;01a16e49-9a7f-7df2-8651-439b2403254a&quot;}
+{&quot;type&quot;:&quot;turn.started&quot;}
+{&quot;type&quot;:&quot;item.completed&quot;,&quot;item&quot;:{&quot;id&quot;:&quot;item_0&quot;,&quot;type&quot;:&quot;agent_message&quot;,&quot;text&quot;:&quot;&lt;requirement name=\&quot;build-main-package\&quot; stories=\&quot;cli-delivery\&quot;&gt;\nif ! (cd \&quot;$APP\&quot; &amp;&amp; go build -o \&quot;$BIN\&quot; ./cmd/ddkstat); then\n    echo \&quot;error: go build ./cmd/ddkstat failed at the application root $APP.\&quot; &gt;&amp;2\n    echo \&quot;The deliverable is a Go module whose main package is ./cmd/ddkstat.\&quot; &gt;&amp;2\n    exit 1\nfi\n&lt;/requirement&gt;\n&lt;requirement name=\&quot;verify-reports-and-exit-codes\&quot; stories=\&quot;cli-delivery\&quot;&gt;\n# Builds ./cmd/ddkstat with `go build` and compares every report&#x27;s exit code and standard output\nover the supplied sample log with the known answer below. Standard error is never compared.\n&lt;/requirement&gt;\n&lt;requirement name=\&quot;generate-six-reports\&quot; stories=\&quot;report-generation\&quot;&gt;\n# ── A. Every report over the whole sample ───────────────────────────────────────────────\n&lt;/requirement&gt;\n&lt;requirement name=\&quot;filter-reports\&quot; stories=\&quot;log-intake,report-generation\&quot;&gt;\n# ── B. Filters ───────────────────────────────────────────────────────────────────────────\n&lt;/requirement&gt;\n&lt;requirement name=\&quot;handle-no-match-filters\&quot; stories=\&quot;log-intake,report-generation\&quot;&gt;\n# ── C. A filter that matches nothing ─────────────────────────────────────────────────────\n&lt;/requirement&gt;\n&lt;requirement name=\&quot;handle-operational-failures\&quot; stories=\&quot;cli-delivery\&quot;&gt;\n# ── E. Operational failures ──────────────────────────────────────────────────────────────\n&lt;/requirement&gt;\n&lt;requirement name=\&quot;handle-usage-errors\&quot; stories=\&quot;cli-delivery\&quot;&gt;\n# ── U. Usage errors ──────────────────────────────────────────────────────────────────────\n&lt;/requirement&gt;\n&lt;unattached story=\&quot;log-intake\&quot;/&gt;&quot;}}
+{&quot;type&quot;:&quot;turn.completed&quot;,&quot;usage&quot;:{&quot;input_tokens&quot;:17315,&quot;cached_input_tokens&quot;:11520,&quot;cache_write_input_tokens&quot;:0,&quot;output_tokens&quot;:367,&quot;reasoning_output_tokens&quot;:0}}
+</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/SCORECARD.md</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/SCORECARD.md</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/DrydockStats/SCORECARD.md">Raw file</a></div></header>
+<article class="doc"><h1>Scorecard: DrydockStats</h1>
+<h2>Specification</h2>
+<blockquote><p><strong>NOT YET RUN</strong> drydock score spec DrydockStats</p></blockquote>
+<h2>Acceptance</h2>
+<blockquote><p><strong>PASSED</strong> drydock score ac DrydockStats · 2026-10-24T14:28:19.314+00:00</p></blockquote>
+<p>PASS 5   FAIL 0   UNVERIFIED 0   PREPASSED 3   (8 AC total)</p>
+<h2>Build</h2>
+<blockquote><p><strong>RECORDED</strong> drydock score build DrydockStats</p></blockquote>
+<p>Blocks: 2   Repaired: 1   Failed: 0<br>Tokens: 1,021,000 (cached 849,024, output 12,905)   Cache hit rate: 84.2%</p>
+<h2>Release</h2>
+<blockquote><p><strong>RELEASED</strong> drydock score release DrydockStats · 2026-10-24T14:29:07.940+00:00</p></blockquote>
+<ul><li>Verdict: PASSED</li></ul>
+<p>DrydockStats: PASSED — 8 of 8</p>
+<p>st-001  MET       [&quot;sh&quot;, &quot;sources/run.sh&quot;] exited 0; sources/run.sh: gate output: DrydockStats: 20 passed, 0 failed (of 20) st-002  MET       bin/test.sh: runs go vet ./... and go test ./...; probe: bin/test.sh exited zero st-003  MET       go.mod: module drydockstats; go 1.22; probe: go build ./cmd/ddkstat exited zero st-004  MET       internal/logintake/intake.go: Read counts invalid and duplicate records as skipped; probe: Read returned two valid records and skipped count 2; summary included the skip count st-005  MET       sources/run.sh: PASS A1 through PASS A6 st-006  MET       sources/run.sh: PASS B1 through PASS B5; probe: Apply returned only the record matching target T on 2026-10-15 st-007  MET       internal/reports/reports.go: model selection prefers Result.Stats.Model and falls back to Job.Model; probe: models output contained both executed and fallback models st-008  MET       internal/cli/run.go: unreadable logs return 1; malformed arguments return 2; probe: missing log returned 1 with zero stdout bytes; invalid date returned 2 with zero stdout bytes</p>
+<h2>Project acceptance</h2>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Type</th><th>Criterion</th><th>Verdict</th><th>Observed</th></tr></thead><tbody><tr><td>st-001</td><td>technical</td><td>The completed ddkstat shall make sh sources/run.sh exit zero; that script&#x27;s exit status is the sole acceptance verdict.</td><td>MET</td><td>[&quot;sh&quot;, &quot;sources/run.sh&quot;] exited 0; sources/run.sh: gate output: DrydockStats: 20 passed, 0 failed (of 20)</td></tr><tr><td>st-002</td><td>technical</td><td>The application shall provide a POSIX-compatible bin/test.sh that exits zero when go vet and every automated test pass.</td><td>MET</td><td>bin/test.sh: runs go vet ./... and go test ./...; probe: bin/test.sh exited zero</td></tr><tr><td>st-003</td><td>technical</td><td>The application root shall be a Go module from which go build ./cmd/ddkstat produces the ddkstat executable using only the standard library.</td><td>MET</td><td>go.mod: module drydockstats; go 1.22; probe: go build ./cmd/ddkstat exited zero</td></tr><tr><td>st-004</td><td>behavioral</td><td>If a log line is not a JSON object, lacks a required field, or repeats an earlier execution_id, then the application shall skip it, count it in the summary, and still exit zero.</td><td>MET</td><td>internal/logintake/intake.go: Read counts invalid and duplicate records as skipped; probe: Read returned two valid records and skipped count 2; summary included the skip count</td></tr><tr><td>st-005</td><td>behavioral</td><td>The application shall compute the summary, commands, targets, models, daily, and failures reports from the log, matching the known answers in sources/run.sh byte for byte.</td><td>MET</td><td>sources/run.sh: PASS A1 through PASS A6</td></tr><tr><td>st-006</td><td>behavioral</td><td>When --target, --since, or --until is given, the application shall compute every report over only the matching records.</td><td>MET</td><td>sources/run.sh: PASS B1 through PASS B5; probe: Apply returned only the record matching target T on 2026-10-15</td></tr><tr><td>st-007</td><td>behavioral</td><td>The application shall attribute a record to result.stats.model when it is present and to job.model otherwise.</td><td>MET</td><td>internal/reports/reports.go: model selection prefers Result.Stats.Model and falls back to Job.Model; probe: models output contained both executed and fallback models</td></tr><tr><td>st-008</td><td>behavioral</td><td>If the log cannot be read, then the application shall exit 1; if the arguments are malformed, then the application shall exit 2; in both cases it shall write nothing to standard output.</td><td>MET</td><td>internal/cli/run.go: unreadable logs return 1; malformed arguments return 2; probe: missing log returned 1 with zero stdout bytes; invalid date returned 2 with zero stdout bytes</td></tr></tbody></table></div>
+<p><strong>Material decisions:</strong></p>
+<ul><li>Malformed input response contract — </li></ul></article>
+</main>
+</body>
+</html>

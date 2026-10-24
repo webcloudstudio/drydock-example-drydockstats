@@ -1,0 +1,27 @@
+<requirement name="build-main-package" stories="cli-delivery">
+if ! (cd "$APP" && go build -o "$BIN" ./cmd/ddkstat); then
+    echo "error: go build ./cmd/ddkstat failed at the application root $APP." >&2
+    echo "The deliverable is a Go module whose main package is ./cmd/ddkstat." >&2
+    exit 1
+fi
+</requirement>
+<requirement name="verify-reports-and-exit-codes" stories="cli-delivery">
+# Builds ./cmd/ddkstat with `go build` and compares every report's exit code and standard output
+over the supplied sample log with the known answer below. Standard error is never compared.
+</requirement>
+<requirement name="generate-six-reports" stories="report-generation">
+# ── A. Every report over the whole sample ───────────────────────────────────────────────
+</requirement>
+<requirement name="filter-reports" stories="log-intake,report-generation">
+# ── B. Filters ───────────────────────────────────────────────────────────────────────────
+</requirement>
+<requirement name="handle-no-match-filters" stories="log-intake,report-generation">
+# ── C. A filter that matches nothing ─────────────────────────────────────────────────────
+</requirement>
+<requirement name="handle-operational-failures" stories="cli-delivery">
+# ── E. Operational failures ──────────────────────────────────────────────────────────────
+</requirement>
+<requirement name="handle-usage-errors" stories="cli-delivery">
+# ── U. Usage errors ──────────────────────────────────────────────────────────────────────
+</requirement>
+<unattached story="log-intake"/>

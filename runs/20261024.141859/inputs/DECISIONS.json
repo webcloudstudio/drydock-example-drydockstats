@@ -1,0 +1,21 @@
+[
+  {
+    "id": "Q-001",
+    "type": "choice",
+    "severity": "material",
+    "origin": "plan",
+    "blueprint": "FEATURE-CLI.md",
+    "story": "cli-delivery",
+    "status": "recommended",
+    "archived": false,
+    "title": "Malformed input response contract",
+    "description": "The source specifies usage and operational exit codes, while malformed and duplicate log lines must be skipped without failing. A particular diagnostic wording is not prescribed; use one warning line per skipped nonblank input line and a single diagnostic line for command-level failures.",
+    "options": [
+      {
+        "value": "conventional",
+        "label": "Conventional exit codes and concise diagnostics"
+      }
+    ],
+    "system_choice": "Use exit code 2 for malformed invocations, exit code 1 for unreadable logs, and exit code 0 when processing succeeds despite skipped lines. Write concise diagnostics to standard error and no standard output on command-level errors."
+  }
+]

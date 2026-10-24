@@ -1,0 +1,10 @@
+RESULT: SUCCESS
+
+FILES CHANGED:
+- ddkstat
+
+SUMMARY:
+Built the `./ddkstat` executable in the build directory, which the two failing acceptance checks expected to exist. Both malformed-line skipping and filtered summary checks now pass. `sh bin/test.sh` also passes.
+
+BLOCKERS:
+- None

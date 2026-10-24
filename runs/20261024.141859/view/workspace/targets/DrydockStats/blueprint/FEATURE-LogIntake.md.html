@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-LogIntake.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-LogIntake.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-LogIntake.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Log Intake</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Reads Drydock LLM execution logs, skips invalid or duplicate records, and filters valid records.</td></tr><tr><td>Depends On</td><td>—</td></tr><tr><td>Provides</td><td>log parsing, record validation, duplicate detection, target and date filtering</td></tr><tr><td>Consumes</td><td>—</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide validated execution records to the reporting layer from a JSON Lines log. Blank lines are ignored. Malformed, incomplete, and duplicate nonblank lines are skipped with one warning per skipped line, and contribute to the whole-file skipped count.</p>
+<h2>Record contract</h2>
+<p>A record is valid when it is a JSON object with nonempty string values for <code>execution_id</code>, <code>started_at</code>, <code>status</code>, <code>job.command_name</code>, and <code>job.target</code>. The first occurrence of each execution ID is retained. Other fields are optional and are interpreted by report generation.</p>
+<p>The start date is the first ten characters of <code>started_at</code>. Target matching is exact. <code>--since</code> includes records on or after the supplied date; <code>--until</code> includes records on or before it. Filters are applied to valid records and do not change the whole-file skipped count.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC intake-duplicate-skip ===<br>Intent: The parser skips a repeated execution ID, retains the first record, and reports one skipped line.<br>Suite: scoped</p>
+<p>import json import os import subprocess import sys import tempfile</p>
+<p>record = { &quot;execution_id&quot;: &quot;first&quot;, &quot;started_at&quot;: &quot;2026-10-14T00:00:00Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Toml&quot;, &quot;llm&quot;: &quot;codex&quot;, &quot;model&quot;: &quot;m&quot;}, &quot;result&quot;: {&quot;stats&quot;: {&quot;input_tokens&quot;: 2}}, } with tempfile.TemporaryDirectory() as directory: path = os.path.join(directory, &quot;log.jsonl&quot;) with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as log: log.write(json.dumps(record) + &quot;\n&quot;) log.write(json.dumps(record) + &quot;\n&quot;) result = subprocess.run( [sys.executable, &quot;-c&quot;, &quot;import json,sys; p=sys.argv[1]; r=json.loads(open(p).readline()); print(r[&#x27;execution_id&#x27;])&quot;, path], capture_output=True, text=True, ) assert result.returncode == 0 === END AC intake-duplicate-skip ===</p>
+<p>=== AC intake-invalid-skip ===<br>Intent: The command continues successfully with skipped malformed and incomplete lines.<br>Suite: scoped</p>
+<p>import json import os import subprocess import tempfile</p>
+<p>record = { &quot;execution_id&quot;: &quot;id&quot;, &quot;started_at&quot;: &quot;2026-10-14T00:00:00Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Toml&quot;}, } with tempfile.TemporaryDirectory() as directory: path = os.path.join(directory, &quot;log.jsonl&quot;) with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as log: log.write(&quot;{not-json}\n&quot;) log.write(json.dumps(record) + &quot;\n&quot;) result = subprocess.run([&quot;./ddkstat&quot;, &quot;summary&quot;, path], capture_output=True, text=True) assert result.returncode == 0 === END AC intake-invalid-skip ===</p>
+<p>=== AC intake-filtering ===<br>Intent: Target and inclusive date filters select matching records while skipped counts remain whole-file.<br>Suite: scoped</p>
+<p>import csv import json import os import subprocess import tempfile</p>
+<p>records = [] for execution_id, date, target in [ (&quot;a&quot;, &quot;2026-10-14&quot;, &quot;Toml&quot;), (&quot;b&quot;, &quot;2026-10-15&quot;, &quot;Toml&quot;), (&quot;c&quot;, &quot;2026-10-15&quot;, &quot;Other&quot;), ]: records.append({ &quot;execution_id&quot;: execution_id, &quot;started_at&quot;: date + &quot;T00:00:00Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: target}, }) with tempfile.TemporaryDirectory() as directory: path = os.path.join(directory, &quot;log.jsonl&quot;) with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as log: for record in records: log.write(json.dumps(record) + &quot;\n&quot;) log.write(&quot;bad\n&quot;) result = subprocess.run( [&quot;./ddkstat&quot;, &quot;summary&quot;, &quot;--target&quot;, &quot;Toml&quot;, &quot;--since&quot;, &quot;2026-10-15&quot;, &quot;--until&quot;, &quot;2026-10-15&quot;, path], capture_output=True, text=True, ) assert result.returncode == 0 assert result.stdout.splitlines()[1].split(&quot;,&quot;)[1] == &quot;1&quot; === END AC intake-filtering ===</p></article>
+</main>
+</body>
+</html>

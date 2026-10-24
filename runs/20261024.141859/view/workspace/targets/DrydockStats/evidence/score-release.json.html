@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/evidence/score-release.json</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/evidence/score-release.json</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/evidence/score-release.json">Raw file</a></div></header>
+<article class="doc"><pre>{
+  &quot;schema_version&quot;: 5,
+  &quot;recorded_at&quot;: &quot;2026-10-24T14:29:07+00:00&quot;,
+  &quot;target&quot;: &quot;DrydockStats&quot;,
+  &quot;verdict&quot;: &quot;PASSED&quot;,
+  &quot;verdict_line&quot;: &quot;DrydockStats: PASSED \u2014 8 of 8&quot;,
+  &quot;statement&quot;: &quot;DrydockStats: PASSED \u2014 8 of 8\n\n  st-001  MET       [\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;] exited 0; sources/run.sh: gate output: DrydockStats: 20 passed, 0 failed (of 20)\n  st-002  MET       bin/test.sh: runs go vet ./... and go test ./...; probe: bin/test.sh exited zero\n  st-003  MET       go.mod: module drydockstats; go 1.22; probe: go build ./cmd/ddkstat exited zero\n  st-004  MET       internal/logintake/intake.go: Read counts invalid and duplicate records as skipped; probe: Read returned two valid records and skipped count 2; summary included the skip count\n  st-005  MET       sources/run.sh: PASS A1 through PASS A6\n  st-006  MET       sources/run.sh: PASS B1 through PASS B5; probe: Apply returned only the record matching target T on 2026-10-15\n  st-007  MET       internal/reports/reports.go: model selection prefers Result.Stats.Model and falls back to Job.Model; probe: models output contained both executed and fallback models\n  st-008  MET       internal/cli/run.go: unreadable logs return 1; malformed arguments return 2; probe: missing log returned 1 with zero stdout bytes; invalid date returned 2 with zero stdout bytes&quot;,
+  &quot;complete&quot;: true,
+  &quot;governed_gate&quot;: {
+    &quot;name&quot;: &quot;full&quot;,
+    &quot;outcome&quot;: &quot;PASS&quot;,
+    &quot;argv&quot;: [
+      &quot;sh&quot;,
+      &quot;sources/run.sh&quot;
+    ],
+    &quot;return_code&quot;: 0,
+    &quot;duration_ms&quot;: 2615,
+    &quot;detail&quot;: &quot;&quot;,
+    &quot;timed_out&quot;: false,
+    &quot;build_identity&quot;: &quot;f0cc2ee144679e53&quot;,
+    &quot;stdout&quot;: &quot;PASS A1: ddkstat summary /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS A2: ddkstat commands /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS A3: ddkstat targets /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS A4: ddkstat models /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS A5: ddkstat daily /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS A6: ddkstat failures /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS B1: ddkstat summary --target Toml --since 2026-10-15 /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS B2: ddkstat commands --until 2026-10-14 /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS B3: ddkstat daily --since 2026-10-15 --until 2026-10-15 /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS B4: ddkstat failures --target CommonMark /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS B5: ddkstat models --target ReadingList /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS C1: ddkstat commands --target NoSuchTarget /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS C2: ddkstat summary --target NoSuchTarget /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS E1: ddkstat summary /tmp/tmp.FKmJJpCEbJ/no-such-log.jsonl\nPASS U1: ddkstat \nPASS U2: ddkstat frobnicate /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS U3: ddkstat summary\nPASS U4: ddkstat summary --since 2026-13-01 /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS U5: ddkstat summary --colour red /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS U6: ddkstat summary /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nDrydockStats: 20 passed, 0 failed (of 20)\n&quot;,
+    &quot;stderr&quot;: &quot;&quot;
+  },
+  &quot;criteria&quot;: [
+    {
+      &quot;criterion_id&quot;: &quot;st-001&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The supplied gate exited zero and reported all 20 checks passed.&quot;,
+      &quot;evidence&quot;: [
+        &quot;[\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;] exited 0&quot;,
+        &quot;sources/run.sh: gate output: DrydockStats: 20 passed, 0 failed (of 20)&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-002&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The POSIX test script ran successfully, including go vet and all automated tests.&quot;,
+      &quot;evidence&quot;: [
+        &quot;bin/test.sh: runs go vet ./... and go test ./...&quot;,
+        &quot;probe: bin/test.sh exited zero&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-003&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The root is a Go module and go build ./cmd/ddkstat completed successfully.&quot;,
+      &quot;evidence&quot;: [
+        &quot;go.mod: module drydockstats; go 1.22&quot;,
+        &quot;probe: go build ./cmd/ddkstat exited zero&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-004&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;A probe containing malformed JSON and a duplicate execution ID skipped both, reported two skipped records, and completed successfully.&quot;,
+      &quot;evidence&quot;: [
+        &quot;internal/logintake/intake.go: Read counts invalid and duplicate records as skipped&quot;,
+        &quot;probe: Read returned two valid records and skipped count 2; summary included the skip count&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-005&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The supplied gate compared all six reports against their known answers and passed each check.&quot;,
+      &quot;evidence&quot;: [
+        &quot;sources/run.sh: PASS A1 through PASS A6&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-006&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The supplied gate passed filter cases, and a probe confirmed target filtering with inclusive since and until dates.&quot;,
+      &quot;evidence&quot;: [
+        &quot;sources/run.sh: PASS B1 through PASS B5&quot;,
+        &quot;probe: Apply returned only the record matching target T on 2026-10-15&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-007&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The models report probe used the executed model when present and fell back to the job model when absent.&quot;,
+      &quot;evidence&quot;: [
+        &quot;internal/reports/reports.go: model selection prefers Result.Stats.Model and falls back to Job.Model&quot;,
+        &quot;probe: models output contained both executed and fallback models&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-008&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;A missing log exited 1 and an invalid date exited 2, with no standard output in either case.&quot;,
+      &quot;evidence&quot;: [
+        &quot;internal/cli/run.go: unreadable logs return 1; malformed arguments return 2&quot;,
+        &quot;probe: missing log returned 1 with zero stdout bytes; invalid date returned 2 with zero stdout bytes&quot;
+      ]
+    }
+  ],
+  &quot;guardrail_ids&quot;: [],
+  &quot;observations&quot;: [
+    {
+      &quot;criterion_id&quot;: &quot;st-001&quot;,
+      &quot;kind&quot;: &quot;command&quot;,
+      &quot;source&quot;: &quot;[\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;]&quot;,
+      &quot;return_code&quot;: 0,
+      &quot;pinned&quot;: &quot;MET&quot;,
+      &quot;detail&quot;: &quot;[\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;] exited 0&quot;,
+      &quot;output&quot;: &quot;PASS A2: ddkstat commands /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS A3: ddkstat targets /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS A4: ddkstat models /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS A5: ddkstat daily /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS A6: ddkstat failures /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS B1: ddkstat summary --target Toml --since 2026-10-15 /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS B2: ddkstat commands --until 2026-10-14 /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS B3: ddkstat daily --since 2026-10-15 --until 2026-10-15 /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS B4: ddkstat failures --target CommonMark /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS B5: ddkstat models --target ReadingList /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS C1: ddkstat commands --target NoSuchTarget /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS C2: ddkstat summary --target NoSuchTarget /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS E1: ddkstat summary /tmp/tmp.IVIxX0H46H/no-such-log.jsonl\nPASS U1: ddkstat \nPASS U2: ddkstat frobnicate /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS U3: ddkstat summary\nPASS U4: ddkstat summary --since 2026-13-01 /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS U5: ddkstat summary --colour red /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nPASS U6: ddkstat summary /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/build/DrydockStats/sources/llm_sample.jsonl\nDrydockStats: 20 passed, 0 failed (of 20)&quot;
+    }
+  ],
+  &quot;blockers&quot;: [],
+  &quot;attestations&quot;: [],
+  &quot;kit_faults&quot;: [],
+  &quot;warnings&quot;: [],
+  &quot;improvements&quot;: [],
+  &quot;identities&quot;: {
+    &quot;code&quot;: &quot;a30aff4ca723f62eeae236bb98ada407bb02b0fc&quot;,
+    &quot;sea_trials&quot;: &quot;8f496adec7bbc5e74f25cf63ac63aab64209e9b2135a13e485f56fbe81647b87&quot;,
+    &quot;blueprint&quot;: {
+      &quot;FEATURE-CLI.md&quot;: &quot;17994b44ae4b152599da77ede0c186b55f48d183af09f99bda28ea795c64cebb&quot;,
+      &quot;FEATURE-LogIntake.md&quot;: &quot;edf21aed845096c9abd10c32bdbd6b1f368b16ec5d0d9642f810bccacbc48010&quot;,
+      &quot;FEATURE-Reports.md&quot;: &quot;c8777526bd9d45cea06d603aae0f8605522a784d5c62a14681961031676872ee&quot;
+    }
+  },
+  &quot;execution_id&quot;: &quot;20261024.142830.149Z-deb68c01&quot;
+}
+</pre></article>
+</main>
+</body>
+</html>

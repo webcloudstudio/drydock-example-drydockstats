@@ -1,0 +1,12 @@
+<requirement name="parse-execution-records" stories="log-intake">
+{"schema_version":1,"execution_id":"20261014.063754.176Z-00bfbe21","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"import_compass","target":"ReadingList","llm":"claude","model":"haiku"},"prompt":{"bytes":191082},"result":{"returncode":0,"timed_out":false,"stats":{"cached_input_tokens":263315,"elapsed_ms":54872,"input_tokens":843,"output_tokens":7751,"turns":16,"cost_usd":0.0659295,"model":"claude-haiku-5-5"}}}
+</requirement>
+<requirement name="aggregate-and-format-reports" stories="report-generation">
+{"schema_version":1,"execution_id":"20261014.063754.176Z-00bfbe21","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"import_compass","target":"ReadingList","llm":"claude","model":"haiku"},"prompt":{"bytes":191082},"result":{"returncode":0,"timed_out":false,"stats":{"cached_input_tokens":263315,"elapsed_ms":54872,"input_tokens":843,"output_tokens":7751,"turns":16,"cost_usd":0.0659295,"model":"claude-haiku-5-5"}}
+</requirement>
+<requirement name="command-line-delivery-and-conformance" stories="cli-delivery">
+{"schema_version":1,"execution_id":"20261014.063754.176Z-00bfbe21","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"import_compass","target":"ReadingList","llm":"claude","model":"haiku"},"prompt":{"bytes":191082},"result":{"returncode":0,"timed_out":false,"stats":{"cached_input_tokens":263315,"elapsed_ms":54872,"input_tokens":843,"output_tokens":7751,"turns":16,"cost_usd":0.0659295,"model":"claude-haiku-5-5"}}
+</requirement>
+<unattached story="log-intake"/>
+<unattached story="report-generation"/>
+<unattached story="cli-delivery"/>

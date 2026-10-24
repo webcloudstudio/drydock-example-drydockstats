@@ -1,0 +1,47 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Build: DrydockStats
+scope: entire project
+frontier: log-intake
+git: baseline DrydockStats 4bb87191b780
+git: baseline DrydockStats 5f2c0e211585
+
+BLOCK block-1  name="Block 1 · Service"  calls_max=7
+  story=log-intake  "Parse execution records, skip invalid and duplicate lines, and apply filters."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261024.142222.151Z-f1318b3a
+    acceptance=1/3  failed=intake-invalid-skip,intake-filtering
+git: block-1 | FEATURE-LogIntake.md | call=1 | app=337d96fd0007 target=faac96ef61e0
+
+  [call 2/7]  kind=repair(1/6)  llm=codex/gpt-6-luna
+    fixing=intake-invalid-skip,intake-filtering
+    result=ok  rc=0  execution=20261024.142334.761Z-8219e1aa
+    acceptance=1/3  failed=intake-invalid-skip,intake-filtering
+git: block-1 | FEATURE-LogIntake.md | call=2 | app=unchanged target=29414d532583
+
+  [call 3/7]  kind=repair(2/6)  llm=codex/gpt-6-luna
+    fixing=intake-invalid-skip,intake-filtering
+    result=ok  rc=0  execution=20261024.142407.402Z-8b26b5c7
+    acceptance=3/3
+git: block-1 | FEATURE-LogIntake.md | call=3 | app=82cd6fd8a1b2 target=e2da3d79c511
+
+  DONE  story=log-intake  state=closed/implemented  execution=20261024.142407.402Z-8b26b5c7  elapsed=2m26s
+git: block-1 | FEATURE-LogIntake.md | step_completed | app=unchanged target=f9f8ded3a570
+
+BLOCK block-2  name="Block 2 · Service"  calls_max=7
+  story=report-generation  "Aggregate and format the six CSV reports."
+  story=cli-delivery  "Deliver and verify the command-line interface, test runner, and full conformance gate."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261024.142503.963Z-cb2e3a1b
+    acceptance=5/5
+git: block-2 | FEATURE-Reports.md, FEATURE-CLI.md | call=1 | app=1602b14528c7 target=7578f2826310
+
+  DONE  story=report-generation  state=closed/implemented  execution=20261024.142503.963Z-cb2e3a1b  elapsed=3m00s
+git: block-2 | FEATURE-Reports.md, FEATURE-CLI.md | step_completed | app=unchanged target=9b54d29464f7
+git: build complete DrydockStats a30aff4ca723
+git: build complete DrydockStats 921d9acf2465
+
+result: 3 built, 0 failed, 0 unchanged
+elapsed: 5 minutes 51 seconds
+Target - committed project workspace git store

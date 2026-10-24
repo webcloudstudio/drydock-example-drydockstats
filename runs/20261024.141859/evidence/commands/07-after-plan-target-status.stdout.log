@@ -1,0 +1,23 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Drydock status
+
+  Target          /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.141859/workspace/targets/DrydockStats
+  Name            drydock DrydockStats Uat Case
+  Description     Drydock uat - DrydockStats builds a Go reporter for Drydock's own LLM execution log (logs/llm.jsonl).
+                  The source is an original brief: read JSON Lines, skip malformed and duplicate records without…
+  Phase           Implement
+  State           3 pending
+  Metadata        planned · approved
+  Sources         3 imported · 3 authored blueprint files
+  Analysis        Ready · 9 stories · 0 questions · 0 blockers
+  Blueprint       ✗  1 errors · 1 warnings
+    ✗  Required files: ARCHITECTURE.md is missing
+    ⚠  Terminal sections: FEATURE-LogIntake.md missing ## Guardrails
+  Plan            3 pending
+  Frontier        log-intake: Parse execution records, skip invalid and duplicate lines, and apply filters.
+  Workflow        4 steps
+                  Initialize         complete at 2026-10-24T14:19:02.528+00:00
+                  Import             complete at 2026-10-24T14:19:09.740+00:00
+                  Analyze            complete at 2026-10-24T14:19:42.593+00:00
+                  Plan               complete at 2026-10-24T14:21:35.960+00:00
+  Next step       drydock build DrydockStats  (frontier: Parse execution records, skip invalid and duplicate lines, and apply filters.)
