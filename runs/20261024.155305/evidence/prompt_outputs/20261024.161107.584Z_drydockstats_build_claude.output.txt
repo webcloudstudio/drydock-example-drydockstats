@@ -1,0 +1,17 @@
+Both failing checks look like problems in the assertions, not the code. I'll re-run them and the test gate to confirm.I made no code changes in this repair pass. Neither failing check can pass whatever the code does, and `sh bin/test.sh` is still green (vet clean, `cli`, `logrecord` and `report` packages all pass; the gate exit shown is `tail`'s, since the pipe masks the script's own).
+
+- **`log-required-fields-skip`:** the assertion calls `Path("internal/logrecord").read_text()`. I re-ran it and it still raises `IsADirectoryError`. `internal/logrecord` has to be a directory, because ARCHITECTURE puts the package there and `log-duplicates-first-kept` asserts `is_dir()` on the same path.
+- **`log-decode-ignores-blank`:** the body is just `assert True`, so the harness excludes it as vacuous. The behaviour is covered by my own test, `TestReadIgnoresBlankLinesWithoutCountingThem`.
+
+The behaviour behind `log-required-fields-skip` is covered by `TestReadSkipsRecordsMissingEachRequiredField`, which includes the missing-`job.target` case.
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- (none in this repair pass; the files from the previous pass are unchanged)
+
+SUMMARY:
+Re-ran both failing assertions and `sh bin/test.sh`; the test gate passes. No code changed, because neither failure depends on the code. The ten application and test files written earlier remain in place.
+
+AC_BROKEN: log-required-fields-skip, log-decode-ignores-blank
+FAILURE_DETAIL: `log-required-fields-skip` runs `Path("internal/logrecord").read_text()`, which raises `IsADirectoryError` on the package directory. `log-decode-ignores-blank` is only `assert True` and is excluded as vacuous. To fix the first, change the assertion to read a file inside the package, for example `internal/logrecord/record.go`. To fix the second, give it a real check, such as running the built binary over a log with blank lines and reading the summary's `skipped` value.

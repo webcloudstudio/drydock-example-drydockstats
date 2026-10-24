@@ -1,0 +1,72 @@
+[
+  {
+    "id": "Q-001",
+    "type": "text",
+    "severity": "low",
+    "origin": "plan",
+    "blueprint": "ARCHITECTURE.md",
+    "story": "go-foundation",
+    "status": "recommended",
+    "archived": false,
+    "title": "No CLI platform file is selected",
+    "description": "TECHNOLOGY_STACK.md lists only Go, common shell, and JSON Lines. No cli.md is selected, so the CLI shape comes from go.md's native CLI layout.",
+    "options": [],
+    "system_choice": "Use go.md's native CLI layout: cmd/ddkstat main calls internal/cli Run(args, stdout, stderr) int. Select no cli.md."
+  },
+  {
+    "id": "Q-002",
+    "type": "text",
+    "severity": "low",
+    "origin": "plan",
+    "blueprint": "ARCHITECTURE.md",
+    "story": "go-foundation",
+    "status": "recommended",
+    "archived": false,
+    "title": "No DATABASE.md is authored",
+    "description": "The analysis and sources describe a read-only JSON Lines file with no persistent store, and the stack is standard library only.",
+    "options": [],
+    "system_choice": "Author no DATABASE.md and no persistence.md stack entry. The log is file input, not persistent state."
+  },
+  {
+    "id": "Q-003",
+    "type": "text",
+    "severity": "material",
+    "origin": "plan",
+    "blueprint": "FEATURE-TestSuite.md",
+    "story": "test-suite",
+    "status": "recommended",
+    "archived": false,
+    "title": "bin/test.sh is created by the foundation, not by BLD-002",
+    "description": "COMPASS.md requires every behavioral story to run sh bin/test.sh, but ANALYSIS.md sequences BLD-002 after all report stories. Both cannot hold unless the launcher exists before the first behavioral story.",
+    "options": [],
+    "system_choice": "go-foundation creates bin/test.sh as a launcher so every behavioral story can run the Verification Protocol. The test-suite story (BLD-002) finalizes it and carries st-002, after all implementation stories."
+  },
+  {
+    "id": "Q-004",
+    "type": "text",
+    "severity": "material",
+    "origin": "plan",
+    "blueprint": "FEATURE-Grader.md",
+    "story": "grader-run",
+    "status": "recommended",
+    "archived": false,
+    "title": "Terminal gate asserts exit status only",
+    "description": "sources/run.sh is the authoritative conformance suite. It exits zero only when the build succeeds and every one of its 20 checks passes.",
+    "options": [],
+    "system_choice": "The terminal story declares Suite: full and asserts returncode == 0 with no re-typed count or known answer. Run.sh output is printed for diagnosis only."
+  },
+  {
+    "id": "Q-005",
+    "type": "text",
+    "severity": "low",
+    "origin": "plan",
+    "blueprint": "FEATURE-CliParse.md",
+    "story": "cli-parse",
+    "status": "recommended",
+    "archived": false,
+    "title": "Report dispatch table is shared",
+    "description": "Six report stories each register a name in the same dispatch table in internal/cli, which creates edit contention if they run in parallel.",
+    "options": [],
+    "system_choice": "cli-parse owns the table. report-summary runs first, and the other report stories depend on it so they edit the table one at a time."
+  }
+]

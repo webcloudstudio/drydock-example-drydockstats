@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-CliSuccessPartial.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-CliSuccessPartial.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-CliSuccessPartial.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Success on Partial Data</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Exit 0 and write the report when lines are skipped or no record matches.</td></tr><tr><td>Depends On</td><td>FEATURE-CliUnreadableLog.md, FEATURE-CliParse.md, FEATURE-ReportEmptyMatch.md, FEATURE-LogDuplicates.md</td></tr><tr><td>Provides</td><td>success exit 0 on partial data</td></tr><tr><td>Consumes</td><td>ddkstat command line, unreadable log exit 1</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>A log with skipped lines, or a filter that matches no records, is a successful run. The reporter exits 0 and writes its report to standard output. Skip warnings go to standard error only.</p>
+<h2>Behavior</h2>
+<ul><li>A log containing blank, malformed, required-field-missing, or duplicate lines exits 0.</li><li>A filter that matches no records exits 0 and writes the header plus the zero TOTAL row where the report has one.</li><li>Skip warnings appear on standard error only; standard output contains only the report CSV.</li><li>No code path returns a non-zero status for these cases.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-partial-skipped-exit-zero ===<br>Intent: A log with malformed and duplicate lines exits 0 and its summary reports skipped lines.<br>Suite: scoped</p>
+<p>import csv import io import json import os import subprocess import sys import tempfile</p>
+<p>from pathlib import Path</p>
+<p>app = Path(os.getcwd()) build = app / &quot;ddkstat_build_probe&quot; subprocess.run([&quot;go&quot;, &quot;build&quot;, &quot;-o&quot;, str(build), &quot;./cmd/ddkstat&quot;], cwd=app, check=True)</p>
+<p>lines = [ json.dumps({&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;a&quot;, &quot;started_at&quot;: &quot;2026-10-14T01:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;T&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;cost_usd&quot;: 0.5}}}), &quot;not json at all&quot;, json.dumps({&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;a&quot;, &quot;started_at&quot;: &quot;2026-10-14T01:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;T&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;cost_usd&quot;: 0.5}}}), ] with tempfile.TemporaryDirectory() as tmp: log = Path(tmp) / &quot;partial.jsonl&quot; log.write_text(&quot;\n&quot;.join(lines) + &quot;\n&quot;, encoding=&quot;utf-8&quot;) result = subprocess.run([str(build), &quot;summary&quot;, str(log)], capture_output=True, text=True) print(result.stdout) print(result.stderr, file=sys.stderr) assert result.returncode == 0, (result.returncode, result.stderr) rows = list(csv.DictReader(io.StringIO(result.stdout))) assert len(rows) == 1 assert rows[0][&quot;records&quot;] == &quot;1&quot; assert rows[0][&quot;skipped&quot;] == &quot;2&quot; === END AC cli-partial-skipped-exit-zero ===</p>
+<p>=== AC cli-partial-no-match-exit-zero ===<br>Intent: A filter that matches no records exits 0 and the commands report writes its header with a zero TOTAL row.<br>Suite: scoped</p>
+<p>import csv import io import json import os import subprocess import sys import tempfile</p>
+<p>from pathlib import Path</p>
+<p>app = Path(os.getcwd()) build = app / &quot;ddkstat_build_probe&quot; subprocess.run([&quot;go&quot;, &quot;build&quot;, &quot;-o&quot;, str(build), &quot;./cmd/ddkstat&quot;], cwd=app, check=True)</p>
+<p>record = json.dumps({&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;a&quot;, &quot;started_at&quot;: &quot;2026-10-14T01:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;T&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;cost_usd&quot;: 0.5}}}) with tempfile.TemporaryDirectory() as tmp: log = Path(tmp) / &quot;one.jsonl&quot; log.write_text(record + &quot;\n&quot;, encoding=&quot;utf-8&quot;) result = subprocess.run([str(build), &quot;commands&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, str(log)], capture_output=True, text=True) print(result.stdout) print(result.stderr, file=sys.stderr) assert result.returncode == 0, (result.returncode, result.stderr) rows = list(csv.reader(io.StringIO(result.stdout))) assert rows[0] == [&quot;command&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;input_tokens&quot;, &quot;cached_tokens&quot;, &quot;output_tokens&quot;, &quot;minutes&quot;] assert rows[-1][0] == &quot;TOTAL&quot; assert rows[-1][1] == &quot;0&quot; === END AC cli-partial-no-match-exit-zero ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Skip warnings never go to standard output.</li><li>Exit code is never non-zero because of skipped lines or an empty match.</li></ul></article>
+</main>
+</body>
+</html>

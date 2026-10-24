@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/evidence/block-1.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/evidence/block-1.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/evidence/block-1.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 1 · Foundational (block-1)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-24</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 12358</li><li>execution id: 20261024.160355.997Z-746b93d1</li></ul>
+<h2>Stories built</h2>
+<ul><li>Create the Go module root, the ddkstat main package, and the internal CLI package. (go-foundation) [story]</li></ul>
+<h2>Acceptance tooling authorization</h2>
+<ul><li>ARCHITECTURE.md#architecture-module-root: executable=go; scope=test; authorization=existing Target environment</li></ul>
+<h2>Stacked context</h2>
+<ul><li>implements: go.md (SP 7578)</li><li>compass: COMPASS.md (SP 1037)</li><li>implements: ARCHITECTURE.md (SP 769)</li><li>stack: common.md (SP 2776)</li></ul>
+<h2>Build directory changes</h2>
+<ul><li>bin/test.sh</li><li>cmd/ddkstat/main.go</li><li>go.mod</li><li>internal/cli/cli.go</li><li>internal/cli/cli_test.go</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: architecture-module-root (ARCHITECTURE.md)</li></ul>
+<p>intent: The module root declares the module path drydockstats and the Go 1.22 directive with no requires. return code: 1 stderr: --- drydock: values at failure --- self = PosixPath(&#x27;go.mod&#x27;) mode = &#x27;r&#x27; buffering = -1 encoding = &#x27;locale&#x27; errors = None newline = None --- drydock: end values --- Traceback (most recent call last): File &quot;architecture-module-root.py&quot;, line 5, in &lt;module&gt; go_mod = Path(&quot;go.mod&quot;).read_text() ^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/home/barlo/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/pathlib.py&quot;, line 1027, in read_text with self.open(mode=&#x27;r&#x27;, encoding=encoding, errors=errors) as f: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/home/barlo/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/pathlib.py&quot;, line 1013, in open return io.open(self, mode, buffering, encoding, errors, newline) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^<br>FileNotFoundError: [Errno 2] No such file or directory: &#x27;go.mod&#x27;</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: architecture-module-root (ARCHITECTURE.md)</li></ul>
+<p>intent: The module root declares the module path drydockstats and the Go 1.22 directive with no requires. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<h2>Build summary</h2>
+<p>The build directory has only <code>.git</code> and <code>sources/</code>, so this is a fresh module. Go 1.24.6 meets the 1.22 floor. I&#x27;ll create the module root, the main package, the CLI package, and a test script with tests.Files are written. Next I&#x27;ll check formatting, vet, and the test script, and confirm the module-root acceptance assertion.RESULT: SUCCESS</p>
+<p>FILES CHANGED:</p>
+<ul><li>go.mod</li><li>cmd/ddkstat/main.go</li><li>internal/cli/cli.go</li><li>internal/cli/cli_test.go</li><li>bin/test.sh</li></ul>
+<p>SUMMARY:</p>
+<ul><li><code>go.mod</code> declares module <code>drydockstats</code> with <code>go 1.22</code> and no <code>require</code> lines. The module-root acceptance check (<code>architecture-module-root</code>) passes.</li><li><code>cmd/ddkstat/main.go</code> is the only <code>main</code> package. It calls <code>os.Exit(cli.Run(os.Args[1:], os.Stdout, os.Stderr))</code>, so it is the only caller of <code>os.Exit</code>.</li><li><code>internal/cli/cli.go</code> exposes <code>Run(args []string, stdout, stderr io.Writer) int</code>, returning 0 as the placeholder.</li><li><code>internal/cli/cli_test.go</code> is a table-driven test that checks <code>Run</code> returns 0 for no, one, and many arguments. It reads the return value directly.</li><li><code>bin/test.sh</code> runs <code>go test ./...</code> from the application root, per the COMPASS verification protocol.</li><li>Verification: <code>gofmt -l .</code> prints nothing, <code>go vet ./...</code> is clean, <code>go build ./cmd/ddkstat</code> succeeds, and <code>sh bin/test.sh</code> exits 0 (cli package passes).</li><li>I did not run <code>sources/run.sh</code>. COMPASS reserves it for the terminal story, and this is the foundation block. Nothing was committed.</li></ul>
+<p>Choices I made beyond the spec:</p>
+<ul><li>I added <code>bin/test.sh</code>. COMPASS requires it for every behavioral story, and the spec did not name it.</li><li>The <code>Run</code> parameters are unused in the placeholder. Go accepts that, and the signature is the contract the later blocks build on.</li></ul></article>
+</main>
+</body>
+</html>

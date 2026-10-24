@@ -1,0 +1,752 @@
+=== BEGIN ARTIFACT FEATURE-ReportFailures.md ===
+# FEATURE: Report Failures
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produce the failures report: one CSV row per failed record, ordered by start time then execution id, with no TOTAL row. |
+| Depends On  | ARCHITECTURE.md, FEATURE-ReportSummary.md, FEATURE-ReportFormat.md, FEATURE-LogModel.md, FEATURE-LogNumbers.md, FEATURE-CliTargetFilter.md, FEATURE-CliDateFilters.md, FEATURE-CliReadErrors.md |
+| Provides    | failures report, dispatch entry for failures |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The failures report lists each failed record so the operator can see which calls failed, where, and how. It is the only report with no TOTAL row.
+
+## Behavior
+
+- Header: `started_at,target,command,model,returncode,timed_out`.
+- A record is failed when `status` is not `succeeded`, per the shared log rules.
+- One row per failed record, ordered by `started_at` then `execution_id`, both ascending by byte value.
+- `returncode` is empty when `result.returncode` is `null` or absent. Otherwise it is the integer.
+- `timed_out` is written as `true` or `false`.
+- `model` is the attributed model from the log-model rule.
+- Filters `--target`, `--since`, and `--until` apply before rows are selected.
+- The `failures` name is registered in the `cli-parse` dispatch table.
+
+## Programmatic Acceptance
+
+=== AC RF-001 ===
+Intent: The failures report writes its header and one row per failed record in started_at then execution_id order, with returncode empty when null and timed_out as true or false.
+
+import csv
+import io
+import json
+import os
+import sys
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def record(execution_id, started_at, status, command, target, model, returncode, timed_out):
+    return {
+        "schema_version": 1,
+        "execution_id": execution_id,
+        "started_at": started_at,
+        "status": status,
+        "job": {"command_name": command, "target": target, "llm": "claude", "model": model},
+        "result": {
+            "returncode": returncode,
+            "timed_out": timed_out,
+            "stats": {"elapsed_ms": 1000, "input_tokens": 1, "cached_input_tokens": 0,
+                      "output_tokens": 1, "cost_usd": 0.01, "model": model},
+        },
+    }
+
+
+def row_of(rec):
+    rc = rec["result"].get("returncode")
+    return [
+        rec["started_at"],
+        rec["job"]["target"],
+        rec["job"]["command_name"],
+        rec["result"]["stats"]["model"],
+        "" if rc is None else str(rc),
+        "true" if rec["result"]["timed_out"] else "false",
+    ]
+
+
+HEADER = ["started_at", "target", "command", "model", "returncode", "timed_out"]
+records = [
+    record("b-run", "2026-10-14T02:38:41.904Z", "failed", "diagnose", "Toml", "gemini-3-flash", 1, False),
+    record("a-run", "2026-10-14T02:38:41.904Z", "failed", "build", "CommonMark", "claude-sonnet-5-5", None, True),
+    record("c-run", "2026-10-15T06:50:39.621Z", "failed", "diagnose", "CommonMark", "claude-sonnet-5-5", None, True),
+    record("d-run", "2026-10-16T00:00:00.000Z", "succeeded", "build", "Toml", "gemini-3-flash", 0, False),
+]
+failed = sorted(
+    [r for r in records if r["status"] != "succeeded"],
+    key=lambda r: (r["started_at"], r["execution_id"]),
+)
+expected = [row_of(r) for r in failed]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "llm.jsonl")
+    with open(path, "w", encoding="utf-8") as handle:
+        for rec in records:
+            print(json.dumps(rec), file=handle)
+    code, out, err = cli_runner("failures", path)
+
+print(out)
+print(err, file=sys.stderr)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == HEADER, rows[0]
+assert rows[1:] == expected, (rows[1:], expected)
+=== END AC RF-001 ===
+
+=== AC RF-002 ===
+Intent: The failures report has no TOTAL row, and --target keeps only the failed records of that Target.
+
+import csv
+import io
+import json
+import os
+import sys
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def record(execution_id, started_at, status, command, target, model, returncode, timed_out):
+    return {
+        "schema_version": 1,
+        "execution_id": execution_id,
+        "started_at": started_at,
+        "status": status,
+        "job": {"command_name": command, "target": target, "llm": "claude", "model": model},
+        "result": {
+            "returncode": returncode,
+            "timed_out": timed_out,
+            "stats": {"elapsed_ms": 1000, "input_tokens": 1, "cached_input_tokens": 0,
+                      "output_tokens": 1, "cost_usd": 0.01, "model": model},
+        },
+    }
+
+
+def row_of(rec):
+    rc = rec["result"].get("returncode")
+    return [
+        rec["started_at"],
+        rec["job"]["target"],
+        rec["job"]["command_name"],
+        rec["result"]["stats"]["model"],
+        "" if rc is None else str(rc),
+        "true" if rec["result"]["timed_out"] else "false",
+    ]
+
+
+TARGET = "CommonMark"
+records = [
+    record("b-run", "2026-10-14T02:38:41.904Z", "failed", "diagnose", "Toml", "gemini-3-flash", 1, False),
+    record("a-run", "2026-10-14T02:38:41.904Z", "failed", "build", "CommonMark", "claude-sonnet-5-5", None, True),
+    record("c-run", "2026-10-15T06:50:39.621Z", "failed", "diagnose", "CommonMark", "claude-sonnet-5-5", None, True),
+    record("d-run", "2026-10-16T00:00:00.000Z", "succeeded", "build", "CommonMark", "claude-sonnet-5-5", 0, False),
+]
+failed = sorted(
+    [r for r in records if r["status"] != "succeeded" and r["job"]["target"] == TARGET],
+    key=lambda r: (r["started_at"], r["execution_id"]),
+)
+expected = [row_of(r) for r in failed]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "llm.jsonl")
+    with open(path, "w", encoding="utf-8") as handle:
+        for rec in records:
+            print(json.dumps(rec), file=handle)
+    code, out, err = cli_runner("failures", "--target", TARGET, path)
+
+print(out)
+print(err, file=sys.stderr)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[1:] == expected, (rows[1:], expected)
+assert not any(row and row[0] == "TOTAL" for row in rows), rows
+=== END AC RF-002 ===
+
+=== AC RF-003 ===
+Intent: A failed record with returncode absent from the log writes an empty returncode field.
+
+import csv
+import io
+import json
+import os
+import sys
+import tempfile
+
+from drydock_go import cli_runner
+
+
+rec = {
+    "schema_version": 1,
+    "execution_id": "absent-run",
+    "started_at": "2026-10-17T01:02:03.000Z",
+    "status": "failed",
+    "job": {"command_name": "build", "target": "Toml", "llm": "claude", "model": "haiku"},
+    "result": {
+        "timed_out": False,
+        "stats": {"elapsed_ms": 1000, "input_tokens": 1, "cached_input_tokens": 0,
+                  "output_tokens": 1, "cost_usd": 0.01, "model": "claude-haiku-5-5"},
+    },
+}
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "llm.jsonl")
+    with open(path, "w", encoding="utf-8") as handle:
+        print(json.dumps(rec), file=handle)
+    code, out, err = cli_runner("failures", path)
+
+print(out)
+print(err, file=sys.stderr)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert rows[1][4] == "", rows[1]
+assert rows[1][5] == "false", rows[1]
+=== END AC RF-003 ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not emit a TOTAL row in the failures report.
+- Do not compare any report row against a hand-typed known answer; expected rows derive from the fixture records.
+- Do not modify or read any file under `sources/` from application code.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportEmptyMatch.md ===
+# FEATURE: Report Empty Match
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Assemble the empty-match behavior across all six reports: each writes its header and, where it has one, a zero TOTAL row. |
+| Depends On  | FEATURE-ReportSummary.md, FEATURE-ReportCommands.md, FEATURE-ReportTargets.md, FEATURE-ReportModels.md, FEATURE-ReportDaily.md, FEATURE-ReportFailures.md |
+| Provides    | empty-match behavior across all six reports |
+
+## Questions
+
+- None.
+
+## Purpose
+
+When a filter or an empty log leaves no matching record, every report still writes its header. Reports with a TOTAL row write that row with zeros. The summary row has empty `first` and `last`. The failures report writes only its header.
+
+## Behavior
+
+- A report run with a filter that matches nothing exits `0`.
+- `commands`, `targets`, `models`, and `daily` write a TOTAL row of zeros: `0.0` minutes and `0.0000` cost where those columns exist.
+- `summary` writes one row with `records` zero and empty `first` and `last`. `skipped` still counts the whole file.
+- `failures` writes only its header.
+
+## Programmatic Acceptance
+
+=== AC REM-001 ===
+Intent: The summary report with a filter that matches nothing writes one row with zero records, empty first and last, and a skipped count over the whole file.
+
+import csv
+import io
+import json
+import os
+import sys
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def record(execution_id, started_at, status, command, target, model, returncode, timed_out):
+    return {
+        "schema_version": 1,
+        "execution_id": execution_id,
+        "started_at": started_at,
+        "status": status,
+        "job": {"command_name": command, "target": target, "llm": "claude", "model": model},
+        "result": {
+            "returncode": returncode,
+            "timed_out": timed_out,
+            "stats": {"elapsed_ms": 1000, "input_tokens": 1, "cached_input_tokens": 0,
+                      "output_tokens": 1, "cost_usd": 0.01, "model": model},
+        },
+    }
+
+
+NO_TARGET = "NoSuchTarget"
+MALFORMED = ["not json"]
+records = [record("e-run", "2026-10-14T02:38:41.904Z", "succeeded", "build", "Toml", "gemini-3-flash", 0, False)]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "llm.jsonl")
+    with open(path, "w", encoding="utf-8") as handle:
+        for rec in records:
+            print(json.dumps(rec), file=handle)
+        for line in MALFORMED:
+            print(line, file=handle)
+    code, out, err = cli_runner("summary", "--target", NO_TARGET, path)
+
+print(out)
+print(err, file=sys.stderr)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert len(rows[0]) == 11, rows[0]
+row = rows[1]
+assert int(row[0]) == 0, row
+assert int(row[1]) == len(MALFORMED), row
+assert int(row[2]) == 0 and int(row[3]) == 0, row
+assert row[4] == "" and row[5] == "", row
+assert int(row[6]) == 0 and int(row[7]) == 0 and int(row[8]) == 0, row
+assert float(row[9]) == 0 and float(row[10]) == 0, row
+=== END AC REM-001 ===
+
+=== AC REM-002 ===
+Intent: The commands report with a filter that matches nothing writes its header and a zero TOTAL row.
+
+import csv
+import io
+import json
+import os
+import sys
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def record(execution_id, started_at, status, command, target, model, returncode, timed_out):
+    return {
+        "schema_version": 1,
+        "execution_id": execution_id,
+        "started_at": started_at,
+        "status": status,
+        "job": {"command_name": command, "target": target, "llm": "claude", "model": model},
+        "result": {
+            "returncode": returncode,
+            "timed_out": timed_out,
+            "stats": {"elapsed_ms": 1000, "input_tokens": 1, "cached_input_tokens": 0,
+                      "output_tokens": 1, "cost_usd": 0.01, "model": model},
+        },
+    }
+
+
+NO_TARGET = "NoSuchTarget"
+records = [record("e-run", "2026-10-14T02:38:41.904Z", "succeeded", "build", "Toml", "gemini-3-flash", 0, False)]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "llm.jsonl")
+    with open(path, "w", encoding="utf-8") as handle:
+        for rec in records:
+            print(json.dumps(rec), file=handle)
+    code, out, err = cli_runner("commands", "--target", NO_TARGET, path)
+
+print(out)
+print(err, file=sys.stderr)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert len(rows[0]) == 7, rows[0]
+total = rows[1]
+assert total[0] == "TOTAL", total
+assert all(int(v) == 0 for v in total[1:6]), total
+assert float(total[6]) == 0, total
+=== END AC REM-002 ===
+
+=== AC REM-003 ===
+Intent: The targets report with a filter that matches nothing writes its header and a zero TOTAL row.
+
+import csv
+import io
+import json
+import os
+import sys
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def record(execution_id, started_at, status, command, target, model, returncode, timed_out):
+    return {
+        "schema_version": 1,
+        "execution_id": execution_id,
+        "started_at": started_at,
+        "status": status,
+        "job": {"command_name": command, "target": target, "llm": "claude", "model": model},
+        "result": {
+            "returncode": returncode,
+            "timed_out": timed_out,
+            "stats": {"elapsed_ms": 1000, "input_tokens": 1, "cached_input_tokens": 0,
+                      "output_tokens": 1, "cost_usd": 0.01, "model": model},
+        },
+    }
+
+
+NO_TARGET = "NoSuchTarget"
+records = [record("e-run", "2026-10-14T02:38:41.904Z", "succeeded", "build", "Toml", "gemini-3-flash", 0, False)]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "llm.jsonl")
+    with open(path, "w", encoding="utf-8") as handle:
+        for rec in records:
+            print(json.dumps(rec), file=handle)
+    code, out, err = cli_runner("targets", "--target", NO_TARGET, path)
+
+print(out)
+print(err, file=sys.stderr)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert len(rows[0]) == 8, rows[0]
+total = rows[1]
+assert total[0] == "TOTAL", total
+assert all(int(v) == 0 for v in total[1:6]), total
+assert float(total[6]) == 0 and float(total[7]) == 0, total
+=== END AC REM-003 ===
+
+=== AC REM-004 ===
+Intent: The models report with a filter that matches nothing writes its header and a zero TOTAL row whose provider column is empty.
+
+import csv
+import io
+import json
+import os
+import sys
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def record(execution_id, started_at, status, command, target, model, returncode, timed_out):
+    return {
+        "schema_version": 1,
+        "execution_id": execution_id,
+        "started_at": started_at,
+        "status": status,
+        "job": {"command_name": command, "target": target, "llm": "claude", "model": model},
+        "result": {
+            "returncode": returncode,
+            "timed_out": timed_out,
+            "stats": {"elapsed_ms": 1000, "input_tokens": 1, "cached_input_tokens": 0,
+                      "output_tokens": 1, "cost_usd": 0.01, "model": model},
+        },
+    }
+
+
+NO_TARGET = "NoSuchTarget"
+records = [record("e-run", "2026-10-14T02:38:41.904Z", "succeeded", "build", "Toml", "gemini-3-flash", 0, False)]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "llm.jsonl")
+    with open(path, "w", encoding="utf-8") as handle:
+        for rec in records:
+            print(json.dumps(rec), file=handle)
+    code, out, err = cli_runner("models", "--target", NO_TARGET, path)
+
+print(out)
+print(err, file=sys.stderr)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert len(rows[0]) == 8, rows[0]
+total = rows[1]
+assert total[0] == "TOTAL" and total[1] == "", total
+assert all(int(v) == 0 for v in total[2:7]), total
+assert float(total[7]) == 0, total
+=== END AC REM-004 ===
+
+=== AC REM-005 ===
+Intent: The daily report with a filter that matches nothing writes its header and a zero TOTAL row.
+
+import csv
+import io
+import json
+import os
+import sys
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def record(execution_id, started_at, status, command, target, model, returncode, timed_out):
+    return {
+        "schema_version": 1,
+        "execution_id": execution_id,
+        "started_at": started_at,
+        "status": status,
+        "job": {"command_name": command, "target": target, "llm": "claude", "model": model},
+        "result": {
+            "returncode": returncode,
+            "timed_out": timed_out,
+            "stats": {"elapsed_ms": 1000, "input_tokens": 1, "cached_input_tokens": 0,
+                      "output_tokens": 1, "cost_usd": 0.01, "model": model},
+        },
+    }
+
+
+NO_TARGET = "NoSuchTarget"
+records = [record("e-run", "2026-10-14T02:38:41.904Z", "succeeded", "build", "Toml", "gemini-3-flash", 0, False)]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "llm.jsonl")
+    with open(path, "w", encoding="utf-8") as handle:
+        for rec in records:
+            print(json.dumps(rec), file=handle)
+    code, out, err = cli_runner("daily", "--target", NO_TARGET, path)
+
+print(out)
+print(err, file=sys.stderr)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert len(rows[0]) == 5, rows[0]
+total = rows[1]
+assert total[0] == "TOTAL", total
+assert all(int(v) == 0 for v in total[1:4]), total
+assert float(total[4]) == 0, total
+=== END AC REM-005 ===
+
+=== AC REM-006 ===
+Intent: The failures report with a filter that matches nothing writes its header and no data rows.
+
+import csv
+import io
+import json
+import os
+import sys
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def record(execution_id, started_at, status, command, target, model, returncode, timed_out):
+    return {
+        "schema_version": 1,
+        "execution_id": execution_id,
+        "started_at": started_at,
+        "status": status,
+        "job": {"command_name": command, "target": target, "llm": "claude", "model": model},
+        "result": {
+            "returncode": returncode,
+            "timed_out": timed_out,
+            "stats": {"elapsed_ms": 1000, "input_tokens": 1, "cached_input_tokens": 0,
+                      "output_tokens": 1, "cost_usd": 0.01, "model": model},
+        },
+    }
+
+
+NO_TARGET = "NoSuchTarget"
+records = [record("e-run", "2026-10-14T02:38:41.904Z", "failed", "build", "Toml", "gemini-3-flash", 1, False)]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "llm.jsonl")
+    with open(path, "w", encoding="utf-8") as handle:
+        for rec in records:
+            print(json.dumps(rec), file=handle)
+    code, out, err = cli_runner("failures", "--target", NO_TARGET, path)
+
+print(out)
+print(err, file=sys.stderr)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 1, rows
+assert len(rows[0]) == 6, rows[0]
+=== END AC REM-006 ===
+
+=== AC REM-007 ===
+Intent: Every report over an empty log exits zero, writes its header, and writes a TOTAL row where the report has one.
+
+import csv
+import io
+import os
+import sys
+import tempfile
+
+from drydock_go import cli_runner
+
+
+COLUMNS = {"summary": 11, "commands": 7, "targets": 8, "models": 8, "daily": 5, "failures": 6}
+TOTAL_REPORTS = ["commands", "targets", "models", "daily"]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "llm.jsonl")
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write("")
+    results = {}
+    for report in COLUMNS:
+        results[report] = cli_runner(report, path)
+
+for report, (code, out, err) in results.items():
+    print(report, code)
+    print(out)
+    print(err, file=sys.stderr)
+    assert code == 0, (report, code, out, err)
+    rows = list(csv.reader(io.StringIO(out)))
+    assert len(rows[0]) == COLUMNS[report], (report, rows[0])
+    if report in TOTAL_REPORTS:
+        assert rows[-1][0] == "TOTAL", (report, rows)
+=== END AC REM-007 ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not emit a placeholder or hard-coded row; every value is read back from the report output.
+- Do not compare report output against a hand-typed known answer.
+- Do not read or modify any file under `sources/` from application code.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-TestSuite.md ===
+# FEATURE: Test Suite
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Finalize bin/test.sh as the POSIX verification gate and add end-to-end coverage across reports, filters, skip rules, and exit codes. |
+| Depends On  | FEATURE-Executable.md, FEATURE-LogReader.md, FEATURE-LogSkip.md, FEATURE-LogModel.md, FEATURE-LogNumbers.md, FEATURE-CliParse.md, FEATURE-CliTargetFilter.md, FEATURE-CliDateFilters.md, FEATURE-CliUsageErrors.md, FEATURE-CliReadErrors.md, FEATURE-ReportFormat.md, FEATURE-ReportSummary.md, FEATURE-ReportCommands.md, FEATURE-ReportTargets.md, FEATURE-ReportModels.md, FEATURE-ReportDaily.md, FEATURE-ReportFailures.md, FEATURE-ReportEmptyMatch.md |
+| Provides    | bin/test.sh verification gate, end-to-end test in cmd/ddkstat |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`bin/test.sh` is the project's verification gate. It runs `go vet ./...` and `go test ./...` from the application root and exits zero only when both pass. The end-to-end test under `cmd/ddkstat` writes logs in test code and exercises each report, each filter, each skip rule, and each exit code through `cli.Run`.
+
+## Behavior
+
+- `bin/test.sh` is POSIX `sh`, runs `go vet ./...` then `go test ./...`, and exits non-zero if either fails.
+- The end-to-end test lives in `cmd/ddkstat` as a `_test.go` file and uses `cli.Run` with `bytes.Buffer` writers.
+- The end-to-end test covers every report, every filter, every skip rule, and every exit code.
+- The test writes its own logs; it never reads `sources/`.
+
+## Programmatic Acceptance
+
+=== AC TS-001 ===
+Intent: bin/test.sh exits zero when go vet and every automated test pass.
+Requires: executable=sh; scope=test
+Requires: executable=go; scope=test
+
+import subprocess
+import sys
+
+result = subprocess.run(["sh", "bin/test.sh"], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0, result.returncode
+=== END AC TS-001 ===
+
+=== AC TS-002 ===
+Intent: bin/test.sh is valid POSIX sh syntax.
+Requires: executable=sh; scope=test
+
+import subprocess
+import sys
+
+result = subprocess.run(["sh", "-n", "bin/test.sh"], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0, result.returncode
+=== END AC TS-002 ===
+
+=== AC TS-003 ===
+Intent: The end-to-end test is present as a _test.go file under cmd/ddkstat.
+
+import glob
+import sys
+
+test_files = glob.glob("cmd/ddkstat/*_test.go")
+print(test_files, file=sys.stderr)
+assert len(test_files) >= 1, test_files
+=== END AC TS-003 ===
+
+=== AC TS-004 ===
+Intent: The end-to-end test package under cmd/ddkstat passes go test on its own.
+Requires: executable=go; scope=test
+
+import subprocess
+import sys
+
+result = subprocess.run(["go", "test", "-count=1", "./cmd/ddkstat"], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0, result.returncode
+=== END AC TS-004 ===
+
+=== AC TS-005 ===
+Intent: go vet passes across the whole application module.
+Requires: executable=go; scope=test
+
+import subprocess
+import sys
+
+result = subprocess.run(["go", "vet", "./..."], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0, result.returncode
+=== END AC TS-005 ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not modify any file under `sources/`.
+- Do not read `sources/run.sh` from application code.
+- Do not hardcode report rows, counts, or totals in the test suite; derive expected values from the logs the tests write.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Grader.md ===
+# FEATURE: Grader Run
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Run the supplied grader `sh sources/run.sh` against the completed application as the terminal gate. |
+| Depends On  | ARCHITECTURE.md, FEATURE-Executable.md, FEATURE-TestSuite.md, FEATURE-ReportEmptyMatch.md, FEATURE-ReportFailures.md |
+| Provides    | terminal verification gate |
+
+## Questions
+
+- None.
+
+## Purpose
+
+This is the terminal story and runs last. Its acceptance runs the supplied conformance harness `sources/run.sh` from the application root and requires exit status zero. The harness exit status is the sole verdict; its output is printed for diagnosis only.
+
+## Behavior
+
+- `sh sources/run.sh` is invoked from the application root with no arguments.
+- The harness builds `./cmd/ddkstat` and runs its own known-answer checks.
+- The acceptance asserts `returncode == 0`. It does not re-type the check total or any known answer.
+- If checks fail, the captured output is the diagnosis. The application is fixed, not the grader.
+
+## Programmatic Acceptance
+
+=== AC GR-001 ===
+Intent: The terminal gate: the supplied grader sh sources/run.sh builds ddkstat and exits zero, and its exit status is the sole verdict.
+Suite: full
+Requires: executable=sh; scope=test
+Requires: executable=go; scope=test
+
+import subprocess
+import sys
+
+result = subprocess.run(["sh", "sources/run.sh"], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0, result.returncode
+=== END AC GR-001 ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not modify, rewrite, regenerate, or substitute `sources/run.sh` or `sources/llm_sample.jsonl`.
+- Do not re-type the 20-check total or any known answer in this acceptance.
+- Application code never reads `sources/run.sh`.
+=== END ARTIFACT ===

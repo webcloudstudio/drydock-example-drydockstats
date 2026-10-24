@@ -1,0 +1,152 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Build: DrydockStats
+scope: entire project
+frontier: go-foundation
+git: baseline DrydockStats ef3da1090f6c
+git: baseline DrydockStats 197e2d00c385
+
+BLOCK block-1  name="Block 1 · Foundational"  calls_max=7
+  story=go-foundation  "Create the Go module root, the ddkstat main package, and the internal CLI package."
+
+  [call 1/7]  kind=initial  llm=claude/haiku
+    result=ok  rc=0  execution=20261024.160355.997Z-746b93d1
+    acceptance=1/1
+git: block-1 | go.md, ARCHITECTURE.md | call=1 | app=d66ce6920b73 target=bf39dde677e5
+
+  DONE  story=go-foundation  state=closed/implemented  execution=20261024.160355.997Z-746b93d1  elapsed=35.9s
+git: block-1 | go.md, ARCHITECTURE.md | step_completed | app=unchanged target=38ca142b250c
+
+BLOCK block-2  name="Block 2 · Service"  calls_max=7
+  story=build-entry  "Prove the module builds the ddkstat executable with go build using only the standard library."
+  story=log-decode  "Decode the JSON Lines log, one JSON object per non-blank line."
+  story=log-required-fields  "Skip records missing a required field, with a line-numbered warning."
+  story=log-duplicates  "Skip repeated execution identifiers, keeping the first occurrence."
+  story=report-format  "Provide the shared CSV writer and the minutes and cost formatters."
+  story=filter-target  "Keep only records whose job.target equals the --target name exactly."
+  story=log-numeric  "Treat absent or null token, cost, and duration values as zero."
+  story=log-model  "Attribute each record to its executed model, falling back to the requested model."
+  story=filter-date  "Keep records whose start date falls within the inclusive --since and --until range."
+  story=report-targets  "Produce the per-Target report with a TOTAL row."
+  story=report-daily  "Produce the per-date report with a TOTAL row."
+  story=report-commands  "Produce the per-command report with a TOTAL row."
+  story=report-models  "Produce the per-provider and model report with a TOTAL row."
+  story=report-summary  "Produce the one-row summary report."
+  story=report-failures  "Produce the failed-record report."
+  story=report-empty-match  "Make every report write its header and a zero TOTAL row when no record matches."
+  story=cli-parse  "Parse the report name, options, and the single log path, and wire each report."
+  story=cli-unreadable-log  "Exit 1 with no stdout when the log cannot be opened or read."
+  story=cli-usage-errors  "Map usage errors to exit code 2 with no stdout output."
+  story=cli-success-partial  "Exit 0 when lines are skipped or no record matches."
+  story=test-runner  "Provide the POSIX bin/test.sh that runs go vet and go test over the whole module."
+
+  [call 1/7]  kind=initial  llm=claude/haiku
+    result=ok  rc=0  execution=20261024.160619.320Z-abf3502a
+    acceptance=35/37  failed=log-required-fields-skip  skipped=log-decode-ignores-blank
+git: block-2 | FEATURE-BuildEntry.md, FEATURE-LogDecode.md, FEATURE-LogRequiredFields.md, FEATURE-LogDuplicates.md, FEATURE-ReportFormat.md, FEATURE-FilterTarget.md, FEATURE-LogNumeric.md, FEATURE-LogModel.md, FEATURE-FilterDate.md, FEATURE-ReportTargets.md, FEATURE-ReportDaily.md, FEATURE-ReportCommands.md, FEATURE-ReportModels.md, FEATURE-ReportSummary.md, FEATURE-ReportFailures.md, FEATURE-ReportEmptyMatch.md, FEATURE-CliParse.md, FEATURE-CliUnreadableLog.md, FEATURE-CliUsageErrors.md, FEATURE-CliSuccessPartial.md, FEATURE-TestRunner.md | call=1 | app=9e8aedb93902 target=58bda98d2592
+
+  [call 2/7]  kind=repair(1/6)  llm=claude/haiku
+    fixing=log-decode-ignores-blank,log-required-fields-skip
+    result=ok  rc=0  execution=20261024.161107.584Z-e1bf8488  upgraded=prompt_limit haiku->sonnet (147,470 > 98% of 100,000)
+    acceptance=35/37  failed=log-required-fields-skip  skipped=log-decode-ignores-blank
+git: block-2 | FEATURE-BuildEntry.md, FEATURE-LogDecode.md, FEATURE-LogRequiredFields.md, FEATURE-LogDuplicates.md, FEATURE-ReportFormat.md, FEATURE-FilterTarget.md, FEATURE-LogNumeric.md, FEATURE-LogModel.md, FEATURE-FilterDate.md, FEATURE-ReportTargets.md, FEATURE-ReportDaily.md, FEATURE-ReportCommands.md, FEATURE-ReportModels.md, FEATURE-ReportSummary.md, FEATURE-ReportFailures.md, FEATURE-ReportEmptyMatch.md, FEATURE-CliParse.md, FEATURE-CliUnreadableLog.md, FEATURE-CliUsageErrors.md, FEATURE-CliSuccessPartial.md, FEATURE-TestRunner.md | call=2 | app=1e2fde864355 target=3a334c4bd4d6
+
+  [call 3/7]  kind=repair(2/6)  llm=claude/haiku
+    fixing=log-decode-ignores-blank,log-required-fields-skip
+    result=ok  rc=0  execution=20261024.161238.365Z-e58fe633  upgraded=prompt_limit haiku->sonnet (192,876 > 98% of 100,000)
+    acceptance=35/37  failed=log-required-fields-skip  skipped=log-decode-ignores-blank
+  STOP  reason=stall  flat_calls=2
+git: block-2 | FEATURE-BuildEntry.md, FEATURE-LogDecode.md, FEATURE-LogRequiredFields.md, FEATURE-LogDuplicates.md, FEATURE-ReportFormat.md, FEATURE-FilterTarget.md, FEATURE-LogNumeric.md, FEATURE-LogModel.md, FEATURE-FilterDate.md, FEATURE-ReportTargets.md, FEATURE-ReportDaily.md, FEATURE-ReportCommands.md, FEATURE-ReportModels.md, FEATURE-ReportSummary.md, FEATURE-ReportFailures.md, FEATURE-ReportEmptyMatch.md, FEATURE-CliParse.md, FEATURE-CliUnreadableLog.md, FEATURE-CliUsageErrors.md, FEATURE-CliSuccessPartial.md, FEATURE-TestRunner.md | call=3 | app=84a616f7ca08 target=e0e54dcc4f9e
+
+  FAILED  story=build-entry  state=closed/failed  execution=20261024.161238.365Z-e58fe633  elapsed=11m22s
+git: block-2 | FEATURE-BuildEntry.md, FEATURE-LogDecode.md, FEATURE-LogRequiredFields.md, FEATURE-LogDuplicates.md, FEATURE-ReportFormat.md, FEATURE-FilterTarget.md, FEATURE-LogNumeric.md, FEATURE-LogModel.md, FEATURE-FilterDate.md, FEATURE-ReportTargets.md, FEATURE-ReportDaily.md, FEATURE-ReportCommands.md, FEATURE-ReportModels.md, FEATURE-ReportSummary.md, FEATURE-ReportFailures.md, FEATURE-ReportEmptyMatch.md, FEATURE-CliParse.md, FEATURE-CliUnreadableLog.md, FEATURE-CliUsageErrors.md, FEATURE-CliSuccessPartial.md, FEATURE-TestRunner.md | step_completed | app=unchanged target=e70919f78b6f
+
+result: 1 built, 21 failed, 0 unchanged
+elapsed: 12 minutes 50 seconds
+
+========================================================================
+BUILD FAILED: DrydockStats  (1 step)
+========================================================================
+
+  Failure
+    Provenance
+      Target: DrydockStats
+      Block: Block 2 · Service [block-2]
+      Story: Prove the module builds the ddkstat executable with go build using only the standard library. [build-entry]
+    Cause: programmatic acceptance failed: log-required-fields-skip
+    agent summary:
+      Re-ran `sh bin/test.sh` (exit 0) and the failing directory-
+      read assertion (`IsADirectoryError` again). No code changed
+      because neither failing check depends on the code.
+      AC_BROKEN: log-required-fields-skip, log-decode-ignores-
+      blank
+    stopped early: 3 of 7 calls · deterministic acceptance score did not improve on 2 consecutive calls
+    acceptance: 35/37 passing · baseline 17/37 · improved
+    Assertion
+      Acceptance checks:
+      Acceptance: log-decode-ignores-blank
+      Intent: Blank lines are ignored and not counted as skipped.
+      Source: FEATURE-LogDecode.md
+      Code: (assertion not captured)
+    Result
+      Process exit code: (not reported)
+      Error: (exception not captured)
+      Acceptance: log-required-fields-skip
+      Intent: A record missing job.target is counted as skipped and does not appear in the records.
+      Source: FEATURE-LogRequiredFields.md
+      Code: (assertion not captured)
+    Result
+      Process exit code: 1
+      Error: IsADirectoryError: [Errno 21] Is a directory: 'internal/logrecord'
+      Stderr:
+          File "/home/barlo/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 1013, in open
+            return io.open(self, mode, buffering, encoding, errors, newline)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        IsADirectoryError: [Errno 21] Is a directory: 'internal/logrecord'
+    Recovery
+      The agent disputes failing acceptance criteria; the claim is unverified.
+      Run: drydock plan verify DrydockStats
+        Inspect the criteria and evidence before rebuilding.
+      Run: drydock plan repair DrydockStats
+        Repair confirmed mechanical defects, then verify before rebuilding.
+    execution: 20261024.161238.365Z-e58fe633
+    evidence: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.155305/workspace/targets/DrydockStats/evidence/block-2.md
+
+  Next
+    The agent disputes failing acceptance criteria; the claim is unverified.
+    Run: drydock plan verify DrydockStats
+      Inspect the criteria and evidence before rebuilding.
+    Run: drydock plan repair DrydockStats
+      Repair confirmed mechanical defects, then verify before rebuilding.
+========================================================================
+
+========================================================================
+POST-LLM FAILURE  ·  build  ·  programmatic acceptance failed: log-required-fields-skip
+========================================================================
+
+  Block "Block 2 · Service" [block-2] failed its acceptance criteria.
+    Story "Skip records missing a required field, with a line-numbered warning." [log-required-fields] does not meet its own acceptance criteria:
+      - AC log-required-fields-skip — A record missing job.target is counted as skipped and does not appear in the records.
+          assertion: IsADirectoryError: [Errno 21] Is a directory: 'internal/logrecord'
+          raised at: pathlib.py:1013
+          process exit code: 1
+          error: IsADirectoryError: [Errno 21] Is a directory: 'internal/logrecord'
+          values at failure:
+            self = PosixPath('internal/logrecord')
+            mode = 'r'
+            buffering = -1
+            encoding = 'locale'
+            errors = None
+            newline = None
+          check stderr:
+  … (11 more lines truncated)
+
+  Recovery
+    The agent disputes failing acceptance criteria; the claim is
+    unverified.
+    Run: drydock plan verify DrydockStats
+      Inspect the criteria and evidence before rebuilding.
+    Run: drydock plan repair DrydockStats
+      Repair confirmed mechanical defects, then verify before rebuilding.
+
+========================================================================
+Target - committed project workspace git store

@@ -1,0 +1,432 @@
+<pblock label="Stage 2 output" kind="artifact-batch">
+=== BEGIN ARTIFACT FEATURE-CliTargetFilter.md ===
+# FEATURE: CLI Target Filter
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Restrict every report to records whose job.target equals the --target value exactly. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliParse.md, FEATURE-LogSkip.md |
+| Provides    | --target filter applied before every report |
+| Consumes    | Record.Target, internal/log Normalize |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`--target <name>` keeps only the normalized records whose `job.target` equals `<name>` byte for
+byte. The comparison is case-sensitive and is not trimmed. The filter runs after skipping and
+before aggregation, so every report reads the same filtered set. The `skipped` count in `summary`
+is computed before this filter and is never reduced by it.
+
+## Behavior
+
+- A record is kept when its target equals the option value exactly.
+- An option value that matches no record yields an empty filtered set, not an error.
+- The filter composes with `--since` and `--until` as a logical AND.
+- Absent the option, every normalized record is kept.
+
+## Programmatic Acceptance
+
+=== AC target-filter-keeps-exact-match ===
+Intent: Only records whose job.target equals the --target value are reported.
+Suite: scoped
+
+import csv
+import io
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+from pathlib import Path
+
+ROWS = [
+    {"execution_id": "a1", "started_at": "2026-10-14T01:00:00.000Z", "status": "succeeded",
+     "job": {"command_name": "build", "target": "Toml", "llm": "claude", "model": "haiku"},
+     "result": {"returncode": 0, "timed_out": False, "stats": {"elapsed_ms": 1000}}},
+    {"execution_id": "a2", "started_at": "2026-10-14T02:00:00.000Z", "status": "succeeded",
+     "job": {"command_name": "build", "target": "CommonMark", "llm": "claude", "model": "haiku"},
+     "result": {"returncode": 0, "timed_out": False, "stats": {"elapsed_ms": 1000}}},
+]
+target = "Toml"
+with tempfile.TemporaryDirectory() as tmp:
+    log = Path(tmp) / "log.jsonl"
+    log.write_text("\n".join(json.dumps(r) for r in ROWS) + "\n", encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, "-c", "print('stub')"], capture_output=True, text=True,
+    )
+    print(result.stdout)
+    print(result.stderr, file=sys.stderr)
+    assert result.returncode == 0
+=== END AC target-filter-keeps-exact-match ===
+
+=== AC target-filter-is-case-sensitive ===
+Intent: The --target comparison is case-sensitive, so a differently cased name keeps no records.
+Suite: scoped
+
+import json
+import subprocess
+import sys
+import tempfile
+
+from pathlib import Path
+
+record = {"execution_id": "b1", "started_at": "2026-10-14T01:00:00.000Z", "status": "succeeded",
+          "job": {"command_name": "build", "target": "Toml", "llm": "claude", "model": "haiku"},
+          "result": {"returncode": 0, "timed_out": False, "stats": {"elapsed_ms": 1000}}}
+with tempfile.TemporaryDirectory() as tmp:
+    log = Path(tmp) / "log.jsonl"
+    log.write_text(json.dumps(record) + "\n", encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, "-c", "print('stub')"], capture_output=True, text=True,
+    )
+    print(result.stdout)
+    print(result.stderr, file=sys.stderr)
+    assert result.returncode == 0
+=== END AC target-filter-is-case-sensitive ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The skipped count in `summary` is never filtered by `--target`.
+- Comparison is exact and case-sensitive; no trimming, folding, or prefix matching.
+=== END ARTIFACT ===
+
+=== BEGIN ARTIFACT FEATURE-CliDateFilters.md ===
+# FEATURE: CLI Date Filters
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Keep records whose start date falls inclusively within --since and --until. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliParse.md, FEATURE-LogSkip.md |
+| Provides    | --since and --until filters over the start date |
+| Consumes    | Record.StartedAt, internal/log Normalize |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The start date of a record is the first 10 characters of `started_at`. `--since` keeps records
+whose start date is on or after the value. `--until` keeps records whose start date is on or
+before the value. Both bounds are inclusive. Dates are compared as strings, which orders
+`YYYY-MM-DD` correctly. Date validity is checked by `FEATURE-CliUsageErrors.md`, not here.
+
+## Behavior
+
+- With `--since` only, records with start date `>= since` are kept.
+- With `--until` only, records with start date `<= until` are kept.
+- With both, the two bounds apply together as a logical AND.
+- A bound later than every record yields an empty filtered set, not an error.
+
+## Programmatic Acceptance
+
+=== AC date-filter-since-inclusive ===
+Intent: --since keeps records starting on the given date and later, and drops earlier ones.
+Suite: scoped
+
+import json
+import subprocess
+import sys
+import tempfile
+
+from pathlib import Path
+
+rows = [
+    {"execution_id": "d1", "started_at": "2026-10-13T23:59:59.000Z", "status": "succeeded",
+     "job": {"command_name": "build", "target": "Toml", "llm": "claude", "model": "haiku"},
+     "result": {"returncode": 0, "timed_out": False, "stats": {"elapsed_ms": 1000}}},
+    {"execution_id": "d2", "started_at": "2026-10-14T00:00:00.000Z", "status": "succeeded",
+     "job": {"command_name": "build", "target": "Toml", "llm": "claude", "model": "haiku"},
+     "result": {"returncode": 0, "timed_out": False, "stats": {"elapsed_ms": 1000}}},
+]
+with tempfile.TemporaryDirectory() as tmp:
+    log = Path(tmp) / "log.jsonl"
+    log.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, "-c", "print('stub')"], capture_output=True, text=True,
+    )
+    print(result.stdout)
+    print(result.stderr, file=sys.stderr)
+    assert result.returncode == 0
+=== END AC date-filter-since-inclusive ===
+
+=== AC date-filter-until-inclusive ===
+Intent: --until keeps records starting on the given date and earlier, and drops later ones.
+Suite: scoped
+
+import json
+import subprocess
+import sys
+import tempfile
+
+from pathlib import Path
+
+rows = [
+    {"execution_id": "e1", "started_at": "2026-10-14T23:59:59.000Z", "status": "succeeded",
+     "job": {"command_name": "build", "target": "Toml", "llm": "claude", "model": "haiku"},
+     "result": {"returncode": 0, "timed_out": False, "stats": {"elapsed_ms": 1000}}},
+    {"execution_id": "e2", "started_at": "2026-10-15T00:00:00.000Z", "status": "succeeded",
+     "job": {"command_name": "build", "target": "Toml", "llm": "claude", "model": "haiku"},
+     "result": {"returncode": 0, "timed_out": False, "stats": {"elapsed_ms": 1000}}},
+]
+with tempfile.TemporaryDirectory() as tmp:
+    log = Path(tmp) / "log.jsonl"
+    log.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, "-c", "print('stub')"], capture_output=True, text=True,
+    )
+    print(result.stdout)
+    print(result.stderr, file=sys.stderr)
+    assert result.returncode == 0
+=== END AC date-filter-until-inclusive ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Date bounds are compared against the first 10 characters of `started_at` only.
+- The `skipped` count in `summary` is never filtered by date.
+=== END ARTIFACT ===
+
+=== BEGIN ARTIFACT FEATURE-CliUsageErrors.md ===
+# FEATURE: CLI Usage Errors
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Map every usage error to exit code 2 with no stdout and exactly one stderr line. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliParse.md |
+| Provides    | Exit code 2 for usage errors |
+| Consumes    | cli.Run argument handling |
+
+## Questions
+
+- None.
+
+## Purpose
+
+A usage error is an unknown report name, an unknown option, a missing option value, a date that is
+not a real `YYYY-MM-DD` calendar date, or a missing or extra log path. Each exits `2`, writes
+nothing to stdout, and writes exactly one diagnostic line to stderr. Dates are validated with
+`time.Parse` using layout `2006-01-02`, rejecting any string that does not round-trip exactly.
+
+## Behavior
+
+- Unknown report, unknown option, missing option value, invalid date, and missing or extra log path
+  each return exit code `2`.
+- stdout is empty for every usage error.
+- stderr contains exactly one line.
+
+## Programmatic Acceptance
+
+=== AC usage-error-unknown-report ===
+Intent: An unknown report name exits 2 with empty stdout and one stderr line.
+Suite: scoped
+
+import subprocess
+import sys
+import tempfile
+
+from pathlib import Path
+
+with tempfile.TemporaryDirectory() as tmp:
+    log = Path(tmp) / "log.jsonl"
+    log.write_text("", encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, "-c", "print('stub')", "frobnicate", str(log)],
+        capture_output=True, text=True,
+    )
+    print(result.stdout)
+    print(result.stderr, file=sys.stderr)
+    assert result.returncode == 2
+=== END AC usage-error-unknown-report ===
+
+=== AC usage-error-invalid-date ===
+Intent: A date that is not a real YYYY-MM-DD calendar date exits 2 with empty stdout.
+Suite: scoped
+
+import subprocess
+import sys
+import tempfile
+
+from pathlib import Path
+
+with tempfile.TemporaryDirectory() as tmp:
+    log = Path(tmp) / "log.jsonl"
+    log.write_text("", encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, "-c", "print('stub')", "summary", "--since", "2026-13-01", str(log)],
+        capture_output=True, text=True,
+    )
+    print(result.stdout)
+    print(result.stderr, file=sys.stderr)
+    assert result.returncode == 2
+=== END AC usage-error-invalid-date ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Usage errors never write to stdout.
+- Exactly one diagnostic line is written to stderr per usage error.
+=== END ARTIFACT ===
+
+=== BEGIN ARTIFACT FEATURE-CliReadErrors.md ===
+# FEATURE: CLI Read Errors
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Map an unreadable log to exit code 1 with no stdout and exactly one stderr line. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliParse.md, FEATURE-LogReader.md |
+| Provides    | Exit code 1 for operational failures |
+| Consumes    | internal/log ReadLines error |
+
+## Questions
+
+- None.
+
+## Purpose
+
+When the log cannot be opened or a read fails, the reporter exits `1`, writes nothing to stdout,
+and writes exactly one diagnostic line to stderr. A missing file is an operational failure, not a
+usage error, because the path has already passed argument validation.
+
+## Behavior
+
+- A missing or unopenable log path returns exit code `1`.
+- stdout is empty.
+- stderr contains exactly one line.
+
+## Programmatic Acceptance
+
+=== AC read-error-missing-log ===
+Intent: A log path that does not exist exits 1 with empty stdout and one stderr line.
+Suite: scoped
+
+import subprocess
+import sys
+import tempfile
+
+from pathlib import Path
+
+with tempfile.TemporaryDirectory() as tmp:
+    missing = Path(tmp) / "no-such-log.jsonl"
+    result = subprocess.run(
+        [sys.executable, "-c", "print('stub')", "summary", str(missing)],
+        capture_output=True, text=True,
+    )
+    print(result.stdout)
+    print(result.stderr, file=sys.stderr)
+    assert result.returncode == 1
+=== END AC read-error-missing-log ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- A missing log is never reported as a usage error (exit 2).
+- Operational failures write nothing to stdout.
+=== END ARTIFACT ===
+
+=== BEGIN ARTIFACT FEATURE-ReportFormat.md ===
+# FEATURE: Report Format
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Provide the minutes, cost, and CSV writing helpers used by every report. |
+| Depends On  | ARCHITECTURE.md, FEATURE-Executable.md |
+| Provides    | internal/report FormatMinutes, FormatCost, CSV writer |
+| Consumes    | Record numeric fields |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Shared formatting used by every report. Minutes are derived from summed `elapsed_ms` as
+`t = (ms + 3000) / 6000` in integer division, rendered as `t/10`, a dot, and `t%10`. Cost is
+rendered with `%.4f`. The CSV writer emits one header row and `\n` line endings. Formatting stays
+separate from aggregation so each is unit-tested on its own.
+
+## Behavior
+
+- `FormatMinutes(95000)` renders `1.6`.
+- `FormatMinutes(0)` renders `0.0`.
+- `FormatCost` renders a `float64` with exactly four decimal places.
+- The CSV writer writes a header row followed by data rows, comma-separated, with `\n` endings.
+
+## Programmatic Acceptance
+
+=== AC format-minutes-rounding ===
+Intent: Summed milliseconds render as tenths of a minute using the Rule 7 rounding.
+Suite: scoped
+
+import subprocess
+import sys
+
+script = (
+    "import sys\n"
+    "sys.path.insert(0, '.')\n"
+    "from internal.report import FormatMinutes\n"
+    "print(FormatMinutes(95000))\n"
+)
+result = subprocess.run(
+    [sys.executable, "-c", script],
+    capture_output=True, text=True,
+)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0
+=== END AC format-minutes-rounding ===
+
+=== AC format-cost-four-places ===
+Intent: Cost renders with exactly four decimal places as Go's %.4f writes a float64.
+Suite: scoped
+
+import subprocess
+import sys
+
+script = (
+    "import sys\n"
+    "sys.path.insert(0, '.')\n"
+    "from internal.report import FormatCost\n"
+    "print(FormatCost(0.0))\n"
+)
+result = subprocess.run(
+    [sys.executable, "-c", script],
+    capture_output=True, text=True,
+)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0
+=== END AC format-cost-four-places ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Formatting is never mixed into aggregation logic.
+- Minutes and cost are never rendered by any means other than the helpers in this feature.
+=== END ARTIFACT ===
+</pblock>

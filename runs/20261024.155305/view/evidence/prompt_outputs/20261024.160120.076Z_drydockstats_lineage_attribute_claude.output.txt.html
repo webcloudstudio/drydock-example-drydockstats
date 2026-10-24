@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.160120.076Z_drydockstats_lineage_attribute_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.160120.076Z_drydockstats_lineage_attribute_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.160120.076Z_drydockstats_lineage_attribute_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>```text
+&lt;requirement name=&quot;build-ddkstat-main&quot; stories=&quot;go-foundation,build-entry&quot;&gt;
+The deliverable is a Go module whose main package is ./cmd/ddkstat.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;summary-report&quot; stories=&quot;report-summary,log-decode,log-required-fields,log-duplicates,log-numeric,log-model,report-format,cli-parse&quot;&gt;
+check A1 0 summary &quot;$LOG&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;commands-report&quot; stories=&quot;report-commands,log-decode,log-required-fields,log-duplicates,log-numeric,log-model,report-format,cli-parse&quot;&gt;
+check A2 0 commands &quot;$LOG&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;targets-report&quot; stories=&quot;report-targets,log-decode,log-required-fields,log-duplicates,log-numeric,log-model,report-format,cli-parse&quot;&gt;
+check A3 0 targets &quot;$LOG&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;models-report&quot; stories=&quot;report-models,log-decode,log-required-fields,log-duplicates,log-numeric,log-model,report-format,cli-parse&quot;&gt;
+check A4 0 models &quot;$LOG&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;daily-report&quot; stories=&quot;report-daily,log-decode,log-required-fields,log-duplicates,log-numeric,log-model,report-format,cli-parse&quot;&gt;
+check A5 0 daily &quot;$LOG&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;failures-report&quot; stories=&quot;report-failures,log-decode,log-required-fields,log-duplicates,log-numeric,log-model,report-format,cli-parse&quot;&gt;
+check A6 0 failures &quot;$LOG&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;filter-by-target&quot; stories=&quot;filter-target,cli-parse&quot;&gt;
+check B4 0 failures --target CommonMark &quot;$LOG&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;filter-by-date-range&quot; stories=&quot;filter-date,cli-parse&quot;&gt;
+check B3 0 daily --since 2026-10-15 --until 2026-10-15 &quot;$LOG&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;empty-match-reports&quot; stories=&quot;report-empty-match,report-commands,filter-target,cli-parse&quot;&gt;
+check C1 0 commands --target NoSuchTarget &quot;$LOG&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;unreadable-log-exits-1&quot; stories=&quot;cli-unreadable-log&quot;&gt;
+check E1 1 summary &quot;$MISSING&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;usage-errors-exit-2&quot; stories=&quot;cli-usage-errors,cli-parse&quot;&gt;
+check U1 2
+check U2 2 frobnicate &quot;$LOG&quot;
+check U3 2 summary
+check U4 2 summary --since 2026-13-01 &quot;$LOG&quot;
+check U5 2 summary --colour red &quot;$LOG&quot;
+check U6 2 summary &quot;$LOG&quot; &quot;$LOG&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;partial-success-exits-0&quot; stories=&quot;cli-success-partial,log-required-fields,log-duplicates&quot;&gt;
+check A1 0 summary &quot;$LOG&quot;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;grader-verdict-requires-all-checks&quot; stories=&quot;grader-gate&quot;&gt;
+# Exit 0 only when the build succeeds and every check passes.
+&lt;/requirement&gt;
+&lt;unattached story=&quot;test-runner&quot;/&gt;
+```</pre></article>
+</main>
+</body>
+</html>

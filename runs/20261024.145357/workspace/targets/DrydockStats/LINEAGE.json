@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "import": {
+    "root": "/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.145357/sources",
+    "format": "markdown"
+  },
+  "sources": {
+    "INSTRUCTIONS.md": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "41438d8",
+          "date": "2026-10-24",
+          "hash": "26e9f16d1cb531d7ebbc324cdfa9a03e31fcf317e285018fb385409111cdc3cc",
+          "release": "",
+          "state": "pending",
+          "via": null,
+          "ticket": null,
+          "requirements": []
+        }
+      ]
+    },
+    "llm_sample.jsonl": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "41438d8",
+          "date": "2026-10-24",
+          "hash": "19a092d921393ca299df3dbdb1b65370649bda5aaea44c2fe4f7f1080cc5f217",
+          "release": "",
+          "state": "pending",
+          "via": null,
+          "ticket": null,
+          "requirements": []
+        }
+      ]
+    },
+    "run.sh": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "41438d8",
+          "date": "2026-10-24",
+          "hash": "0cc2ee483269886e4d61e5bfdbefec2419121f8a49a10ef33f182f855ba889d3",
+          "release": "",
+          "state": "pending",
+          "via": null,
+          "ticket": null,
+          "requirements": []
+        }
+      ]
+    }
+  }
+}

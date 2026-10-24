@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.155955.210Z_drydockstats_plan_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.155955.210Z_drydockstats_plan_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.155955.210Z_drydockstats_plan_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>Stage 2 batch: author three Blueprint files, in order, using the frozen topology and the ledger.
+
+=== BEGIN ARTIFACT FEATURE-CliSuccessPartial.md ===
+# FEATURE: CLI Success on Partial Data
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Exit 0 and write the report when lines are skipped or no record matches. |
+| Depends On  | FEATURE-CliUnreadableLog.md, FEATURE-CliParse.md, FEATURE-ReportEmptyMatch.md, FEATURE-LogDuplicates.md |
+| Provides    | success exit 0 on partial data |
+| Consumes    | ddkstat command line, unreadable log exit 1 |
+
+## Questions
+
+- None.
+
+## Purpose
+
+A log with skipped lines, or a filter that matches no records, is a successful run. The reporter exits 0 and writes its report to standard output. Skip warnings go to standard error only.
+
+## Behavior
+
+- A log containing blank, malformed, required-field-missing, or duplicate lines exits 0.
+- A filter that matches no records exits 0 and writes the header plus the zero TOTAL row where the report has one.
+- Skip warnings appear on standard error only; standard output contains only the report CSV.
+- No code path returns a non-zero status for these cases.
+
+## Programmatic Acceptance
+
+=== AC cli-partial-skipped-exit-zero ===
+Intent: A log with malformed and duplicate lines exits 0 and its summary reports skipped lines.
+Suite: scoped
+
+import csv
+import io
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+from pathlib import Path
+
+app = Path(os.getcwd())
+build = app / &quot;ddkstat_build_probe&quot;
+subprocess.run([&quot;go&quot;, &quot;build&quot;, &quot;-o&quot;, str(build), &quot;./cmd/ddkstat&quot;], cwd=app, check=True)
+
+lines = [
+    json.dumps({&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;a&quot;, &quot;started_at&quot;: &quot;2026-10-14T01:00:00.000Z&quot;,
+                &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;T&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;},
+                &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;cost_usd&quot;: 0.5}}}),
+    &quot;not json at all&quot;,
+    json.dumps({&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;a&quot;, &quot;started_at&quot;: &quot;2026-10-14T01:00:00.000Z&quot;,
+                &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;T&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;},
+                &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;cost_usd&quot;: 0.5}}}),
+]
+with tempfile.TemporaryDirectory() as tmp:
+    log = Path(tmp) / &quot;partial.jsonl&quot;
+    log.write_text(&quot;\n&quot;.join(lines) + &quot;\n&quot;, encoding=&quot;utf-8&quot;)
+    result = subprocess.run([str(build), &quot;summary&quot;, str(log)], capture_output=True, text=True)
+    print(result.stdout)
+    print(result.stderr, file=sys.stderr)
+    assert result.returncode == 0, (result.returncode, result.stderr)
+    rows = list(csv.DictReader(io.StringIO(result.stdout)))
+    assert len(rows) == 1
+    assert rows[0][&quot;records&quot;] == &quot;1&quot;
+    assert rows[0][&quot;skipped&quot;] == &quot;2&quot;
+=== END AC cli-partial-skipped-exit-zero ===
+
+=== AC cli-partial-no-match-exit-zero ===
+Intent: A filter that matches no records exits 0 and the commands report writes its header with a zero TOTAL row.
+Suite: scoped
+
+import csv
+import io
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+from pathlib import Path
+
+app = Path(os.getcwd())
+build = app / &quot;ddkstat_build_probe&quot;
+subprocess.run([&quot;go&quot;, &quot;build&quot;, &quot;-o&quot;, str(build), &quot;./cmd/ddkstat&quot;], cwd=app, check=True)
+
+record = json.dumps({&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;a&quot;, &quot;started_at&quot;: &quot;2026-10-14T01:00:00.000Z&quot;,
+                     &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;T&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;},
+                     &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;cost_usd&quot;: 0.5}}})
+with tempfile.TemporaryDirectory() as tmp:
+    log = Path(tmp) / &quot;one.jsonl&quot;
+    log.write_text(record + &quot;\n&quot;, encoding=&quot;utf-8&quot;)
+    result = subprocess.run([str(build), &quot;commands&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, str(log)],
+                            capture_output=True, text=True)
+    print(result.stdout)
+    print(result.stderr, file=sys.stderr)
+    assert result.returncode == 0, (result.returncode, result.stderr)
+    rows = list(csv.reader(io.StringIO(result.stdout)))
+    assert rows[0] == [&quot;command&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;input_tokens&quot;, &quot;cached_tokens&quot;, &quot;output_tokens&quot;, &quot;minutes&quot;]
+    assert rows[-1][0] == &quot;TOTAL&quot;
+    assert rows[-1][1] == &quot;0&quot;
+=== END AC cli-partial-no-match-exit-zero ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Skip warnings never go to standard output.
+- Exit code is never non-zero because of skipped lines or an empty match.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-TestRunner.md ===
+# FEATURE: Test Runner
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Provide the POSIX bin/test.sh that runs go vet and go test over the whole module. |
+| Depends On  | FEATURE-BuildEntry.md, FEATURE-LogDecode.md, FEATURE-LogRequiredFields.md, FEATURE-LogDuplicates.md, FEATURE-LogModel.md, FEATURE-LogNumeric.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-ReportFormat.md, FEATURE-ReportSummary.md, FEATURE-ReportCommands.md, FEATURE-ReportTargets.md, FEATURE-ReportModels.md, FEATURE-ReportDaily.md, FEATURE-ReportFailures.md, FEATURE-ReportEmptyMatch.md, FEATURE-CliParse.md, FEATURE-CliUsageErrors.md, FEATURE-CliUnreadableLog.md, FEATURE-CliSuccessPartial.md |
+| Provides    | bin/test.sh |
+| Consumes    | go vet ./..., go test ./... |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Provide the project&#x27;s test gate as a POSIX sh script. The script runs the Go toolchain from the application root and exits zero only when both `go vet ./...` and `go test ./...` pass.
+
+## Behavior
+
+- `bin/test.sh` is POSIX sh with `set -eu`.
+- It changes to the application root relative to its own location.
+- It runs `go vet ./...`, then `go test ./...`.
+- It exits 0 only when both succeed; any failure exits non-zero.
+- It invokes the installed Go toolchain and never vendors one.
+
+## Programmatic Acceptance
+
+=== AC test-runner-script-present ===
+Intent: bin/test.sh exists and is a POSIX sh script that sets errexit and nounset.
+Suite: scoped
+
+from pathlib import Path
+import os
+
+script = Path(os.getcwd()) / &quot;bin&quot; / &quot;test.sh&quot;
+assert script.is_file()
+text = script.read_text(encoding=&quot;utf-8&quot;)
+first_lines = text.splitlines()[:3]
+assert any(line.strip() == &quot;set -eu&quot; for line in first_lines)
+=== END AC test-runner-script-present ===
+
+=== AC test-runner-passes-on-clean-module ===
+Intent: bin/test.sh exits 0 when go vet and go test both pass over the module.
+Suite: scoped
+
+import subprocess
+import sys
+import os
+
+from pathlib import Path
+
+app = Path(os.getcwd())
+result = subprocess.run([&quot;sh&quot;, str(app / &quot;bin&quot; / &quot;test.sh&quot;)], cwd=app, capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0, result.returncode
+=== END AC test-runner-passes-on-clean-module ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Never vendor a Go toolchain; always invoke the installed `go`.
+- Never modify anything under `sources/`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Acceptance.md ===
+# FEATURE: Acceptance Gate
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Assembly gate: the supplied grader must exit zero as the release verdict. |
+| Depends On  | FEATURE-TestRunner.md, FEATURE-CliUsageErrors.md, FEATURE-CliSuccessPartial.md |
+| Provides    | sources/run.sh verdict |
+| Consumes    | sources/run.sh |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Terminal assembly story. After every member story is verified, run `sh sources/run.sh` from the application root. Its exit status is the sole acceptance verdict.
+
+## Behavior
+
+- Runs once every member story is closed and verified.
+- Executes `sh sources/run.sh` from the application root.
+- The grader&#x27;s exit status is the verdict; its output is not parsed.
+- Does not edit anything under `sources/`.
+
+## Programmatic Acceptance
+
+=== AC acceptance-grader-passes ===
+Intent: The supplied grader exits 0 against the completed application.
+Suite: full
+
+import subprocess
+import sys
+import os
+
+from pathlib import Path
+
+app = Path(os.getcwd())
+result = subprocess.run([&quot;sh&quot;, &quot;sources/run.sh&quot;], cwd=app, capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0, result.returncode
+=== END AC acceptance-grader-passes ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Never modify, rewrite, regenerate, or substitute any file under `sources/`.
+- Never read `sources/run.sh` from application code.
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>

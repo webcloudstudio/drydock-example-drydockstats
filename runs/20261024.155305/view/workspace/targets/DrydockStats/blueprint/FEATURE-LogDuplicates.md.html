@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-LogDuplicates.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-LogDuplicates.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-LogDuplicates.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Log Duplicates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Skip repeated execution identifiers, keeping the first occurrence.</td></tr><tr><td>Depends On</td><td>FEATURE-LogRequiredFields.md</td></tr><tr><td>Provides</td><td>duplicate execution identifier filter</td></tr><tr><td>Consumes</td><td>-</td></tr></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC log-duplicates-first-kept ===<br>Intent: The first occurrence of a duplicate execution_id is kept and later occurrences are skipped.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>from pathlib import Path</p>
+<p>assert Path(&quot;internal/logrecord&quot;).is_dir() === END AC log-duplicates-first-kept ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Duplicate detection runs only on lines that passed required-field validation.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-CliUsageErrors.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-CliUsageErrors.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-CliUsageErrors.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Usage Error Exit Codes</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Maps every command-line usage error to exit code 2 with no standard output.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-CliParse.md</td></tr><tr><td>Provides</td><td>usage error exit 2</td></tr><tr><td>Consumes</td><td>Run</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Let a caller distinguish a malformed invocation from an operational failure, so a wrong command is never mistaken for an unreadable log.</p>
+<h2>Behavior</h2>
+<ul><li>Usage errors are: unknown report name, unknown option, missing option value, invalid <code>--since</code> or <code>--until</code> date, and a missing or extra log path.</li><li>Each usage error returns exit code <code>2</code>, writes one diagnostic line to standard error, and writes nothing to standard output.</li><li>A date is valid only when <code>time.Parse</code> accepts it with layout <code>2006-01-02</code>; impossible dates such as <code>2026-02-30</code> are rejected.</li><li>Usage checks run before the log is opened.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC usage-unknown-report ===<br>Intent: An unknown report name exits 2 with empty stdout.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import subprocess import os import sys import tempfile</p>
+<p>app = os.getcwd() with tempfile.TemporaryDirectory() as d: bin_path = os.path.join(d, &quot;ddkstat&quot;) subprocess.run([&quot;go&quot;, &quot;build&quot;, &quot;-o&quot;, bin_path, &quot;./cmd/ddkstat&quot;], cwd=app, check=True) result = subprocess.run([bin_path, &quot;frobnicate&quot;, os.devnull], capture_output=True, text=True) print(result.stdout) print(result.stderr, file=sys.stderr) assert result.returncode == 2 assert result.stdout == &quot;&quot; === END AC usage-unknown-report ===</p>
+<p>=== AC usage-impossible-date ===<br>Intent: A calendar-impossible --since date exits 2 with empty stdout.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import subprocess import os import sys import tempfile</p>
+<p>app = os.getcwd() with tempfile.TemporaryDirectory() as d: bin_path = os.path.join(d, &quot;ddkstat&quot;) subprocess.run([&quot;go&quot;, &quot;build&quot;, &quot;-o&quot;, bin_path, &quot;./cmd/ddkstat&quot;], cwd=app, check=True) result = subprocess.run( [bin_path, &quot;summary&quot;, &quot;--since&quot;, &quot;2026-02-30&quot;, os.devnull], capture_output=True, text=True ) print(result.stdout) print(result.stderr, file=sys.stderr) assert result.returncode == 2 assert result.stdout == &quot;&quot; === END AC usage-impossible-date ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>A usage error never opens the log.</li><li>Usage errors never write to standard output.</li></ul></article>
+</main>
+</body>
+</html>

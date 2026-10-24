@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>inputs/DECISIONS.json</title>
+<link rel="stylesheet" href="../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>inputs/DECISIONS.json</h1><div class="filenav"><a href="../../index.html">&larr; Report</a><a href="../../inputs/DECISIONS.json">Raw file</a></div></header>
+<article class="doc"><pre>[
+  {
+    &quot;id&quot;: &quot;Q-001&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: &quot;go-foundation&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;No DATABASE.md&quot;,
+    &quot;description&quot;: &quot;The Commander expectations and the source state that the product uses no database. The log is read-only file input, so there is no persistent state for a DATABASE.md contract.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Omit DATABASE.md. No persistence stack is selected, and no story implements DATABASE.md.&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-002&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-ReportEmptyMatch.md&quot;,
+    &quot;story&quot;: &quot;report-empty-match&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;RPT-008 owned by a separate story&quot;,
+    &quot;description&quot;: &quot;RPT-008 applies to every report, so it cannot be cleanly attached to one report story. It is owned by report-empty-match, which depends on all six report stories and verifies and corrects their empty-match output.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Keep empty-match behavior in report-empty-match, after the six report stories.&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-003&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-BuildEntry.md&quot;,
+    &quot;story&quot;: &quot;build-entry&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;BLD-001 separate from the foundation&quot;,
+    &quot;description&quot;: &quot;Foundational stories may not carry covers or accepts. BLD-001 is an analyzed behavior, so it is owned by a service story, build-entry, that depends on go-foundation.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Keep go-foundation as a foundational story with no covers or accepts, and assign BLD-001 to build-entry.&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-004&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-FilterDate.md&quot;,
+    &quot;story&quot;: &quot;filter-date&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Start date from a short or malformed started_at&quot;,
+    &quot;description&quot;: &quot;The source defines the start date as the first 10 characters of started_at but does not say what happens when that text is shorter than 10 characters or is not a date. No skip rule covers it.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Use the first min(10, length) characters as the date text. Do not skip the record. This keeps the skip rules limited to the source&#x27;s stated rules.&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-005&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: &quot;go-foundation&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Go module path&quot;,
+    &quot;description&quot;: &quot;The source does not name a module path.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Use module path drydockstats.&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-006&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: &quot;go-foundation&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Analysis story count differs from enumerated IDs&quot;,
+    &quot;description&quot;: &quot;ANALYSIS.md metadata reports 22 stories, but its Story List enumerates 21 IDs: LOG 5, FLT 2, RPT 8, CLI 4, BLD 2. The topology covers all 21 enumerated IDs.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Treat the enumerated Story List as authoritative. Cover all 21 IDs with exactly one story each.&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-skip-feature-logdecode.md-log-decode-ignores-blank&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-LogDecode.md&quot;,
+    &quot;story&quot;: &quot;log-decode&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Acceptance skipped: log-decode-ignores-blank&quot;,
+    &quot;description&quot;: &quot;excluded check: ALWAYS_PASSES vacuous&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Leave log-decode-ignores-blank untested until its acceptance setup is repaired; do not treat it as passed.&quot;
+  }
+]
+</pre></article>
+</main>
+</body>
+</html>

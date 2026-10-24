@@ -1,0 +1,37 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Drydock status
+
+  Target          /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.155305/workspace/targets/DrydockStats
+  Name            drydock DrydockStats Uat Case
+  Description     Drydock uat - DrydockStats builds a Go reporter for Drydock's own LLM execution log (logs/llm.jsonl).
+                  The source is an original brief: read JSON Lines, skip malformed and duplicate records without…
+  Phase           Implement
+  State           Failed: programmatic acceptance failed: log-required-fields-skip
+  Metadata        building · running
+  Sources         3 imported · 23 authored blueprint files
+  Analysis        Ready · 22 stories · 0 questions · 0 blockers
+  Blueprint       ⚠  0 errors · 6 warnings
+    ⚠  Terminal sections: FEATURE-CliUnreadableLog.md missing ## Guardrails
+    ⚠  Terminal sections: FEATURE-FilterDate.md missing ## Guardrails
+    ⚠  Terminal sections: FEATURE-FilterTarget.md missing ## Guardrails
+    ⚠  Terminal sections: FEATURE-LogModel.md missing ## Guardrails
+    ⚠  Terminal sections: FEATURE-LogNumeric.md missing ## Guardrails
+    ⚠  Terminal sections: FEATURE-ReportFormat.md missing ## Guardrails
+  Plan            1 pending · 1 closed/implemented · 21 closed/failed
+  Frontier        (none)
+  Workflow        5 steps
+                  Initialize         complete at 2026-10-24T15:53:08.503+00:00
+                  Import             complete at 2026-10-24T15:53:15.477+00:00
+                  Analyze            complete at 2026-10-24T15:53:45.982+00:00
+                  Plan               complete at 2026-10-24T16:02:27.938+00:00
+                  Build              failed at 2026-10-24T16:16:06.663+00:00
+  Next step       drydock run quarterdeck DrydockStats
+
+========================================================================
+STOPPED: DrydockStats  ·  initial-build-1  ·  2026-10-24T16:16:08Z
+========================================================================
+
+  The build exited 1 with work still on the frontier. Diagnose the failing block from its evidence before rerunning; a score taken over a partial build grades the absence, not the product.
+
+  Clear: delete STOP_NOW.md, or answer y when a command offers to.
+========================================================================

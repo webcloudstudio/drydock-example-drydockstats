@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.155717.344Z_drydockstats_plan_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.155717.344Z_drydockstats_plan_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.155717.344Z_drydockstats_plan_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT FEATURE-ReportSummary.md ===
+# FEATURE: Report Summary
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produce the one-row `summary` report over the filtered normalized records, with skipped counted over the whole file. |
+| Depends On  | FEATURE-FilterDate.md, FEATURE-ReportFormat.md, FEATURE-LogNumeric.md |
+| Provides    | ddkstat summary |
+| Consumes    | FormatMinutes, FormatCost, WriteCSV, filtered records from FEATURE-FilterDate.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat summary &lt;log&gt;` writes one CSV header row and one data row to standard output. The header is
+`records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes`.
+
+`skipped` counts skipped lines in the whole file and is unaffected by `--target`, `--since`, or
+`--until`. Every other column is computed over the records that pass the filters. `first` and `last`
+are the earliest and latest start dates, empty when no record matches. `minutes` and `cost_usd` use
+the shared formatters from FEATURE-ReportFormat.md.
+
+## Programmatic Acceptance
+
+=== AC summary-header ===
+Intent: The summary report exits zero and writes the declared header row as its first CSV row.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+HEADER = [&quot;records&quot;, &quot;skipped&quot;, &quot;succeeded&quot;, &quot;failed&quot;, &quot;first&quot;, &quot;last&quot;, &quot;input_tokens&quot;, &quot;cached_tokens&quot;, &quot;output_tokens&quot;, &quot;cost_usd&quot;, &quot;minutes&quot;]
+
+code, out, err = cli_runner(&quot;summary&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == HEADER, rows[0]
+=== END AC summary-header ===
+
+=== AC summary-single-data-row ===
+Intent: The summary report writes exactly one data row beneath its header, with the same number of fields.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;summary&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert len(rows[1]) == len(rows[0]), rows
+=== END AC summary-single-data-row ===
+
+=== AC summary-skipped-ignores-filters ===
+Intent: The skipped count is identical with and without a filter that matches nothing, because it counts the whole file.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+def summary_row(*options):
+    code, out, err = cli_runner(&quot;summary&quot;, *options, &quot;sources/llm_sample.jsonl&quot;)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    rows = list(csv.reader(io.StringIO(out)))
+    return dict(zip(rows[0], rows[1]))
+
+unfiltered = summary_row()
+filtered = summary_row(&quot;--target&quot;, &quot;NoSuchTarget&quot;)
+assert filtered[&quot;skipped&quot;] == unfiltered[&quot;skipped&quot;], (filtered, unfiltered)
+=== END AC summary-skipped-ignores-filters ===
+
+=== AC summary-records-sum ===
+Intent: For unfiltered and target-filtered runs, records equals succeeded plus failed.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+def summary_row(*options):
+    code, out, err = cli_runner(&quot;summary&quot;, *options, &quot;sources/llm_sample.jsonl&quot;)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    rows = list(csv.reader(io.StringIO(out)))
+    return dict(zip(rows[0], rows[1]))
+
+for options in [(), (&quot;--target&quot;, &quot;Toml&quot;)]:
+    row = summary_row(*options)
+    assert int(row[&quot;records&quot;]) == int(row[&quot;succeeded&quot;]) + int(row[&quot;failed&quot;]), row
+=== END AC summary-records-sum ===
+
+=== AC summary-empty-match-first-last ===
+Intent: A filter that matches no record writes records as zero and leaves first and last empty.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;summary&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+row = dict(zip(rows[0], rows[1]))
+assert row[&quot;records&quot;] == &quot;0&quot;, row
+assert row[&quot;first&quot;] == &quot;&quot; and row[&quot;last&quot;] == &quot;&quot;, row
+=== END AC summary-empty-match-first-last ===
+
+=== AC summary-dates-match-daily ===
+Intent: Under a single-day date filter, summary records equals the daily TOTAL calls, and first and last equal that day when records exist.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+LOG = &quot;sources/llm_sample.jsonl&quot;
+day = &quot;2026-10-15&quot;
+
+def rows_of(report, *options):
+    code, out, err = cli_runner(report, *options, LOG)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    return list(csv.reader(io.StringIO(out)))
+
+summary_rows = rows_of(&quot;summary&quot;, &quot;--since&quot;, day, &quot;--until&quot;, day)
+summary = dict(zip(summary_rows[0], summary_rows[1]))
+daily_rows = rows_of(&quot;daily&quot;, &quot;--since&quot;, day, &quot;--until&quot;, day)
+total = daily_rows[-1]
+assert total[0] == &quot;TOTAL&quot;, daily_rows
+assert total[1] == summary[&quot;records&quot;], (total, summary)
+if int(summary[&quot;records&quot;]) &gt; 0:
+    assert summary[&quot;first&quot;] == day and summary[&quot;last&quot;] == day, summary
+=== END AC summary-dates-match-daily ===
+
+=== AC summary-number-formats ===
+Intent: The minutes column is tenths of a minute and the cost column has exactly four decimal places.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+import re
+
+code, out, err = cli_runner(&quot;summary&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+row = dict(zip(rows[0], rows[1]))
+assert re.fullmatch(r&quot;\d+\.\d&quot;, row[&quot;minutes&quot;]), row
+assert re.fullmatch(r&quot;\d+\.\d{4}&quot;, row[&quot;cost_usd&quot;]), row
+=== END AC summary-number-formats ===
+
+=== AC summary-reads-only ===
+Intent: Running the summary report leaves the log byte-for-byte unchanged.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+
+path = &quot;sources/llm_sample.jsonl&quot;
+before = open(path, &quot;rb&quot;).read()
+code, out, err = cli_runner(&quot;summary&quot;, path)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+after = open(path, &quot;rb&quot;).read()
+assert before == after
+=== END AC summary-reads-only ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Every value is computed from the log being read; no row, count, or total is hardcoded in application code.
+- Standard error is diagnostic only and is never compared.
+- The log is opened read-only and is never written.
+- Application code never reads `sources/run.sh`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportCommands.md ===
+# FEATURE: Report Commands
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produce the per-command `commands` report with one row per command and a TOTAL row. |
+| Depends On  | FEATURE-FilterDate.md, FEATURE-ReportFormat.md, FEATURE-LogNumeric.md |
+| Provides    | ddkstat commands |
+| Consumes    | FormatMinutes, FormatCost, WriteCSV, filtered records from FEATURE-FilterDate.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat commands &lt;log&gt;` writes CSV with the header
+`command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes`. It writes one row per
+`job.command_name` among filtered records, ordered by calls descending and then command ascending by
+byte-wise comparison. It ends with a `TOTAL` row over all filtered records. When no record matches,
+it writes the header and a zero TOTAL row.
+
+## Programmatic Acceptance
+
+=== AC commands-header ===
+Intent: The commands report exits zero and writes the declared header as its first CSV row.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+HEADER = [&quot;command&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;input_tokens&quot;, &quot;cached_tokens&quot;, &quot;output_tokens&quot;, &quot;minutes&quot;]
+
+code, out, err = cli_runner(&quot;commands&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == HEADER, rows[0]
+=== END AC commands-header ===
+
+=== AC commands-total-last ===
+Intent: The final row is TOTAL and its calls equals the sum of the command rows above it.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;commands&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+total = rows[-1]
+data = rows[1:-1]
+assert total[0] == &quot;TOTAL&quot;, rows
+assert int(total[1]) == sum(int(r[1]) for r in data), rows
+=== END AC commands-total-last ===
+
+=== AC commands-ordering ===
+Intent: Command rows are ordered by calls descending, then command ascending by byte-wise comparison.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;commands&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+data = rows[1:-1]
+keys = [(-int(r[1]), r[0].encode(&quot;utf-8&quot;)) for r in data]
+assert keys == sorted(keys), data
+assert len({r[0] for r in data}) == len(data), data
+=== END AC commands-ordering ===
+
+=== AC commands-target-matches-summary ===
+Intent: Under a target filter, the commands TOTAL calls equals the summary records for the same filter.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+LOG = &quot;sources/llm_sample.jsonl&quot;
+target = &quot;Toml&quot;
+
+def rows_of(report, *options):
+    code, out, err = cli_runner(report, *options, LOG)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    return list(csv.reader(io.StringIO(out)))
+
+commands_rows = rows_of(&quot;commands&quot;, &quot;--target&quot;, target)
+summary_rows = rows_of(&quot;summary&quot;, &quot;--target&quot;, target)
+summary = dict(zip(summary_rows[0], summary_rows[1]))
+assert commands_rows[-1][0] == &quot;TOTAL&quot;, commands_rows
+assert commands_rows[-1][1] == summary[&quot;records&quot;], (commands_rows[-1], summary)
+=== END AC commands-target-matches-summary ===
+
+=== AC commands-failed-sum ===
+Intent: The failed column sums over command rows to the failed count of the summary report.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+LOG = &quot;sources/llm_sample.jsonl&quot;
+
+def rows_of(report, *options):
+    code, out, err = cli_runner(report, *options, LOG)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    return list(csv.reader(io.StringIO(out)))
+
+commands_rows = rows_of(&quot;commands&quot;)
+summary_rows = rows_of(&quot;summary&quot;)
+summary = dict(zip(summary_rows[0], summary_rows[1]))
+data = commands_rows[1:-1]
+assert sum(int(r[2]) for r in data) == int(summary[&quot;failed&quot;]), (commands_rows, summary)
+=== END AC commands-failed-sum ===
+
+=== AC commands-number-formats ===
+Intent: Each minutes value is tenths of a minute and the TOTAL row carries the same minutes as the summary report.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+import re
+
+LOG = &quot;sources/llm_sample.jsonl&quot;
+
+def rows_of(report, *options):
+    code, out, err = cli_runner(report, *options, LOG)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    return list(csv.reader(io.StringIO(out)))
+
+commands_rows = rows_of(&quot;commands&quot;)
+summary_rows = rows_of(&quot;summary&quot;)
+summary = dict(zip(summary_rows[0], summary_rows[1]))
+for r in commands_rows[1:]:
+    assert re.fullmatch(r&quot;\d+\.\d&quot;, r[6]), r
+assert commands_rows[-1][6] == summary[&quot;minutes&quot;], (commands_rows[-1], summary)
+=== END AC commands-number-formats ===
+
+=== AC commands-empty-match ===
+Intent: A filter that matches no record writes the header and a zero TOTAL row with 0.0 minutes.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;commands&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert rows[1][0] == &quot;TOTAL&quot; and rows[1][1:6] == [&quot;0&quot;, &quot;0&quot;, &quot;0&quot;, &quot;0&quot;, &quot;0&quot;], rows
+assert rows[1][6] == &quot;0.0&quot;, rows
+=== END AC commands-empty-match ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Every command row is computed from the log being read; no command name is hardcoded in application code.
+- Standard error is diagnostic only and is never compared.
+- The log is opened read-only and is never written.
+- Application code never reads `sources/run.sh`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportTargets.md ===
+# FEATURE: Report Targets
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produce the per-Target `targets` report with one row per Target and a TOTAL row. |
+| Depends On  | FEATURE-FilterDate.md, FEATURE-ReportFormat.md, FEATURE-LogNumeric.md |
+| Provides    | ddkstat targets |
+| Consumes    | FormatMinutes, FormatCost, WriteCSV, filtered records from FEATURE-FilterDate.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat targets &lt;log&gt;` writes CSV with the header
+`target,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd,minutes`. It writes one row per
+`job.target` among filtered records, ordered by Target ascending by byte-wise comparison. It ends with
+a `TOTAL` row over all filtered records. When no record matches, it writes the header and a zero TOTAL
+row.
+
+## Programmatic Acceptance
+
+=== AC targets-header ===
+Intent: The targets report exits zero and writes the declared header as its first CSV row.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+HEADER = [&quot;target&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;input_tokens&quot;, &quot;cached_tokens&quot;, &quot;output_tokens&quot;, &quot;cost_usd&quot;, &quot;minutes&quot;]
+
+code, out, err = cli_runner(&quot;targets&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == HEADER, rows[0]
+=== END AC targets-header ===
+
+=== AC targets-total-last ===
+Intent: The final row is TOTAL and its calls equals the sum of the Target rows above it.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;targets&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+total = rows[-1]
+data = rows[1:-1]
+assert total[0] == &quot;TOTAL&quot;, rows
+assert int(total[1]) == sum(int(r[1]) for r in data), rows
+=== END AC targets-total-last ===
+
+=== AC targets-ordering ===
+Intent: Target rows are ordered by Target name ascending by byte-wise comparison and each Target appears once.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;targets&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+data = rows[1:-1]
+keys = [r[0].encode(&quot;utf-8&quot;) for r in data]
+assert keys == sorted(keys), data
+assert len(set(keys)) == len(keys), data
+=== END AC targets-ordering ===
+
+=== AC targets-exact-match-filter ===
+Intent: A target filter keeps only the one matching Target row, and the TOTAL calls equals the summary records for that filter.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+LOG = &quot;sources/llm_sample.jsonl&quot;
+target = &quot;Toml&quot;
+
+def rows_of(report, *options):
+    code, out, err = cli_runner(report, *options, LOG)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    return list(csv.reader(io.StringIO(out)))
+
+target_rows = rows_of(&quot;targets&quot;, &quot;--target&quot;, target)
+summary_rows = rows_of(&quot;summary&quot;, &quot;--target&quot;, target)
+summary = dict(zip(summary_rows[0], summary_rows[1]))
+data = target_rows[1:-1]
+assert all(r[0] == target for r in data), target_rows
+assert target_rows[-1][1] == summary[&quot;records&quot;], (target_rows[-1], summary)
+=== END AC targets-exact-match-filter ===
+
+=== AC targets-number-formats ===
+Intent: Each cost value has exactly four decimal places and each minutes value is tenths of a minute.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+import re
+
+code, out, err = cli_runner(&quot;targets&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+for r in rows[1:]:
+    assert re.fullmatch(r&quot;\d+\.\d{4}&quot;, r[6]), r
+    assert re.fullmatch(r&quot;\d+\.\d&quot;, r[7]), r
+=== END AC targets-number-formats ===
+
+=== AC targets-empty-match ===
+Intent: A filter that matches no record writes the header and a zero TOTAL row with 0.0 cost and 0.0 minutes.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;targets&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert rows[1][0] == &quot;TOTAL&quot; and rows[1][1:6] == [&quot;0&quot;, &quot;0&quot;, &quot;0&quot;, &quot;0&quot;, &quot;0&quot;], rows
+assert rows[1][6] == &quot;0.0000&quot; and rows[1][7] == &quot;0.0&quot;, rows
+=== END AC targets-empty-match ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Every Target row is computed from the log being read; no Target name is hardcoded in application code.
+- Target matching is exact and case-sensitive.
+- Standard error is diagnostic only and is never compared.
+- The log is opened read-only and is never written.
+- Application code never reads `sources/run.sh`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportModels.md ===
+# FEATURE: Report Models
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produce the per-provider and model `models` report with one row per pair and a TOTAL row. |
+| Depends On  | FEATURE-FilterDate.md, FEATURE-ReportFormat.md, FEATURE-LogModel.md, FEATURE-LogNumeric.md |
+| Provides    | ddkstat models |
+| Consumes    | FormatCost, WriteCSV, model attribution from FEATURE-LogModel.md, filtered records from FEATURE-FilterDate.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat models &lt;log&gt;` writes CSV with the header
+`provider,model,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd`. It writes one row per
+provider and model pair among filtered records, ordered by provider then model ascending by byte-wise
+comparison. Its TOTAL row has an empty model column. When no record matches, it writes the header and
+a zero TOTAL row.
+
+## Programmatic Acceptance
+
+=== AC models-header ===
+Intent: The models report exits zero and writes the declared header as its first CSV row.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+HEADER = [&quot;provider&quot;, &quot;model&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;input_tokens&quot;, &quot;cached_tokens&quot;, &quot;output_tokens&quot;, &quot;cost_usd&quot;]
+
+code, out, err = cli_runner(&quot;models&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == HEADER, rows[0]
+=== END AC models-header ===
+
+=== AC models-total-empty-model ===
+Intent: The final row is TOTAL with an empty model column, and its calls equals the sum of the pair rows above it.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;models&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+total = rows[-1]
+data = rows[1:-1]
+assert total[0] == &quot;TOTAL&quot; and total[1] == &quot;&quot;, rows
+assert int(total[2]) == sum(int(r[2]) for r in data), rows
+=== END AC models-total-empty-model ===
+
+=== AC models-ordering ===
+Intent: Pair rows are ordered by provider then model ascending by byte-wise comparison, with each pair appearing once.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;models&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+data = rows[1:-1]
+keys = [(r[0].encode(&quot;utf-8&quot;), r[1].encode(&quot;utf-8&quot;)) for r in data]
+assert keys == sorted(keys), data
+assert len(set(keys)) == len(keys), data
+=== END AC models-ordering ===
+
+=== AC models-target-matches-summary ===
+Intent: Under a target filter, the models TOTAL calls equals the summary records for the same filter.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+LOG = &quot;sources/llm_sample.jsonl&quot;
+target = &quot;ReadingList&quot;
+
+def rows_of(report, *options):
+    code, out, err = cli_runner(report, *options, LOG)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    return list(csv.reader(io.StringIO(out)))
+
+models_rows = rows_of(&quot;models&quot;, &quot;--target&quot;, target)
+summary_rows = rows_of(&quot;summary&quot;, &quot;--target&quot;, target)
+summary = dict(zip(summary_rows[0], summary_rows[1]))
+assert models_rows[-1][2] == summary[&quot;records&quot;], (models_rows[-1], summary)
+=== END AC models-target-matches-summary ===
+
+=== AC models-cost-format ===
+Intent: Each cost value has exactly four decimal places.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+import re
+
+code, out, err = cli_runner(&quot;models&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+for r in rows[1:]:
+    assert re.fullmatch(r&quot;\d+\.\d{4}&quot;, r[7]), r
+=== END AC models-cost-format ===
+
+=== AC models-empty-match ===
+Intent: A filter that matches no record writes the header and a zero TOTAL row with a 0.0000 cost.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;models&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert rows[1][0] == &quot;TOTAL&quot; and rows[1][1] == &quot;&quot;, rows
+assert rows[1][2:7] == [&quot;0&quot;, &quot;0&quot;, &quot;0&quot;, &quot;0&quot;, &quot;0&quot;], rows
+assert rows[1][7] == &quot;0.0000&quot;, rows
+=== END AC models-empty-match ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Every provider and model pair is computed from the log being read; no model name is hardcoded in application code.
+- The executed model is preferred over the requested model when both are present.
+- Standard error is diagnostic only and is never compared.
+- The log is opened read-only and is never written.
+- Application code never reads `sources/run.sh`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportDaily.md ===
+# FEATURE: Report Daily
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produce the per-date `daily` report with one row per start date, token totals, and a TOTAL row. |
+| Depends On  | FEATURE-FilterDate.md, FEATURE-ReportFormat.md, FEATURE-LogNumeric.md |
+| Provides    | ddkstat daily |
+| Consumes    | FormatMinutes, WriteCSV, filtered records from FEATURE-FilterDate.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat daily &lt;log&gt;` writes CSV with the header `date,calls,failed,tokens,minutes`. It writes one row
+per start date among filtered records, ordered by date ascending. `tokens` is input plus cached plus
+output tokens. It ends with a `TOTAL` row over all filtered records. When no record matches, it writes
+the header and a zero TOTAL row.
+
+## Programmatic Acceptance
+
+=== AC daily-header ===
+Intent: The daily report exits zero and writes the declared header as its first CSV row.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+HEADER = [&quot;date&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;tokens&quot;, &quot;minutes&quot;]
+
+code, out, err = cli_runner(&quot;daily&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == HEADER, rows[0]
+=== END AC daily-header ===
+
+=== AC daily-total-last ===
+Intent: The final row is TOTAL and its calls equals the sum of the date rows above it.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;daily&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+total = rows[-1]
+data = rows[1:-1]
+assert total[0] == &quot;TOTAL&quot;, rows
+assert int(total[1]) == sum(int(r[1]) for r in data), rows
+=== END AC daily-total-last ===
+
+=== AC daily-ordering-and-date-shape ===
+Intent: Date rows are unique, shaped as YYYY-MM-DD, and ordered ascending.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+import re
+
+code, out, err = cli_runner(&quot;daily&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+data = rows[1:-1]
+for r in data:
+    assert re.fullmatch(r&quot;\d{4}-\d{2}-\d{2}&quot;, r[0]), r
+dates = [r[0] for r in data]
+assert dates == sorted(dates), data
+assert len(set(dates)) == len(dates), data
+=== END AC daily-ordering-and-date-shape ===
+
+=== AC daily-tokens-match-targets ===
+Intent: The TOTAL tokens equal the input plus cached plus output tokens in the targets report TOTAL row, and minutes equal the summary minutes.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+LOG = &quot;sources/llm_sample.jsonl&quot;
+
+def rows_of(report, *options):
+    code, out, err = cli_runner(report, *options, LOG)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    return list(csv.reader(io.StringIO(out)))
+
+daily_rows = rows_of(&quot;daily&quot;)
+targets_rows = rows_of(&quot;targets&quot;)
+summary_rows = rows_of(&quot;summary&quot;)
+summary = dict(zip(summary_rows[0], summary_rows[1]))
+targets_total = targets_rows[-1]
+expected_tokens = int(targets_total[3]) + int(targets_total[4]) + int(targets_total[5])
+assert int(daily_rows[-1][3]) == expected_tokens, (daily_rows[-1], targets_total)
+assert daily_rows[-1][4] == summary[&quot;minutes&quot;], (daily_rows[-1], summary)
+=== END AC daily-tokens-match-targets ===
+
+=== AC daily-range-filter ===
+Intent: Under an inclusive --since and --until range, every date row falls within that range.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+LOG = &quot;sources/llm_sample.jsonl&quot;
+since = &quot;2026-10-15&quot;
+until = &quot;2026-10-16&quot;
+
+code, out, err = cli_runner(&quot;daily&quot;, &quot;--since&quot;, since, &quot;--until&quot;, until, LOG)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+for r in rows[1:-1]:
+    assert since &lt;= r[0] &lt;= until, r
+=== END AC daily-range-filter ===
+
+=== AC daily-empty-match ===
+Intent: A filter that matches no record writes the header and a zero TOTAL row with 0.0 minutes.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+import csv
+import io
+
+code, out, err = cli_runner(&quot;daily&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, &quot;sources/llm_sample.jsonl&quot;)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert rows[1][0] == &quot;TOTAL&quot; and rows[1][1:4] == [&quot;0&quot;, &quot;0&quot;, &quot;0&quot;], rows
+assert rows[1][4] == &quot;0.0&quot;, rows
+=== END AC daily-empty-match ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Every date row is computed from the log being read; no date is hardcoded in application code.
+- A record&#x27;s date is the first 10 characters of `started_at`, as defined by FEATURE-FilterDate.md.
+- Standard error is diagnostic only and is never compared.
+- The log is opened read-only and is never written.
+- Application code never reads `sources/run.sh`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportModels.md ===
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,2 @@
+error: build failed for DrydockStats: 21 step(s)
+  build-entry — closed/failed: programmatic acceptance failed: log-required-fields-skip

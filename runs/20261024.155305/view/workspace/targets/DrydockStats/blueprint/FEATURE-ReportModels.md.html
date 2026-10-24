@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ReportModels.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ReportModels.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ReportModels.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Models Report</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Produce the per-provider and model CSV report over filtered records, ordered by provider then model ascending, with a TOTAL row.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogDecode.md, FEATURE-LogRequiredFields.md, FEATURE-LogDuplicates.md, FEATURE-LogNumeric.md, FEATURE-LogModel.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-ReportFormat.md</td></tr><tr><td>Provides</td><td>models report</td></tr><tr><td>Consumes</td><td>records, FormatCost, WriteCSV</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Write the <code>models</code> report: one row per provider and model pair over filtered records, followed by a <code>TOTAL</code> row.</p>
+<h2>Report Contract</h2>
+<p>Header:</p>
+<pre><code>provider,model,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd</code></pre>
+<ul><li>Rows are grouped by the provider from <code>job.llm</code> and the model from <code>LOG-004</code> attribution.</li><li>Rows are ordered by provider then model ascending, byte-wise.</li><li><code>failed</code> counts filtered records whose <code>status</code> is not <code>succeeded</code>.</li><li><code>cost_usd</code> is written by <code>FormatCost</code>.</li><li>The final row is <code>TOTAL</code> with an empty model column, over all filtered records. With no matches it is <code>TOTAL,,0,0,0,0,0,0.0000</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC models-ordering-and-total ===<br>Intent: Models rows group by provider and attributed model, ordered byte-wise, with the TOTAL row leaving the model column empty.<br>Suite: scoped</p>
+<p>import csv import io import os import sys import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>def rec(eid, llm, job_model, stats_model=None): stats = &#x27;&quot;input_tokens&quot;:1,&quot;cached_input_tokens&quot;:2,&quot;output_tokens&quot;:3,&quot;cost_usd&quot;:0.1,&quot;elapsed_ms&quot;:1000&#x27; if stats_model is not None: stats = &#x27;&quot;model&quot;:&quot;%s&quot;,&#x27; % stats_model + stats return (&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;%s&quot;,&quot;started_at&quot;:&quot;2026-10-14T01:00:00.000Z&quot;,&#x27; &#x27;&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;T&quot;,&quot;llm&quot;:&quot;%s&quot;,&quot;model&quot;:&quot;%s&quot;},&#x27; &#x27;&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false,&quot;stats&quot;:{%s}}}&#x27;) % (eid, llm, job_model, stats)</p>
+<p>lines = [ rec(&quot;1&quot;, &quot;codex&quot;, &quot;gpt-x&quot;), rec(&quot;2&quot;, &quot;claude&quot;, &quot;haiku&quot;, stats_model=&quot;claude-haiku-5-5&quot;), rec(&quot;3&quot;, &quot;claude&quot;, &quot;haiku&quot;, stats_model=&quot;claude-haiku-5-5&quot;), ]</p>
+<p>with tempfile.TemporaryDirectory() as d: path = os.path.join(d, &quot;log.jsonl&quot;) with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f: f.write(&quot;\n&quot;.join(lines) + &quot;\n&quot;) code, out, err = cli_runner(&quot;models&quot;, path) print(out) print(err, file=sys.stderr) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert rows[0] == [&quot;provider&quot;, &quot;model&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;input_tokens&quot;, &quot;cached_tokens&quot;, &quot;output_tokens&quot;, &quot;cost_usd&quot;] pairs = [(r[0], r[1]) for r in rows[1:-1]] assert pairs == [(&quot;claude&quot;, &quot;claude-haiku-5-5&quot;), (&quot;codex&quot;, &quot;gpt-x&quot;)] total = rows[-1] assert total[0] == &quot;TOTAL&quot; assert total[1] == &quot;&quot; assert total[2] == &quot;3&quot; === END AC models-ordering-and-total ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The models report must not read <code>sources/run.sh</code> or embed any expected answer.</li><li>Model attribution follows FEATURE-LogModel exactly: <code>result.stats.model</code> when non-empty, otherwise <code>job.model</code>.</li></ul></article>
+</main>
+</body>
+</html>

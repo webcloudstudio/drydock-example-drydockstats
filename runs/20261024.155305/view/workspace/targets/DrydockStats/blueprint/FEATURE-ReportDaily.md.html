@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ReportDaily.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ReportDaily.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ReportDaily.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Daily Report</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Produce the per-date CSV report over filtered records, ordered by start date ascending, with tokens as input plus cached plus output and a TOTAL row.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogDecode.md, FEATURE-LogRequiredFields.md, FEATURE-LogDuplicates.md, FEATURE-LogNumeric.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-ReportFormat.md</td></tr><tr><td>Provides</td><td>daily report</td></tr><tr><td>Consumes</td><td>records, FormatMinutes, WriteCSV</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Write the <code>daily</code> report: one row per start date over filtered records, followed by a <code>TOTAL</code> row.</p>
+<h2>Report Contract</h2>
+<p>Header:</p>
+<pre><code>date,calls,failed,tokens,minutes</code></pre>
+<ul><li>Rows are grouped by start date, the first 10 characters of <code>started_at</code>.</li><li>Rows are ordered by <code>date</code> ascending.</li><li><code>failed</code> counts filtered records whose <code>status</code> is not <code>succeeded</code>.</li><li><code>tokens</code> is <code>input_tokens</code> plus <code>cached_input_tokens</code> plus <code>output_tokens</code>, summed over the group.</li><li><code>minutes</code> is written by <code>FormatMinutes</code> over summed <code>elapsed_ms</code>.</li><li>The final row is <code>TOTAL</code> over all filtered records. With no matches it is <code>TOTAL,0,0,0,0.0</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC daily-ordering-and-total ===<br>Intent: Daily rows group by start date ascending, tokens sum input plus cached plus output, and the TOTAL row covers all filtered records.<br>Suite: scoped</p>
+<p>import csv import io import os import sys import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>def rec(eid, started, status=&quot;succeeded&quot;): return (&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;%s&quot;,&quot;started_at&quot;:&quot;%s&quot;,&#x27; &#x27;&quot;status&quot;:&quot;%s&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;T&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&#x27; &#x27;&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false,&quot;stats&quot;:{&quot;input_tokens&quot;:10,&quot;cached_input_tokens&quot;:20,&#x27; &#x27;&quot;output_tokens&quot;:30,&quot;cost_usd&quot;:0.1,&quot;elapsed_ms&quot;:1000}}}&#x27;) % (eid, started, status)</p>
+<p>lines = [ rec(&quot;1&quot;, &quot;2026-10-15T09:00:00.000Z&quot;), rec(&quot;2&quot;, &quot;2026-10-14T09:00:00.000Z&quot;), rec(&quot;3&quot;, &quot;2026-10-14T10:00:00.000Z&quot;, status=&quot;failed&quot;), ]</p>
+<p>with tempfile.TemporaryDirectory() as d: path = os.path.join(d, &quot;log.jsonl&quot;) with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f: f.write(&quot;\n&quot;.join(lines) + &quot;\n&quot;) code, out, err = cli_runner(&quot;daily&quot;, path) print(out) print(err, file=sys.stderr) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert rows[0] == [&quot;date&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;tokens&quot;, &quot;minutes&quot;] dates = [r[0] for r in rows[1:-1]] assert dates == [&quot;2026-10-14&quot;, &quot;2026-10-15&quot;] first_group = rows[1] assert first_group[1] == &quot;2&quot; assert first_group[2] == &quot;1&quot; assert first_group[3] == &quot;120&quot; total = rows[-1] assert total[0] == &quot;TOTAL&quot; assert total[1] == &quot;3&quot; assert total[3] == &quot;180&quot; === END AC daily-ordering-and-total ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The daily report must not read <code>sources/run.sh</code> or embed any expected answer.</li><li>Dates are grouped as text of the first 10 characters of <code>started_at</code>, never re-parsed into local time.</li></ul></article>
+</main>
+</body>
+</html>

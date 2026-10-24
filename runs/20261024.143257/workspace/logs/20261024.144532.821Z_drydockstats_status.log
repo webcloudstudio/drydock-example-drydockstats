@@ -1,0 +1,22 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Drydock status
+
+  Target          /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.143257/workspace/targets/DrydockStats
+  Name            drydock DrydockStats Uat Case
+  Description     Drydock uat - DrydockStats builds a Go reporter for Drydock's own LLM execution log (logs/llm.jsonl).
+                  The source is an original brief: read JSON Lines, skip malformed and duplicate records without…
+  Phase           Implement
+  State           Error: plan cannot be built as written
+  Metadata        planned · approved
+  Sources         3 imported · 21 authored blueprint files
+  Analysis        Ready · 16 stories · 0 questions · 0 blockers
+  Blueprint       ✓  0 errors · 0 warnings
+  Plan            21 pending
+  Frontier        go-foundation: Stand up the Go module, the bin/test.sh launcher, and a placeholder package.
+  Workflow        5 steps
+                  Initialize         complete at 2026-10-24T14:32:59.385+00:00
+                  Import             complete at 2026-10-24T14:33:05.653+00:00
+                  Analyze            complete at 2026-10-24T14:33:33.587+00:00
+                  Plan               failed at 2026-10-24T14:43:34.978+00:00
+                  Plan repair        complete at 2026-10-24T14:44:43.969+00:00
+  Next step       drydock run quarterdeck DrydockStats

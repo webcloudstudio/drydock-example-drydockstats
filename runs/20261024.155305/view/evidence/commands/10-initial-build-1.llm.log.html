@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/10-initial-build-1.llm.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/10-initial-build-1.llm.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/10-initial-build-1.llm.log">Raw file</a></div></header>
+<article class="doc"><pre>--- llm 1/4 · build · claude claude-haiku-5-5 · 20261024.160355.997Z-746b93d1 ---
+  Claude session: start id=10c97050-1a4a-44f2-bf1c-ce394def6d54
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=22.6s   provider=20.8s   turns=8   cached=84,848 (100% hit)   uncached=8   write 24,148   out=3,055   cost=$0.0072   tps=135.2
+  tokens: cached=84,848 (100% hit) · uncached=8 · write 24,148 · out=3,055 · cost=$0.0072
+
+--- llm 2/4 · build · claude claude-haiku-5-5 · 20261024.160619.320Z-abf3502a ---
+  Claude session: start id=60ad454b-1b9f-4069-a05f-49039a4b7804
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=3m 51.9s   provider=3m 49.9s   turns=22   cached=1,788,745 (100% hit)   uncached=44   write 100,789   out=53,009   cost=$0.1133   tps=228.5
+  tokens: cached=1,788,745 (100% hit) · uncached=44 · write 100,789 · out=53,009 · cost=$0.1133
+
+--- llm 3/4 · build · claude claude-sonnet-5-5 · 20261024.161107.584Z-e1bf8488 ---
+  upgraded=prompt_limit haiku-&gt;sonnet (147,470 &gt; 98% of 100,000)
+  Claude session: resume id=60ad454b-1b9f-4069-a05f-49039a4b7804
+  Completed CLAUDE/claude-sonnet-5-5 (build)  rc=0
+    elapsed=32.9s   provider=30.8s   turns=2   cached=156,487 (100% hit)   uncached=4   write 146,954   out=1,189   cost=$0.7286   tps=36.1
+  tokens: cached=156,487 (100% hit) · uncached=4 · write 146,954 · out=1,189 · cost=$0.7286
+
+--- llm 4/4 · build · claude claude-sonnet-5-5 · 20261024.161238.365Z-e58fe633 ---
+  upgraded=prompt_limit haiku-&gt;sonnet (192,876 &gt; 98% of 100,000)
+  Claude session: resume id=60ad454b-1b9f-4069-a05f-49039a4b7804
+  Completed CLAUDE/claude-sonnet-5-5 (build)  rc=0
+    elapsed=25.2s   provider=22.7s   turns=2   cached=347,278 (100% hit)   uncached=4   write 43,689   out=1,085   cost=$0.9490   tps=43.0
+  tokens: cached=347,278 (100% hit) · uncached=4 · write 43,689 · out=1,085 · cost=$0.9490
+</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,40 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Next: drydock build DrydockStats
+
+Blueprint: DrydockStats
+Target: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.143257/workspace/targets/DrydockStats
+Rows: <state> <type>  <Name>  [<id>]   — pass [<id>] to --step
+
+Block: Build Block 1 · Foundational  [block-1]   — 0/1 stories complete
+  [pending] story  Stand up the Go module, the bin/test.sh launcher, and a placeholder package.  [go-foundation]  <- next
+
+Block: Build Block 2 · Service  [block-2]   — 0/17 stories complete
+  [pending] story  Produce the ddkstat executable from ./cmd/ddkstat using only the standard library.  [build-executable]
+  [pending] story  Provide the minutes, cost, and CSV writing helpers used by every report.  [report-format]
+  [pending] story  Parse the report name, options, and the single log path in the required order.  [cli-parse]
+  [pending] story  Read the log path as JSON Lines, yielding each non-blank line with its line number.  [log-reader]
+  [pending] story  Map an unreadable log to exit code 1 with no stdout and one stderr line.  [cli-read-errors]
+  [pending] story  Attribute each record to the executed model, falling back to the requested model.  [log-model]
+  [pending] story  Map every usage error to exit code 2 with no stdout and one stderr line.  [cli-usage-errors]
+  [pending] story  Zero-fill absent numeric fields and derive the failed flag on each normalized record.  [log-numbers]
+  [pending] story  Classify each non-blank line and skip malformed or duplicate records with a warning.  [log-skip]
+  [pending] story  Keep only records whose job.target equals the --target value exactly.  [cli-target-filter]
+  [pending] story  Keep records whose start date falls inclusively within --since and --until.  [cli-date-filters]
+  [pending] story  Produce the one-row summary report and register the summary name.  [report-summary]
+  [pending] story  Produce the per-start-date report with a TOTAL row, and register the daily name.  [report-daily]
+  [pending] story  Produce the per-Target report with a TOTAL row, and register the targets name.  [report-targets]
+  [pending] story  Produce the per-command report with a TOTAL row, and register the commands name.  [report-commands]
+  [pending] story  Produce the per-provider and model report with an empty-provider TOTAL row, and register the models name.  [report-models]
+  [pending] story  Produce the failed-record report with no TOTAL row, and register the failures name.  [report-failures]
+
+Block: Build Block 3 · Feature  [block-3]   — 0/1 stories complete
+  [pending] story  Assemble and verify that every report writes its header and zero TOTAL row when nothing matches.  [report-empty-match]
+
+Block: Build Block 4 · Service  [block-4]   — 0/1 stories complete
+  [pending] story  Finalize bin/test.sh and add end-to-end coverage across reports, filters, skip rules, and exit codes.  [test-suite]
+
+Block: Build Block 5 · Feature  [block-5]   — 0/1 stories complete
+  [pending] story  Run the supplied grader sh sources/run.sh against the completed application as the terminal gate.  [grader-run]
+
+Steps: 21 total — 0 done, 0 built (await verify), 0 in review, 21 pending, 0 blocked by questions, 0 failed (0% complete)
+Buildable now: block-1

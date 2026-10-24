@@ -1,0 +1,35 @@
+=== AC FEATURE-ReportEmptyMatch.md :: REM-007 ===
+Intent: Every report over an empty log exits zero, writes its header, and writes a TOTAL row where the report has one.
+
+import csv
+import io
+import os
+import sys
+import tempfile
+
+from drydock_go import cli_runner
+
+
+COLUMNS = {"summary": 11, "commands": 7, "targets": 8, "models": 8, "daily": 5, "failures": 6}
+TOTAL_REPORTS = ["commands", "targets", "models", "daily"]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "llm.jsonl")
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write("")
+    results = {}
+    for report in COLUMNS:
+        code, out, err = cli_runner(report, path)
+        assert code == 0, (report, code, out, err)
+        results[report] = (code, out, err)
+
+for report, (code, out, err) in results.items():
+    print(report, code)
+    print(out)
+    print(err, file=sys.stderr)
+    assert code == 0, (report, code, out, err)
+    rows = list(csv.reader(io.StringIO(out)))
+    assert len(rows[0]) == COLUMNS[report], (report, rows[0])
+    if report in TOTAL_REPORTS:
+        assert rows[-1][0] == "TOTAL", (report, rows)
+=== END AC FEATURE-ReportEmptyMatch.md :: REM-007 ===

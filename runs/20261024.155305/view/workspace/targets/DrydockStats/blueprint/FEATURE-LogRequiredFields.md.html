@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-LogRequiredFields.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-LogRequiredFields.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-LogRequiredFields.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Log Required Fields</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Skip records missing a required field, with a line-numbered warning on stderr.</td></tr><tr><td>Depends On</td><td>FEATURE-LogDecode.md</td></tr><tr><td>Provides</td><td>required field validation</td></tr><tr><td>Consumes</td><td>-</td></tr></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC log-required-fields-skip ===<br>Intent: A record missing job.target is counted as skipped and does not appear in the records.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>from pathlib import Path</p>
+<p>src = Path(&quot;internal/logrecord&quot;).read_text() assert &quot;job.target&quot; in src === END AC log-required-fields-skip ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Skipping never changes the exit code.</li></ul></article>
+</main>
+</body>
+</html>

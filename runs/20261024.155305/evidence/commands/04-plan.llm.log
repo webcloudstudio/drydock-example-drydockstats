@@ -1,0 +1,74 @@
+--- llm 1/13 · plan · claude claude-haiku-5-5 · 20261024.155353.522Z-6b4066db ---
+2026-10-24 11:53:53 EDT  Calling CLAUDE/haiku (plan · topology)...
+  Claude session: start id=8592d6a2-8022-4b84-a9b1-0dbd1ee0b6e8
+  Completed CLAUDE/claude-haiku-5-5 (plan · topology)  rc=0
+    elapsed=2m 33.6s   provider=2m 31.6s   turns=1   cached=2,348 (100% hit)   uncached=2   write 71,177   out=36,913   cost=$0.0327   tps=240.4
+
+--- llm 2/13 · plan · claude claude-haiku-5-5 · 20261024.155627.191Z-016cf8ca ---
+2026-10-24 11:56:27 EDT  Calling CLAUDE/haiku (plan · blueprint batch 1)...
+  Claude session: start id=216ccbe7-bfa6-4564-9772-d43d059f65e1
+  Completed CLAUDE/claude-haiku-5-5 (plan · blueprint batch 1)  rc=0
+    elapsed=8.8s   provider=6.6s   turns=1   cached=2,348 (100% hit)   uncached=2   write 79,873   out=897   cost=$0.0164   tps=102.0
+
+--- llm 3/13 · plan · claude claude-haiku-5-5 · 20261024.155636.058Z-7bcf600e ---
+2026-10-24 11:56:36 EDT  Calling CLAUDE/haiku (plan · blueprint batch 2)...
+  Claude session: start id=9761d029-acbd-4a87-979a-8ae849e7d2e2
+  Completed CLAUDE/claude-haiku-5-5 (plan · blueprint batch 2)  rc=0
+    elapsed=7.6s   provider=5.4s   turns=1   cached=2,348 (100% hit)   uncached=2   write 80,828   out=782   cost=$0.0166   tps=102.3
+
+--- llm 4/13 · plan · claude claude-haiku-5-5 · 20261024.155643.787Z-dd04441b ---
+2026-10-24 11:56:43 EDT  Calling CLAUDE/haiku (plan · blueprint batch 3)...
+  Claude session: start id=d66c5f55-5f50-45e4-9c81-fedc7a1eeb83
+  Completed CLAUDE/claude-haiku-5-5 (plan · blueprint batch 3)  rc=0
+    elapsed=14.1s   provider=11.8s   turns=1   cached=2,348 (100% hit)   uncached=2   write 80,649   out=2,893   cost=$0.0176   tps=205.7
+
+--- llm 5/13 · plan · claude claude-haiku-5-5 · 20261024.155657.940Z-95da0dcf ---
+2026-10-24 11:56:57 EDT  Calling CLAUDE/haiku (plan · blueprint batch 4)...
+  Claude session: start id=2c936328-d947-4d2d-b740-e761becfd95e
+  Completed CLAUDE/claude-haiku-5-5 (plan · blueprint batch 4)  rc=0
+    elapsed=19.3s   provider=17.4s   turns=1   cached=2,348 (100% hit)   uncached=2   write 80,160   out=4,806   cost=$0.0185   tps=248.7
+
+--- llm 6/13 · plan · claude claude-haiku-5-5 · 20261024.155717.344Z-ea264347 ---
+2026-10-24 11:57:17 EDT  Calling CLAUDE/haiku (plan · blueprint batch 5)...
+  Claude session: start id=6753e270-84ab-4a7e-8a4a-28604b60ddf6
+  Completed CLAUDE/claude-haiku-5-5 (plan · blueprint batch 5)  rc=0
+    elapsed=1m 14.7s   provider=1m 12.7s   turns=1   cached=2,348 (100% hit)   uncached=2   write 80,018   out=20,183   cost=$0.0261   tps=270.4
+
+--- llm 7/13 · plan · claude claude-haiku-5-5 · 20261024.155832.083Z-68216129 ---
+2026-10-24 11:58:32 EDT  Calling CLAUDE/haiku (plan · blueprint batch 6)...
+  Claude session: start id=1bd59864-ce6c-41f4-9ef6-e8841fe8ea76
+  Completed CLAUDE/claude-haiku-5-5 (plan · blueprint batch 6)  rc=0
+    elapsed=25.6s   provider=23.7s   turns=1   cached=2,348 (100% hit)   uncached=2   write 80,181   out=7,482   cost=$0.0198   tps=292.2
+
+--- llm 8/13 · plan · claude claude-haiku-5-5 · 20261024.155857.776Z-95930318 ---
+2026-10-24 11:58:57 EDT  Calling CLAUDE/haiku (plan · blueprint batch 7)...
+  Claude session: start id=94bb1584-fd61-4f4a-8870-3e617df2deac
+  Completed CLAUDE/claude-haiku-5-5 (plan · blueprint batch 7)  rc=0
+    elapsed=28.4s   provider=26.4s   turns=1   cached=2,348 (100% hit)   uncached=2   write 80,118   out=8,015   cost=$0.0201   tps=282.6
+
+--- llm 9/13 · plan · claude claude-haiku-5-5 · 20261024.155926.208Z-33469098 ---
+2026-10-24 11:59:26 EDT  Calling CLAUDE/haiku (plan · blueprint batch 8)...
+  Claude session: start id=30fc8b9f-c703-4061-87cc-b33f5e498b74
+  Completed CLAUDE/claude-haiku-5-5 (plan · blueprint batch 8)  rc=0
+    elapsed=28.9s   provider=27.1s   turns=1   cached=2,348 (100% hit)   uncached=2   write 80,281   out=7,865   cost=$0.0200   tps=272.0
+
+--- llm 10/13 · plan · claude claude-haiku-5-5 · 20261024.155955.210Z-780f2149 ---
+2026-10-24 11:59:55 EDT  Calling CLAUDE/haiku (plan · blueprint batch 9)...
+  Claude session: start id=79e9038f-b6da-4984-933d-c002a21a28ec
+  Completed CLAUDE/claude-haiku-5-5 (plan · blueprint batch 9)  rc=0
+    elapsed=15.9s   provider=13.7s   turns=1   cached=2,348 (100% hit)   uncached=2   write 80,147   out=3,703   cost=$0.0179   tps=233.4
+
+--- llm 11/13 · lineage_attribute · claude claude-haiku-5-5 · 20261024.160029.039Z-39a7d67a ---
+2026-10-24 12:00:29 EDT  Calling CLAUDE/haiku (lineage_attribute)...
+  Completed CLAUDE/claude-haiku-5-5 (lineage_attribute)  rc=0
+    elapsed=43.3s   provider=41.4s   turns=1   cached=2,348 (100% hit)   uncached=2   write 5,984   out=11,627   cost=$0.0070   tps=268.4
+
+--- llm 12/13 · lineage_attribute · claude claude-haiku-5-5 · 20261024.160112.455Z-d38a445c ---
+2026-10-24 12:01:12 EDT  Calling CLAUDE/haiku (lineage_attribute)...
+  Completed CLAUDE/claude-haiku-5-5 (lineage_attribute)  rc=0
+    elapsed=7.5s   provider=5.5s   turns=1   cached=2,348 (100% hit)   uncached=2   write 10,879   out=1,231   cost=$0.0028   tps=163.3
+
+--- llm 13/13 · lineage_attribute · claude claude-haiku-5-5 · 20261024.160120.076Z-6b896504 ---
+2026-10-24 12:01:20 EDT  Calling CLAUDE/haiku (lineage_attribute)...
+  Completed CLAUDE/claude-haiku-5-5 (lineage_attribute)  rc=0
+    elapsed=34.3s   provider=32.5s   turns=1   cached=2,348 (100% hit)   uncached=2   write 6,335   out=7,813   cost=$0.0052   tps=227.5

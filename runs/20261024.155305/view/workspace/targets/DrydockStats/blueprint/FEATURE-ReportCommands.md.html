@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ReportCommands.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ReportCommands.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ReportCommands.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Commands Report</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Produce the per-command CSV report over filtered records, ordered by calls descending then command ascending, with a TOTAL row.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogDecode.md, FEATURE-LogRequiredFields.md, FEATURE-LogDuplicates.md, FEATURE-LogNumeric.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-ReportFormat.md</td></tr><tr><td>Provides</td><td>commands report</td></tr><tr><td>Consumes</td><td>records, FormatMinutes, WriteCSV</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Write the <code>commands</code> report: one row per <code>job.command_name</code> over filtered records, followed by a <code>TOTAL</code> row.</p>
+<h2>Report Contract</h2>
+<p>Header:</p>
+<pre><code>command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes</code></pre>
+<ul><li>Rows are grouped by <code>job.command_name</code>.</li><li>Rows are ordered by <code>calls</code> descending, then <code>command</code> ascending by byte-wise comparison (AC-011).</li><li><code>failed</code> counts filtered records whose <code>status</code> is not <code>succeeded</code>.</li><li><code>minutes</code> is written by <code>FormatMinutes</code> over summed <code>elapsed_ms</code>.</li><li>The final row is <code>TOTAL</code> over all filtered records. With no matches it is <code>TOTAL,0,0,0,0,0,0.0</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC commands-ordering-and-total ===<br>Intent: Commands rows order by calls descending then byte-wise command ascending, and the TOTAL row sums all filtered records.<br>Suite: scoped</p>
+<p>import csv import io import os import sys import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>def rec(eid, cmd, status=&quot;succeeded&quot;): return (&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;%s&quot;,&quot;started_at&quot;:&quot;2026-10-14T01:00:00.000Z&quot;,&#x27; &#x27;&quot;status&quot;:&quot;%s&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;%s&quot;,&quot;target&quot;:&quot;T&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&#x27; &#x27;&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false,&quot;stats&quot;:{&quot;input_tokens&quot;:1,&quot;cached_input_tokens&quot;:2,&#x27; &#x27;&quot;output_tokens&quot;:3,&quot;cost_usd&quot;:0.1,&quot;elapsed_ms&quot;:1000}}}&#x27;) % (eid, status, cmd)</p>
+<p>lines = [ rec(&quot;1&quot;, &quot;plan&quot;), rec(&quot;2&quot;, &quot;build&quot;), rec(&quot;3&quot;, &quot;build&quot;), rec(&quot;4&quot;, &quot;analyze&quot;), rec(&quot;5&quot;, &quot;analyze&quot;), ]</p>
+<p>with tempfile.TemporaryDirectory() as d: path = os.path.join(d, &quot;log.jsonl&quot;) with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f: f.write(&quot;\n&quot;.join(lines) + &quot;\n&quot;) code, out, err = cli_runner(&quot;commands&quot;, path) print(out) print(err, file=sys.stderr) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert rows[0] == [&quot;command&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;input_tokens&quot;, &quot;cached_tokens&quot;, &quot;output_tokens&quot;, &quot;minutes&quot;] commands = [r[0] for r in rows[1:-1]] assert commands == [&quot;analyze&quot;, &quot;build&quot;, &quot;plan&quot;] total = rows[-1] assert total[0] == &quot;TOTAL&quot; assert total[1] == &quot;5&quot; assert total[3] == &quot;5&quot; === END AC commands-ordering-and-total ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The commands report must not read <code>sources/run.sh</code> or embed any expected answer.</li><li>Ordering ties on call count are resolved by byte-wise command comparison, never locale collation.</li></ul></article>
+</main>
+</body>
+</html>
