@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-FormatMinutes.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-FormatMinutes.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-FormatMinutes.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Format Minutes in Tenths</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Render a summed elapsed_ms as minutes to one decimal place using the specified integer rounding.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>FormatMinutes(ms) string</td></tr><tr><td>Consumes</td><td>none</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Every minutes column in every report is rendered by this single formatter so the rounding rule is defined in one place.</p>
+<h2>Behavior</h2>
+<ul><li>Input: the summed <code>elapsed_ms</code> of a group, as a non-negative integer.</li><li>Compute <code>t = (ms + 3000) / 6000</code> in integer division.</li><li>Output is <code>t / 10</code>, a period, then <code>t % 10</code>. Example: 95000 ms gives <code>t = 16</code>, rendered <code>1.6</code>.</li><li>Zero input gives <code>t = 0</code>, rendered <code>0.0</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC fmt-minutes-example ===<br>Intent: The minutes formatter renders 95000 ms as 1.6 by observing a summary report that sums one record of that duration.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>record = {&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;j-1&quot;, &quot;started_at&quot;: &quot;2026-10-14T09:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Alpha&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 95000, &quot;input_tokens&quot;: 1, &quot;cached_input_tokens&quot;: 0, &quot;output_tokens&quot;: 1, &quot;cost_usd&quot;: 0.1}}}</p>
+<p>fd, path = tempfile.mkstemp(suffix=&quot;.jsonl&quot;) with os.fdopen(fd, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: fh.write(json.dumps(record) + &quot;\n&quot;)</p>
+<p>try: code, out, err = cli_runner(&quot;summary&quot;, path) print(out) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(out.splitlines())) header = rows[0] assert header[-1] == &quot;minutes&quot;, header assert rows[1][-1] == &quot;1.6&quot;, rows finally: os.remove(path) === END AC fmt-minutes-example ===</p>
+<p>=== AC fmt-minutes-zero ===<br>Intent: A group with zero elapsed time renders minutes as 0.0 in the summary report.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>record = {&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;k-1&quot;, &quot;started_at&quot;: &quot;2026-10-14T10:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Alpha&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 0, &quot;input_tokens&quot;: 1, &quot;cached_input_tokens&quot;: 0, &quot;output_tokens&quot;: 1, &quot;cost_usd&quot;: 0.1}}}</p>
+<p>fd, path = tempfile.mkstemp(suffix=&quot;.jsonl&quot;) with os.fdopen(fd, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: fh.write(json.dumps(record) + &quot;\n&quot;)</p>
+<p>try: code, out, err = cli_runner(&quot;summary&quot;, path) print(out) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(out.splitlines())) assert rows[1][-1] == &quot;0.0&quot;, rows finally: os.remove(path) === END AC fmt-minutes-zero ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The formula is integer division exactly as stated; no floating-point rounding is used.</li><li>Minutes never render in any other format.</li></ul></article>
+</main>
+</body>
+</html>

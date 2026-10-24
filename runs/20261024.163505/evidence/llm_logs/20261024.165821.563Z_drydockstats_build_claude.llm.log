@@ -1,0 +1,5 @@
+  upgraded=prompt_limit haiku->sonnet (214,554 > 98% of 100,000)
+  Claude session: resume id=40292c6b-d61a-4fdf-95c9-749d886cf456
+  Completed CLAUDE/claude-sonnet-5-5 (build)  rc=0
+    elapsed=18.0s   provider=15.8s   turns=2   cached=388,424 (100% hit)   uncached=4   write 52,293   out=1,115   cost=$1.0298   tps=61.8
+  tokens: cached=388,424 (100% hit) · uncached=4 · write 52,293 · out=1,115 · cost=$1.0298

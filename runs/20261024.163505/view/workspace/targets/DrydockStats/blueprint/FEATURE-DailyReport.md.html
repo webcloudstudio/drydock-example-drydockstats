@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-DailyReport.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-DailyReport.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-DailyReport.md">Raw file</a></div></header>
+<article class="doc"><h1>Feature: Daily Report</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Produce the per-start-date CSV report over the filtered log records.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-LogNumbers.md, FEATURE-LogFailed.md, FEATURE-FormatCSV.md, FEATURE-FormatMinutes.md</td></tr><tr><td>Provides</td><td>daily report</td></tr><tr><td>Consumes</td><td>record aggregates, CSV and format helpers</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Write one CSV row per start date over the records that pass the active <code>--target</code>, <code>--since</code>, and <code>--until</code> filters. A record&#x27;s start date is the first 10 characters of <code>started_at</code>. Tokens per row are input plus cached plus output.</p>
+<h2>Output</h2>
+<p>Header row, in this exact order:</p>
+<pre><code>date,calls,failed,tokens,minutes</code></pre>
+<ul><li>One data row per distinct start date, ordered ascending by byte value of the <code>YYYY-MM-DD</code> string.</li><li><code>tokens</code> is input plus cached plus output tokens summed over the date&#x27;s records.</li><li><code>minutes</code> is the summed <code>elapsed_ms</code> formatted by the minutes rule (tenths of a minute).</li><li>A final <code>TOTAL</code> row over all filtered records.</li><li>A report with no matching records writes the header and a <code>TOTAL,0,0,0,0.0</code> row.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC daily-report-whole-sample ===<br>Intent: The daily report over the full sample matches the supplied known answer for every date and the TOTAL row, parsed as CSV.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import os</p>
+<p>from drydock_go import cli_runner</p>
+<p>sample = os.path.join(&quot;sources&quot;, &quot;llm_sample.jsonl&quot;) code, out, err = cli_runner(&quot;daily&quot;, sample) print(out) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert rows[0] == [&quot;date&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;tokens&quot;, &quot;minutes&quot;], rows[0] assert rows[-1][0] == &quot;TOTAL&quot; and rows[-1][1] == &quot;33&quot; and rows[-1][2] == &quot;2&quot;, rows[-1] dates = [r[0] for r in rows[1:-1]] assert dates == sorted(dates), dates === END AC daily-report-whole-sample ===</p>
+<p>=== AC daily-report-since-until ===<br>Intent: With --since and --until both set to 2026-10-15 the daily report contains only that date and its TOTAL row, parsed as CSV.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import os</p>
+<p>from drydock_go import cli_runner</p>
+<p>sample = os.path.join(&quot;sources&quot;, &quot;llm_sample.jsonl&quot;) code, out, err = cli_runner(&quot;daily&quot;, &quot;--since&quot;, &quot;2026-10-15&quot;, &quot;--until&quot;, &quot;2026-10-15&quot;, sample) print(out) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert len(rows) == 3, rows assert rows[1][0] == &quot;2026-10-15&quot;, rows[1] assert rows[2][0] == &quot;TOTAL&quot; and rows[2][1] == rows[1][1], rows === END AC daily-report-since-until ===</p>
+<p>=== AC daily-report-zero-match ===<br>Intent: A filter matching no record writes the header and a zero TOTAL row with exit 0.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import os</p>
+<p>from drydock_go import cli_runner</p>
+<p>sample = os.path.join(&quot;sources&quot;, &quot;llm_sample.jsonl&quot;) code, out, err = cli_runner(&quot;daily&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, sample) print(out) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert len(rows) == 2, rows assert rows[1][0] == &quot;TOTAL&quot; and rows[1][1] == &quot;0&quot;, rows[1] === END AC daily-report-zero-match ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Dates are compared by byte value of the <code>YYYY-MM-DD</code> string only; no time-zone conversion is applied.</li><li>Values are computed from the log read, never from a hardcoded row or count.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-SummaryReport.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-SummaryReport.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-SummaryReport.md">Raw file</a></div></header>
+<article class="doc"><h1>Feature: Summary Report</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Produces the one-row summary report over the filtered records.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-SkippedCount.md, FEATURE-LogFailed.md, FEATURE-LogNumbers.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-FormatCSV.md, FEATURE-FormatMinutes.md, FEATURE-FormatCost.md</td></tr><tr><td>Provides</td><td>summary report</td></tr><tr><td>Consumes</td><td>skipped count, record aggregates, CSV and format helpers</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>The summary report answers the operator&#x27;s first question: how many records ran, how many succeeded or failed, over what date span, and what tokens, cost, and minutes they used.</p>
+<h2>Behavior</h2>
+<ul><li>Writes one data row under the header <code>records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes</code>.</li><li><code>records</code> is the count of filtered records; <code>skipped</code> is the whole-file skipped count.</li><li><code>succeeded</code> and <code>failed</code> partition the filtered records by status.</li><li><code>first</code> and <code>last</code> are the earliest and latest start dates (first 10 characters of <code>started_at</code>) among filtered records, empty when none match.</li><li>Token columns are the sums of the filtered records&#x27; values; absent values count as zero.</li><li><code>cost_usd</code> is written with <code>%.4f</code>; <code>minutes</code> is written in tenths of a minute.</li><li>A zero-match run writes the header and one zero row (<code>0,&lt;skipped&gt;,0,0,,,0,0,0,0.0000,0.0</code>).</li><li>Exit code is 0 whenever the log can be read, including when no record matches.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC summary-header-and-row-shape ===<br>Intent: The summary report writes the exact header and one data row with eleven fields.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io</p>
+<p>from drydock_go import cli_runner</p>
+<p>log = &quot;/tmp/ddkstat-summary-shape.jsonl&quot; with open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f: f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e1&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:37:54.176Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false,&quot;stats&quot;:{&quot;cached_input_tokens&quot;:10,&quot;elapsed_ms&quot;:60000,&quot;input_tokens&quot;:5,&quot;output_tokens&quot;:7,&quot;cost_usd&quot;:0.25,&quot;model&quot;:&quot;haiku&quot;}}}\n&#x27;)</p>
+<p>code, out, err = cli_runner(&quot;summary&quot;, log) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert rows[0] == [&quot;records&quot;, &quot;skipped&quot;, &quot;succeeded&quot;, &quot;failed&quot;, &quot;first&quot;, &quot;last&quot;, &quot;input_tokens&quot;, &quot;cached_tokens&quot;, &quot;output_tokens&quot;, &quot;cost_usd&quot;, &quot;minutes&quot;], rows[0] assert len(rows) == 2, rows assert len(rows[1]) == 11, rows[1] === END AC summary-header-and-row-shape ===</p>
+<p>=== AC summary-values-from-fixture ===<br>Intent: The summary report aggregates a known fixture into the expected counts, dates, sums, cost, and minutes.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io</p>
+<p>from drydock_go import cli_runner</p>
+<p>log = &quot;/tmp/ddkstat-summary-values.jsonl&quot; with open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f: f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e1&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:37:54.176Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false,&quot;stats&quot;:{&quot;cached_input_tokens&quot;:10,&quot;elapsed_ms&quot;:60000,&quot;input_tokens&quot;:5,&quot;output_tokens&quot;:7,&quot;cost_usd&quot;:0.25,&quot;model&quot;:&quot;haiku&quot;}}}\n&#x27;) f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e2&quot;,&quot;started_at&quot;:&quot;2026-10-16T06:37:54.176Z&quot;,&quot;status&quot;:&quot;failed&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:1,&quot;timed_out&quot;:false,&quot;stats&quot;:{&quot;cached_input_tokens&quot;:20,&quot;elapsed_ms&quot;:35000,&quot;input_tokens&quot;:6,&quot;output_tokens&quot;:8,&quot;cost_usd&quot;:0.5,&quot;model&quot;:&quot;haiku&quot;}}}\n&#x27;)</p>
+<p>expected_records = &quot;2&quot; expected_skipped = &quot;0&quot; expected_succeeded = &quot;1&quot; expected_failed = &quot;1&quot; expected_first = &quot;2026-10-14&quot; expected_last = &quot;2026-10-16&quot;</p>
+<p>code, out, err = cli_runner(&quot;summary&quot;, log) print(err) assert code == 0, (code, out, err) row = next(csv.reader(io.StringIO(out))) rows = list(csv.reader(io.StringIO(out))) assert rows[1][0] == expected_records, rows[1] assert rows[1][1] == expected_skipped, rows[1] assert rows[1][2] == expected_succeeded, rows[1] assert rows[1][3] == expected_failed, rows[1] assert rows[1][4] == expected_first, rows[1] assert rows[1][5] == expected_last, rows[1] assert rows[1][6] == &quot;11&quot;, rows[1] assert rows[1][7] == &quot;30&quot;, rows[1] assert rows[1][8] == &quot;15&quot;, rows[1] assert rows[1][9] == &quot;0.7500&quot;, rows[1] assert rows[1][10] == &quot;1.6&quot;, rows[1] === END AC summary-values-from-fixture ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The summary report is one row only; it never carries a TOTAL row.</li><li>Filters narrow <code>records</code>, <code>succeeded</code>, <code>failed</code>, tokens, cost, and minutes, but never <code>skipped</code>.</li></ul></article>
+</main>
+</body>
+</html>

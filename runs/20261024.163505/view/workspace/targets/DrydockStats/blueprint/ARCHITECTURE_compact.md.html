@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/ARCHITECTURE_compact.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/ARCHITECTURE_compact.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/ARCHITECTURE_compact.md">Raw file</a></div></header>
+<article class="doc"><p>&lt;!-- Compacted from ARCHITECTURE.md sha256=6dfac808a9c3ea79454bc3271ac63000f1596fadf3af180b25ec2760fb9c0ac7 on 2026-10-24 by drydock build agent --&gt;</p>
+<p>Module: <code>ddkstat</code>, <code>go 1.22</code>, no <code>require</code> lines (standard library only).<br>Layout: <code>cmd/ddkstat/main.go</code> (process startup only; the sole <code>os.Exit</code>); <code>internal/cli</code> (args, usage errors, dispatch); <code>internal/log</code> (JSON Lines read, parse, skip rules, model attribution, numeric defaults); <code>internal/filter</code> (target and inclusive date-range predicates); <code>internal/report</code> (aggregation and six CSV reports); <code>internal/format</code> (minutes in tenths, cost <code>%.4f</code>, CSV writer); <code>bin/</code> (launchers, holds <code>test.sh</code>).<br>Interface: <code>cli.Run(args []string, stdout, stderr io.Writer) int</code> — 0 success, 1 operational read failure, 2 usage error.<br>Boundaries: only <code>cmd/ddkstat</code> calls <code>os.Exit</code>; no package outside <code>cmd/ddkstat</code> writes to the real stdout/stderr; stdout carries only CSV; diagnostics go to stderr.<br>Acceptance: <code>go build -o &lt;out&gt; ./cmd/ddkstat</code> from the root must succeed; <code>go.mod</code> must contain <code>module ddkstat</code> and <code>go 1.22</code> with no <code>require</code>.<br>Guardrails: no third-party modules; never read <code>sources/run.sh</code> from application code; never hardcode report values; never write to the log being read.</p></article>
+</main>
+</body>
+</html>

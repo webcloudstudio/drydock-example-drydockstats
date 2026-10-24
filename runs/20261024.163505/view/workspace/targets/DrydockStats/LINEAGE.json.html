@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/LINEAGE.json</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/LINEAGE.json</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/DrydockStats/LINEAGE.json">Raw file</a></div></header>
+<article class="doc"><pre>{
+  &quot;version&quot;: 1,
+  &quot;import&quot;: {
+    &quot;root&quot;: &quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.163505/sources&quot;,
+    &quot;format&quot;: &quot;markdown&quot;
+  },
+  &quot;sources&quot;: {
+    &quot;INSTRUCTIONS.md&quot;: {
+      &quot;state&quot;: &quot;current&quot;,
+      &quot;versions&quot;: [
+        {
+          &quot;commit&quot;: &quot;b6e4ab7&quot;,
+          &quot;date&quot;: &quot;2026-10-24&quot;,
+          &quot;hash&quot;: &quot;26e9f16d1cb531d7ebbc324cdfa9a03e31fcf317e285018fb385409111cdc3cc&quot;,
+          &quot;release&quot;: &quot;&quot;,
+          &quot;state&quot;: &quot;consumed&quot;,
+          &quot;via&quot;: &quot;plan&quot;,
+          &quot;ticket&quot;: null,
+          &quot;requirements&quot;: [
+            {
+              &quot;name&quot;: &quot;build-go-module&quot;,
+              &quot;text&quot;: &quot;Implement in Go 1.22 or newer using only the standard library. The application root is a Go module, and its executable is the main package at `./cmd/ddkstat`.&quot;,
+              &quot;stories&quot;: [
+                &quot;foundation&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;dispatch-report&quot;,
+              &quot;text&quot;: &quot;`&lt;report&gt;` is one of `summary`, `commands`, `targets`, `models`, `daily`, `failures`.&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-entry&quot;,
+                &quot;report-pipeline&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;parse-arguments&quot;,
+              &quot;text&quot;: &quot;`&lt;report&gt;` comes first, options follow it, and the log path is last. Exactly one log path is required.&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-parse&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;reject-usage-errors&quot;,
+              &quot;text&quot;: &quot;Usage error: unknown report or option, missing option value, invalid date, missing or extra log path.&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-usage&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;failing-command-output&quot;,
+              &quot;text&quot;: &quot;A failing command writes nothing to standard output and one diagnostic line to standard error.&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-usage&quot;,
+                &quot;cli-read-fail&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;report-read-failure&quot;,
+              &quot;text&quot;: &quot;Operational failure: the log cannot be opened or read.&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-read-fail&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;read-log-records&quot;,
+              &quot;text&quot;: &quot;The log is JSON Lines in UTF-8: one JSON object per line.&quot;,
+              &quot;stories&quot;: [
+                &quot;log-read&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;validate-date-options&quot;,
+              &quot;text&quot;: &quot;A date option must be a real calendar date written `YYYY-MM-DD`.&quot;,
+              &quot;stories&quot;: [
+                &quot;filter-validate&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;filter-by-target&quot;,
+              &quot;text&quot;: &quot;Keep only records whose `job.target` equals `&lt;name&gt;` exactly.&quot;,
+              &quot;stories&quot;: [
+                &quot;filter-target&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;filter-by-date-range&quot;,
+              &quot;text&quot;: &quot;Keep only records whose start date is on or after `&lt;date&gt;`. Keep only records whose start date is on or before `&lt;date&gt;`.&quot;,
+              &quot;stories&quot;: [
+                &quot;filter-date&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;filters-apply-to-reports&quot;,
+              &quot;text&quot;: &quot;Filters apply to every report.&quot;,
+              &quot;stories&quot;: [
+                &quot;report-pipeline&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;skip-invalid-lines&quot;,
+              &quot;text&quot;: &quot;A line is skipped when it is not a JSON object, when any of `execution_id`, `started_at`, `status`, `job.command_name`, or `job.target` is absent or not a non-empty string, or when its `execution_id` already appeared on an earlier line. Each skipped line writes one warning to standard error naming its line number.&quot;,
+              &quot;stories&quot;: [
+                &quot;log-skip&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;count-skipped-lines&quot;,
+              &quot;text&quot;: &quot;The `skipped` count in `summary` counts skipped lines in the whole file regardless of filters.&quot;,
+              &quot;stories&quot;: [
+                &quot;summary-skipped&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;zero-missing-numbers&quot;,
+              &quot;text&quot;: &quot;An absent or `null` token count, cost, or duration counts as zero.&quot;,
+              &quot;stories&quot;: [
+                &quot;log-numbers&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;attribute-model&quot;,
+              &quot;text&quot;: &quot;A record&#x27;s model is `result.stats.model` when present and non-empty, otherwise `job.model`.&quot;,
+              &quot;stories&quot;: [
+                &quot;log-model&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;classify-failed-records&quot;,
+              &quot;text&quot;: &quot;A record is failed when `status` is not `succeeded`.&quot;,
+              &quot;stories&quot;: [
+                &quot;log-failed&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;format-minutes&quot;,
+              &quot;text&quot;: &quot;A minutes column is the group&#x27;s summed `elapsed_ms` written in tenths of a minute.&quot;,
+              &quot;stories&quot;: [
+                &quot;fmt-minutes&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;format-cost&quot;,
+              &quot;text&quot;: &quot;A cost column is the group&#x27;s summed `cost_usd` written with exactly four decimal places, as Go&#x27;s `%.4f` writes a `float64`.&quot;,
+              &quot;stories&quot;: [
+                &quot;fmt-cost&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;write-csv&quot;,
+              &quot;text&quot;: &quot;Every report writes CSV to standard output: one header row, then data rows, comma-separated, `\\n` line endings.&quot;,
+              &quot;stories&quot;: [
+                &quot;fmt-csv&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;total-rows&quot;,
+              &quot;text&quot;: &quot;Every report except `summary` and `failures` ends with a `TOTAL` row over all filtered records.&quot;,
+              &quot;stories&quot;: [
+                &quot;fmt-csv&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;order-text-by-bytes&quot;,
+              &quot;text&quot;: &quot;Text is compared by byte value.&quot;,
+              &quot;stories&quot;: [
+                &quot;commands-report&quot;,
+                &quot;targets-report&quot;,
+                &quot;models-report&quot;,
+                &quot;daily-report&quot;,
+                &quot;failures-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;produce-summary&quot;,
+              &quot;text&quot;: &quot;One row. `first` and `last` are the earliest and latest start dates, empty when no record matches.&quot;,
+              &quot;stories&quot;: [
+                &quot;summary-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;produce-commands&quot;,
+              &quot;text&quot;: &quot;One per command, by calls descending, then command ascending. Then `TOTAL,\u2026`.&quot;,
+              &quot;stories&quot;: [
+                &quot;commands-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;produce-targets&quot;,
+              &quot;text&quot;: &quot;One per Target, by Target ascending. Then `TOTAL,\u2026`.&quot;,
+              &quot;stories&quot;: [
+                &quot;targets-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;produce-models&quot;,
+              &quot;text&quot;: &quot;One per provider and model pair, by provider then model ascending. Then `TOTAL,,\u2026`.&quot;,
+              &quot;stories&quot;: [
+                &quot;models-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;produce-daily&quot;,
+              &quot;text&quot;: &quot;One per start date, ascending. `tokens` is input plus cached plus output. Then `TOTAL,\u2026`.&quot;,
+              &quot;stories&quot;: [
+                &quot;daily-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;produce-failures&quot;,
+              &quot;text&quot;: &quot;One per failed record, by `started_at` then `execution_id` ascending.&quot;,
+              &quot;stories&quot;: [
+                &quot;failures-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;provide-test-script&quot;,
+              &quot;text&quot;: &quot;The completed application provides a POSIX-compatible `bin/test.sh` that runs `go vet ./...` and `go test ./...` from the application root and exits zero only when both pass.&quot;,
+              &quot;stories&quot;: [
+                &quot;bld-test-script&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;pass-grader&quot;,
+              &quot;text&quot;: &quot;`drydock uat` runs `sh sources/run.sh` from the completed application root and takes its exit code and output as the score.&quot;,
+              &quot;stories&quot;: [
+                &quot;bld-terminal&quot;
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    &quot;llm_sample.jsonl&quot;: {
+      &quot;state&quot;: &quot;current&quot;,
+      &quot;versions&quot;: [
+        {
+          &quot;commit&quot;: &quot;b6e4ab7&quot;,
+          &quot;date&quot;: &quot;2026-10-24&quot;,
+          &quot;hash&quot;: &quot;19a092d921393ca299df3dbdb1b65370649bda5aaea44c2fe4f7f1080cc5f217&quot;,
+          &quot;release&quot;: &quot;&quot;,
+          &quot;state&quot;: &quot;consumed&quot;,
+          &quot;via&quot;: &quot;plan&quot;,
+          &quot;ticket&quot;: null,
+          &quot;requirements&quot;: []
+        }
+      ]
+    },
+    &quot;run.sh&quot;: {
+      &quot;state&quot;: &quot;current&quot;,
+      &quot;versions&quot;: [
+        {
+          &quot;commit&quot;: &quot;b6e4ab7&quot;,
+          &quot;date&quot;: &quot;2026-10-24&quot;,
+          &quot;hash&quot;: &quot;0cc2ee483269886e4d61e5bfdbefec2419121f8a49a10ef33f182f855ba889d3&quot;,
+          &quot;release&quot;: &quot;&quot;,
+          &quot;state&quot;: &quot;consumed&quot;,
+          &quot;via&quot;: &quot;plan&quot;,
+          &quot;ticket&quot;: null,
+          &quot;requirements&quot;: [
+            {
+              &quot;name&quot;: &quot;build-ddkstat&quot;,
+              &quot;text&quot;: &quot;Builds ./cmd/ddkstat with `go build` and compares every report&#x27;s exit code and standard output&quot;,
+              &quot;stories&quot;: [
+                &quot;foundation&quot;,
+                &quot;cli-entry&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;report-matches-known-answer&quot;,
+              &quot;text&quot;: &quot;over the supplied sample log with the known answer below. Standard error is never compared.&quot;,
+              &quot;stories&quot;: [
+                &quot;report-pipeline&quot;,
+                &quot;cli-entry&quot;,
+                &quot;log-read&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;summary-report-sample&quot;,
+              &quot;text&quot;: &quot;check A1 0 summary \&quot;$LOG\&quot; &lt;&lt;&#x27;EOF&#x27;&quot;,
+              &quot;stories&quot;: [
+                &quot;summary-report&quot;,
+                &quot;summary-skipped&quot;,
+                &quot;log-skip&quot;,
+                &quot;log-numbers&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;commands-report-sample&quot;,
+              &quot;text&quot;: &quot;check A2 0 commands \&quot;$LOG\&quot; &lt;&lt;&#x27;EOF&#x27;&quot;,
+              &quot;stories&quot;: [
+                &quot;commands-report&quot;,
+                &quot;report-pipeline&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;targets-report-sample&quot;,
+              &quot;text&quot;: &quot;check A3 0 targets \&quot;$LOG\&quot; &lt;&lt;&#x27;EOF&#x27;&quot;,
+              &quot;stories&quot;: [
+                &quot;targets-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;models-report-sample&quot;,
+              &quot;text&quot;: &quot;check A4 0 models \&quot;$LOG\&quot; &lt;&lt;&#x27;EOF&#x27;&quot;,
+              &quot;stories&quot;: [
+                &quot;models-report&quot;,
+                &quot;log-model&quot;,
+                &quot;log-numbers&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;daily-report-sample&quot;,
+              &quot;text&quot;: &quot;check A5 0 daily \&quot;$LOG\&quot; &lt;&lt;&#x27;EOF&#x27;&quot;,
+              &quot;stories&quot;: [
+                &quot;daily-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;failures-report-sample&quot;,
+              &quot;text&quot;: &quot;check A6 0 failures \&quot;$LOG\&quot; &lt;&lt;&#x27;EOF&#x27;&quot;,
+              &quot;stories&quot;: [
+                &quot;failures-report&quot;,
+                &quot;log-failed&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;filter-by-target&quot;,
+              &quot;text&quot;: &quot;check B4 0 failures --target CommonMark \&quot;$LOG\&quot; &lt;&lt;&#x27;EOF&#x27;&quot;,
+              &quot;stories&quot;: [
+                &quot;filter-target&quot;,
+                &quot;summary-report&quot;,
+                &quot;models-report&quot;,
+                &quot;failures-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;filter-by-date-range&quot;,
+              &quot;text&quot;: &quot;check B3 0 daily --since 2026-10-15 --until 2026-10-15 \&quot;$LOG\&quot; &lt;&lt;&#x27;EOF&#x27;&quot;,
+              &quot;stories&quot;: [
+                &quot;filter-date&quot;,
+                &quot;daily-report&quot;,
+                &quot;commands-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;empty-filter-result&quot;,
+              &quot;text&quot;: &quot;# \u2500\u2500 C. A filter that matches nothing \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500&quot;,
+              &quot;stories&quot;: [
+                &quot;filter-target&quot;,
+                &quot;commands-report&quot;,
+                &quot;summary-report&quot;,
+                &quot;summary-skipped&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;operational-failure-exit-1&quot;,
+              &quot;text&quot;: &quot;# \u2500\u2500 E. Operational failures \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-read-fail&quot;,
+                &quot;log-read&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;usage-errors-exit-2&quot;,
+              &quot;text&quot;: &quot;# \u2500\u2500 U. Usage errors \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500&quot;,
+              &quot;stories&quot;: [
+                &quot;cli-usage&quot;,
+                &quot;cli-parse&quot;,
+                &quot;filter-validate&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;report-formats&quot;,
+              &quot;text&quot;: &quot;33,3,31,2,2026-10-14,2026-10-16,262526,17053317,398580,5.5245,159.4&quot;,
+              &quot;stories&quot;: [
+                &quot;fmt-csv&quot;,
+                &quot;fmt-cost&quot;,
+                &quot;fmt-minutes&quot;,
+                &quot;summary-report&quot;
+              ]
+            },
+            {
+              &quot;name&quot;: &quot;grader-release-gate&quot;,
+              &quot;text&quot;: &quot;Exit 0 only when the build succeeds and every check passes.&quot;,
+              &quot;stories&quot;: [
+                &quot;bld-terminal&quot;
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+</pre></article>
+</main>
+</body>
+</html>

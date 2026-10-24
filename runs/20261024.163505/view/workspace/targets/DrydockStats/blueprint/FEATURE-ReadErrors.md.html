@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ReadErrors.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ReadErrors.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ReadErrors.md">Raw file</a></div></header>
+<article class="doc"><h1>Feature: Read Errors</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>An unreadable log exits 1 with empty stdout and one stderr diagnostic line.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogRead.md</td></tr><tr><td>Provides</td><td>exit 1 for an unreadable log</td></tr><tr><td>Consumes</td><td>—</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>When the log file cannot be opened or read, exit 1 with nothing on stdout and one diagnostic line on stderr.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC read-missing-log-exit-1 ===<br>Intent: A log path that does not exist exits 1 with empty stdout.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>import subprocess import tempfile import os</p>
+<p>out = os.path.join(tempfile.mkdtemp(), &quot;ddkstat&quot;) build = subprocess.run([&quot;go&quot;, &quot;build&quot;, &quot;-o&quot;, out, &quot;./cmd/ddkstat&quot;], capture_output=True, text=True) print(build.stderr) assert build.returncode == 0 missing = os.path.join(tempfile.mkdtemp(), &quot;no-such-log.jsonl&quot;) result = subprocess.run([out, &quot;summary&quot;, missing], capture_output=True, text=True) print(result.stderr) assert result.returncode == 1 assert result.stdout == &quot;&quot; === END AC read-missing-log-exit-1 ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>A read failure writes nothing to stdout.</li></ul></article>
+</main>
+</body>
+</html>

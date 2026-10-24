@@ -1,0 +1,466 @@
+=== BEGIN ARTIFACT FEATURE-FormatCSV.md ===
+# Feature: CSV Report Writer
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Writes report rows as CSV with a header row, LF line endings, and optional TOTAL rows. |
+| Depends On  | ARCHITECTURE.md |
+| Provides    | CSV writer for report rows |
+| Consumes    | — |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Every report shares one CSV writer. It writes a header row first, then data rows, comma-separated with `\n` line endings. Zero-match reports write their header and, where the report defines one, a zero TOTAL row.
+
+## Behavior
+
+- The first row written is the report header, exactly as the report defines it.
+- Each subsequent row is written as comma-separated fields, terminated by `\n`.
+- Line endings are `\n` only; no `\r\n`.
+- A zero-match report writes its header and, where the report has a TOTAL row, a TOTAL row carrying zero values.
+- The writer does not add quoting to plain values. Values in this product are alphanumeric, numeric, or dates, and contain no commas, quotes, or newlines.
+
+## Programmatic Acceptance
+
+=== AC csv-header-and-lf ===
+Intent: The CSV writer emits the header first and uses LF-only line endings.
+Requires: executable=python3; scope=test
+
+import subprocess
+
+from drydock_go import cli_runner
+
+log = "/tmp/ddkstat-csv-fixture.jsonl"
+with open(log, "w", encoding="utf-8") as f:
+    f.write('{"schema_version":1,"execution_id":"e1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"build","target":"T","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cached_input_tokens":1,"elapsed_ms":1000,"input_tokens":2,"output_tokens":3,"cost_usd":0.5,"model":"haiku"}}}\n')
+
+code, out, err = cli_runner("summary", log)
+print(err)
+assert code == 0, (code, out, err)
+assert "\r" not in out, repr(out)
+lines = out.split("\n")
+assert lines[0] == "records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes", repr(lines[0])
+=== END AC csv-header-and-lf ===
+
+=== AC csv-zero-match-total ===
+Intent: A zero-match commands report writes its header and a zero TOTAL row, and exits 0.
+Requires: executable=python3; scope=test
+
+import subprocess
+
+from drydock_go import cli_runner
+
+log = "/tmp/ddkstat-csv-empty.jsonl"
+with open(log, "w", encoding="utf-8") as f:
+    f.write("")
+
+code, out, err = cli_runner("commands", "--target", "NoSuchTarget", log)
+print(err)
+assert code == 0, (code, out, err)
+lines = [line for line in out.split("\n") if line != ""]
+assert lines[0] == "command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes", repr(lines[0])
+assert lines[-1].startswith("TOTAL,"), repr(lines[-1])
+=== END AC csv-zero-match-total ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library CSV-free writing only; no quoting logic is required by the sources.
+- Output goes to standard output only; diagnostics go to standard error.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-SkippedCount.md ===
+# Feature: Whole-File Skipped Count
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Counts skipped log lines over the whole file, independent of any filter. |
+| Depends On  | ARCHITECTURE.md, FEATURE-LogSkip.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md |
+| Provides    | whole-file skipped count |
+| Consumes    | record parser, target and date filters |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The `skipped` column of the summary report counts skipped lines in the entire log, regardless of `--target`, `--since`, or `--until`. Filters narrow the records a report aggregates; they never change the skipped count.
+
+## Behavior
+
+- The skipped count is the number of non-blank lines that the record parser rejects, computed over every line of the file.
+- The count is computed before filters are applied, so `--target` and the date options have no effect on it.
+- Blank lines are not counted (see FEATURE-LogRead.md).
+- Running the same log with and without filters yields the same skipped count.
+
+## Programmatic Acceptance
+
+=== AC skipped-ignores-target ===
+Intent: The skipped count is identical with and without a --target filter.
+Requires: executable=python3; scope=test
+
+import subprocess
+
+from drydock_go import cli_runner
+
+log = "/tmp/ddkstat-skip-fixture.jsonl"
+with open(log, "w", encoding="utf-8") as f:
+    f.write('{"schema_version":1,"execution_id":"e1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"build","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false}}\n')
+    f.write("not json\n")
+    f.write('{"schema_version":1,"execution_id":"e2","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"build","target":"B","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false}}\n')
+
+code_all, out_all, err_all = cli_runner("summary", log)
+code_f, out_f, err_f = cli_runner("summary", "--target", "A", log)
+print(err_all)
+print(err_f)
+assert code_all == 0, (code_all, out_all, err_all)
+assert code_f == 0, (code_f, out_f, err_f)
+
+skipped_all = out_all.split("\n")[1].split(",")[1]
+skipped_f = out_f.split("\n")[1].split(",")[1]
+assert skipped_all == "1", repr(skipped_all)
+assert skipped_f == skipped_all, (skipped_all, skipped_f)
+=== END AC skipped-ignores-target ===
+
+=== AC skipped-ignores-date ===
+Intent: The skipped count is identical with and without date filters.
+Requires: executable=python3; scope=test
+
+import subprocess
+
+from drydock_go import cli_runner
+
+log = "/tmp/ddkstat-skip-date-fixture.jsonl"
+with open(log, "w", encoding="utf-8") as f:
+    f.write('{"schema_version":1,"execution_id":"e1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"build","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false}}\n')
+    f.write("not json\n")
+    f.write('{"schema_version":1,"execution_id":"e2","started_at":"2026-10-15T06:37:54.176Z","status":"succeeded","job":{"command_name":"build","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false}}\n')
+
+code_all, out_all, err_all = cli_runner("summary", log)
+code_f, out_f, err_f = cli_runner("summary", "--since", "2026-10-15", "--until", "2026-10-15", log)
+print(err_all)
+print(err_f)
+assert code_all == 0, (code_all, out_all, err_all)
+assert code_f == 0, (code_f, out_f, err_f)
+
+skipped_all = out_all.split("\n")[1].split(",")[1]
+skipped_f = out_f.split("\n")[1].split(",")[1]
+assert skipped_all == "1", repr(skipped_all)
+assert skipped_f == skipped_all, (skipped_all, skipped_f)
+=== END AC skipped-ignores-date ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The skipped count never depends on --target, --since, or --until.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-SummaryReport.md ===
+# Feature: Summary Report
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produces the one-row summary report over the filtered records. |
+| Depends On  | ARCHITECTURE.md, FEATURE-SkippedCount.md, FEATURE-LogFailed.md, FEATURE-LogNumbers.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-FormatCSV.md, FEATURE-FormatMinutes.md, FEATURE-FormatCost.md |
+| Provides    | summary report |
+| Consumes    | skipped count, record aggregates, CSV and format helpers |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The summary report answers the operator's first question: how many records ran, how many succeeded or failed, over what date span, and what tokens, cost, and minutes they used.
+
+## Behavior
+
+- Writes one data row under the header `records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes`.
+- `records` is the count of filtered records; `skipped` is the whole-file skipped count.
+- `succeeded` and `failed` partition the filtered records by status.
+- `first` and `last` are the earliest and latest start dates (first 10 characters of `started_at`) among filtered records, empty when none match.
+- Token columns are the sums of the filtered records' values; absent values count as zero.
+- `cost_usd` is written with `%.4f`; `minutes` is written in tenths of a minute.
+- A zero-match run writes the header and one zero row (`0,<skipped>,0,0,,,0,0,0,0.0000,0.0`).
+- Exit code is 0 whenever the log can be read, including when no record matches.
+
+## Programmatic Acceptance
+
+=== AC summary-header-and-row-shape ===
+Intent: The summary report writes the exact header and one data row with eleven fields.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+
+from drydock_go import cli_runner
+
+log = "/tmp/ddkstat-summary-shape.jsonl"
+with open(log, "w", encoding="utf-8") as f:
+    f.write('{"schema_version":1,"execution_id":"e1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"build","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cached_input_tokens":10,"elapsed_ms":60000,"input_tokens":5,"output_tokens":7,"cost_usd":0.25,"model":"haiku"}}}\n')
+
+code, out, err = cli_runner("summary", log)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == ["records", "skipped", "succeeded", "failed", "first", "last", "input_tokens", "cached_tokens", "output_tokens", "cost_usd", "minutes"], rows[0]
+assert len(rows) == 2, rows
+assert len(rows[1]) == 11, rows[1]
+=== END AC summary-header-and-row-shape ===
+
+=== AC summary-values-from-fixture ===
+Intent: The summary report aggregates a known fixture into the expected counts, dates, sums, cost, and minutes.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+
+from drydock_go import cli_runner
+
+log = "/tmp/ddkstat-summary-values.jsonl"
+with open(log, "w", encoding="utf-8") as f:
+    f.write('{"schema_version":1,"execution_id":"e1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"build","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cached_input_tokens":10,"elapsed_ms":60000,"input_tokens":5,"output_tokens":7,"cost_usd":0.25,"model":"haiku"}}}\n')
+    f.write('{"schema_version":1,"execution_id":"e2","started_at":"2026-10-16T06:37:54.176Z","status":"failed","job":{"command_name":"build","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":1,"timed_out":false,"stats":{"cached_input_tokens":20,"elapsed_ms":35000,"input_tokens":6,"output_tokens":8,"cost_usd":0.5,"model":"haiku"}}}\n')
+
+expected_records = "2"
+expected_skipped = "0"
+expected_succeeded = "1"
+expected_failed = "1"
+expected_first = "2026-10-14"
+expected_last = "2026-10-16"
+
+code, out, err = cli_runner("summary", log)
+print(err)
+assert code == 0, (code, out, err)
+row = next(csv.reader(io.StringIO(out)))
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[1][0] == expected_records, rows[1]
+assert rows[1][1] == expected_skipped, rows[1]
+assert rows[1][2] == expected_succeeded, rows[1]
+assert rows[1][3] == expected_failed, rows[1]
+assert rows[1][4] == expected_first, rows[1]
+assert rows[1][5] == expected_last, rows[1]
+assert rows[1][6] == "11", rows[1]
+assert rows[1][7] == "30", rows[1]
+assert rows[1][8] == "15", rows[1]
+assert rows[1][9] == "0.7500", rows[1]
+assert rows[1][10] == "1.6", rows[1]
+=== END AC summary-values-from-fixture ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The summary report is one row only; it never carries a TOTAL row.
+- Filters narrow `records`, `succeeded`, `failed`, tokens, cost, and minutes, but never `skipped`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CommandsReport.md ===
+# Feature: Commands Report
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produces one row per command, ordered by calls then command name, plus a TOTAL row. |
+| Depends On  | ARCHITECTURE.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-LogNumbers.md, FEATURE-LogFailed.md, FEATURE-FormatCSV.md, FEATURE-FormatMinutes.md |
+| Provides    | commands report |
+| Consumes    | record aggregates, CSV and format helpers |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The commands report shows which Drydock commands ran, how often, how many failed, and what tokens and minutes they used.
+
+## Behavior
+
+- Header: `command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes`.
+- One row per distinct `job.command_name` among filtered records.
+- Rows are ordered by `calls` descending, then `command` ascending by byte value (AC-006).
+- Each row's `minutes` is written in tenths of a minute (FEATURE-FormatMinutes.md).
+- A final `TOTAL` row aggregates all filtered records.
+- A zero-match run writes the header and one row `TOTAL,0,0,0,0,0,0.0`.
+
+## Programmatic Acceptance
+
+=== AC commands-ordering-and-total ===
+Intent: Commands are ordered by calls descending then name ascending, and TOTAL sums the rows.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+
+from drydock_go import cli_runner
+
+log = "/tmp/ddkstat-commands-order.jsonl"
+with open(log, "w", encoding="utf-8") as f:
+    f.write('{"schema_version":1,"execution_id":"e1","started_at":"2026-10-14T06:00:00.000Z","status":"succeeded","job":{"command_name":"plan","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cached_input_tokens":1,"elapsed_ms":60000,"input_tokens":1,"output_tokens":1,"cost_usd":0.1,"model":"haiku"}}}\n')
+    f.write('{"schema_version":1,"execution_id":"e2","started_at":"2026-10-14T06:01:00.000Z","status":"succeeded","job":{"command_name":"build","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cached_input_tokens":1,"elapsed_ms":60000,"input_tokens":1,"output_tokens":1,"cost_usd":0.1,"model":"haiku"}}}\n')
+    f.write('{"schema_version":1,"execution_id":"e3","started_at":"2026-10-14T06:02:00.000Z","status":"succeeded","job":{"command_name":"build","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cached_input_tokens":1,"elapsed_ms":60000,"input_tokens":1,"output_tokens":1,"cost_usd":0.1,"model":"haiku"}}}\n')
+
+code, out, err = cli_runner("commands", log)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[1][0] == "build", rows[1]
+assert rows[2][0] == "plan", rows[2]
+assert rows[3][0] == "TOTAL", rows[3]
+assert rows[3][1] == "3", rows[3]
+assert rows[3][3] == "3", rows[3]
+=== END AC commands-ordering-and-total ===
+
+=== AC commands-tie-byte-order ===
+Intent: Commands with equal call counts are ordered by command name in byte order.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+
+from drydock_go import cli_runner
+
+log = "/tmp/ddkstat-commands-tie.jsonl"
+with open(log, "w", encoding="utf-8") as f:
+    f.write('{"schema_version":1,"execution_id":"e1","started_at":"2026-10-14T06:00:00.000Z","status":"succeeded","job":{"command_name":"score release","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false}}\n')
+    f.write('{"schema_version":1,"execution_id":"e2","started_at":"2026-10-14T06:01:00.000Z","status":"succeeded","job":{"command_name":"analyze","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false}}\n')
+
+code, out, err = cli_runner("commands", log)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[1][0] == "analyze", rows[1]
+assert rows[2][0] == "score release", rows[2]
+=== END AC commands-tie-byte-order ===
+
+=== AC commands-zero-match ===
+Intent: A filter matching nothing yields the header and a zero TOTAL row, exit 0.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+
+from drydock_go import cli_runner
+
+log = "/tmp/ddkstat-commands-zero.jsonl"
+with open(log, "w", encoding="utf-8") as f:
+    f.write('{"schema_version":1,"execution_id":"e1","started_at":"2026-10-14T06:00:00.000Z","status":"succeeded","job":{"command_name":"build","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false}}\n')
+
+code, out, err = cli_runner("commands", "--target", "NoSuchTarget", log)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == ["command", "calls", "failed", "input_tokens", "cached_tokens", "output_tokens", "minutes"], rows[0]
+assert rows[1][0] == "TOTAL", rows[1]
+assert rows[1][1] == "0", rows[1]
+assert rows[1][6] == "0.0", rows[1]
+=== END AC commands-zero-match ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Commands are grouped by the exact `job.command_name` value; no normalization or case folding.
+- Filters apply to every row and to TOTAL.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-TargetsReport.md ===
+# Feature: Targets Report
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produces one row per Target ordered ascending, with cost and minutes columns, plus a TOTAL row. |
+| Depends On  | ARCHITECTURE.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-LogNumbers.md, FEATURE-LogFailed.md, FEATURE-FormatCSV.md, FEATURE-FormatMinutes.md, FEATURE-FormatCost.md |
+| Provides    | targets report |
+| Consumes    | record aggregates, CSV and format helpers |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The targets report shows, per Target, how many calls ran, how many failed, and what tokens, cost, and minutes they used.
+
+## Behavior
+
+- Header: `target,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd,minutes`.
+- One row per distinct `job.target` among filtered records, ordered ascending by byte value.
+- `cost_usd` is written with `%.4f`; `minutes` is written in tenths of a minute.
+- A final `TOTAL` row aggregates all filtered records.
+- A zero-match run writes the header and one row `TOTAL,0,0,0,0,0,0.0000,0.0`.
+
+## Programmatic Acceptance
+
+=== AC targets-ordering-and-total ===
+Intent: Targets are ordered ascending by byte value and TOTAL sums the rows.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+
+from drydock_go import cli_runner
+
+log = "/tmp/ddkstat-targets-order.jsonl"
+with open(log, "w", encoding="utf-8") as f:
+    f.write('{"schema_version":1,"execution_id":"e1","started_at":"2026-10-14T06:00:00.000Z","status":"succeeded","job":{"command_name":"build","target":"Zeta","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cached_input_tokens":1,"elapsed_ms":60000,"input_tokens":1,"output_tokens":1,"cost_usd":0.1,"model":"haiku"}}}\n')
+    f.write('{"schema_version":1,"execution_id":"e2","started_at":"2026-10-14T06:01:00.000Z","status":"succeeded","job":{"command_name":"build","target":"Alpha","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cached_input_tokens":1,"elapsed_ms":60000,"input_tokens":1,"output_tokens":1,"cost_usd":0.1,"model":"haiku"}}}\n')
+
+code, out, err = cli_runner("targets", log)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[1][0] == "Alpha", rows[1]
+assert rows[2][0] == "Zeta", rows[2]
+assert rows[3][0] == "TOTAL", rows[3]
+assert rows[3][1] == "2", rows[3]
+assert rows[3][6] == "0.2000", rows[3]
+=== END AC targets-ordering-and-total ===
+
+=== AC targets-zero-match ===
+Intent: A filter matching nothing yields the header and a zero TOTAL row with cost and minutes, exit 0.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+
+from drydock_go import cli_runner
+
+log = "/tmp/ddkstat-targets-zero.jsonl"
+with open(log, "w", encoding="utf-8") as f:
+    f.write('{"schema_version":1,"execution_id":"e1","started_at":"2026-10-14T06:00:00.000Z","status":"succeeded","job":{"command_name":"build","target":"A","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false}}\n')
+
+code, out, err = cli_runner("targets", "--target", "NoSuchTarget", log)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == ["target", "calls", "failed", "input_tokens", "cached_tokens", "output_tokens", "cost_usd", "minutes"], rows[0]
+assert rows[1][0] == "TOTAL", rows[1]
+assert rows[1][6] == "0.0000", rows[1]
+assert rows[1][7] == "0.0", rows[1]
+=== END AC targets-zero-match ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Targets are grouped by the exact `job.target` value; no normalization or case folding.
+- Filters apply to every row and to TOTAL.
+=== END ARTIFACT ===

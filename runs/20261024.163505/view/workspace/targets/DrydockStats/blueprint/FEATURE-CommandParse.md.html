@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-CommandParse.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-CommandParse.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-CommandParse.md">Raw file</a></div></header>
+<article class="doc"><h1>Feature: Command Parse</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Parse the report name, options, and the single log path from the argument list.</td></tr><tr><td>Depends On</td><td>FEATURE-Entrypoint.md</td></tr><tr><td>Provides</td><td>report, options, log path</td></tr><tr><td>Consumes</td><td>—</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Take the report name as the first argument, parse the following options with a local <code>flag.FlagSet</code> (ContinueOnError), then require exactly one log path. Options follow the report name; the log path is last.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC parse-summary-with-target ===<br>Intent: <code>summary --target X &lt;log&gt;</code> parses the report, the option value, and the log path.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>import subprocess import tempfile import os</p>
+<p>out = os.path.join(tempfile.mkdtemp(), &quot;ddkstat&quot;) build = subprocess.run([&quot;go&quot;, &quot;build&quot;, &quot;-o&quot;, out, &quot;./cmd/ddkstat&quot;], capture_output=True, text=True) print(build.stderr) assert build.returncode == 0 log = os.path.join(tempfile.mkdtemp(), &quot;log.jsonl&quot;) open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;).close() result = subprocess.run([out, &quot;summary&quot;, &quot;--target&quot;, &quot;X&quot;, log], capture_output=True, text=True) print(result.stderr) assert result.returncode == 0 === END AC parse-summary-with-target ===</p>
+<p>=== AC parse-repeated-option-exit-2 ===<br>Intent: A repeated --target option is a usage error with exit 2 and empty stdout.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>import subprocess import tempfile import os</p>
+<p>out = os.path.join(tempfile.mkdtemp(), &quot;ddkstat&quot;) build = subprocess.run([&quot;go&quot;, &quot;build&quot;, &quot;-o&quot;, out, &quot;./cmd/ddkstat&quot;], capture_output=True, text=True) print(build.stderr) assert build.returncode == 0 log = os.path.join(tempfile.mkdtemp(), &quot;log.jsonl&quot;) open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;).close() result = subprocess.run( [out, &quot;summary&quot;, &quot;--target&quot;, &quot;A&quot;, &quot;--target&quot;, &quot;B&quot;, log], capture_output=True, text=True, ) print(result.stderr) assert result.returncode == 2 assert result.stdout == &quot;&quot; === END AC parse-repeated-option-exit-2 ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Options are parsed with a local <code>flag.FlagSet</code> using <code>flag.ContinueOnError</code>.</li></ul></article>
+</main>
+</body>
+</html>

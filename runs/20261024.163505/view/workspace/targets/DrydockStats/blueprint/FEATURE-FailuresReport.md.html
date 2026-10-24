@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-FailuresReport.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-FailuresReport.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-FailuresReport.md">Raw file</a></div></header>
+<article class="doc"><h1>Feature: Failures Report</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Produce the failed-record CSV report over the filtered log records.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-LogFailed.md, FEATURE-LogModel.md, FEATURE-FormatCSV.md</td></tr><tr><td>Provides</td><td>failures report</td></tr><tr><td>Consumes</td><td>failed-record accessors, model attribution, CSV helpers</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Write one CSV row per failed record over the records that pass the active <code>--target</code>, <code>--since</code>, and <code>--until</code> filters. A record is failed when its <code>status</code> is any value other than <code>succeeded</code>.</p>
+<h2>Output</h2>
+<p>Header row, in this exact order:</p>
+<pre><code>started_at,target,command,model,returncode,timed_out</code></pre>
+<ul><li>One data row per failed record, ordered by <code>started_at</code> then <code>execution_id</code>, ascending by byte value.</li><li><code>model</code> follows the model attribution rule: <code>result.stats.model</code> when present and non-empty, otherwise <code>job.model</code>.</li><li><code>returncode</code> is empty when <code>result.returncode</code> is null or absent; otherwise the integer.</li><li><code>timed_out</code> is <code>true</code> or <code>false</code>.</li><li>No TOTAL row.</li><li>A report with no matching failed records writes the header only.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC failures-report-whole-sample ===<br>Intent: The failures report over the full sample matches the two known failed records, parsed as CSV.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import os</p>
+<p>from drydock_go import cli_runner</p>
+<p>sample = os.path.join(&quot;sources&quot;, &quot;llm_sample.jsonl&quot;) code, out, err = cli_runner(&quot;failures&quot;, sample) print(out) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert rows[0] == [&quot;started_at&quot;, &quot;target&quot;, &quot;command&quot;, &quot;model&quot;, &quot;returncode&quot;, &quot;timed_out&quot;], rows[0] assert len(rows) == 3, rows assert rows[1][1:3] == [&quot;Toml&quot;, &quot;diagnose&quot;], rows[1] assert rows[2][1:3] == [&quot;CommonMark&quot;, &quot;diagnose&quot;], rows[2] assert all(r[0] != &quot;TOTAL&quot; for r in rows), rows === END AC failures-report-whole-sample ===</p>
+<p>=== AC failures-report-target-filter ===<br>Intent: With --target CommonMark the failures report contains only the CommonMark failed record, with an empty returncode and timed_out true, parsed as CSV.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import os</p>
+<p>from drydock_go import cli_runner</p>
+<p>sample = os.path.join(&quot;sources&quot;, &quot;llm_sample.jsonl&quot;) code, out, err = cli_runner(&quot;failures&quot;, &quot;--target&quot;, &quot;CommonMark&quot;, sample) print(out) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert len(rows) == 2, rows assert rows[1][1] == &quot;CommonMark&quot;, rows[1] assert rows[1][4] == &quot;&quot;, rows[1] assert rows[1][5] == &quot;true&quot;, rows[1] === END AC failures-report-target-filter ===</p>
+<p>=== AC failures-report-zero-match ===<br>Intent: A filter matching no failed record writes only the header with exit 0.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import os</p>
+<p>from drydock_go import cli_runner</p>
+<p>sample = os.path.join(&quot;sources&quot;, &quot;llm_sample.jsonl&quot;) code, out, err = cli_runner(&quot;failures&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, sample) print(out) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert len(rows) == 1, rows === END AC failures-report-zero-match ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The failures report never writes a TOTAL row.</li><li>Values are computed from the log read, never from a hardcoded row or count.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-UsageErrors.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-UsageErrors.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-UsageErrors.md">Raw file</a></div></header>
+<article class="doc"><h1>Feature: Usage Errors</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Unknown reports, unknown options, missing values, and bad log-path counts exit 2 with empty stdout.</td></tr><tr><td>Depends On</td><td>FEATURE-CommandParse.md</td></tr><tr><td>Provides</td><td>exit 2 usage-error path</td></tr><tr><td>Consumes</td><td>—</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>An unknown report, unknown option, missing option value, repeated option, invalid date, or missing or extra log path exits 2 with nothing on stdout and one diagnostic line on stderr.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC usage-unknown-report-exit-2 ===<br>Intent: An unknown report name exits 2 with empty stdout.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>import subprocess import tempfile import os</p>
+<p>out = os.path.join(tempfile.mkdtemp(), &quot;ddkstat&quot;) build = subprocess.run([&quot;go&quot;, &quot;build&quot;, &quot;-o&quot;, out, &quot;./cmd/ddkstat&quot;], capture_output=True, text=True) print(build.stderr) assert build.returncode == 0 log = os.path.join(tempfile.mkdtemp(), &quot;log.jsonl&quot;) open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;).close() result = subprocess.run([out, &quot;frobnicate&quot;, log], capture_output=True, text=True) print(result.stderr) assert result.returncode == 2 assert result.stdout == &quot;&quot; === END AC usage-unknown-report-exit-2 ===</p>
+<p>=== AC usage-no-log-path-exit-2 ===<br>Intent: A report with no log path exits 2 with empty stdout.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>import subprocess import tempfile import os</p>
+<p>out = os.path.join(tempfile.mkdtemp(), &quot;ddkstat&quot;) build = subprocess.run([&quot;go&quot;, &quot;build&quot;, &quot;-o&quot;, out, &quot;./cmd/ddkstat&quot;], capture_output=True, text=True) print(build.stderr) assert build.returncode == 0 result = subprocess.run([out, &quot;summary&quot;], capture_output=True, text=True, stdin=subprocess.DEVNULL) print(result.stderr) assert result.returncode == 2 assert result.stdout == &quot;&quot; === END AC usage-no-log-path-exit-2 ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Usage errors write nothing to stdout.</li></ul></article>
+</main>
+</body>
+</html>

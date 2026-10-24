@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/DECISIONS.json</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/DECISIONS.json</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/DrydockStats/DECISIONS.json">Raw file</a></div></header>
+<article class="doc"><pre>[
+  {
+    &quot;id&quot;: &quot;Q-001&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: &quot;foundation&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Go module path&quot;,
+    &quot;description&quot;: &quot;No source names the module path. The module is an application root that nothing imports from outside, so a bare module name is the narrowest choice.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;ddkstat&quot;,
+        &quot;label&quot;: &quot;ddkstat&quot;
+      },
+      {
+        &quot;value&quot;: &quot;drydock.local/ddkstat&quot;,
+        &quot;label&quot;: &quot;drydock.local/ddkstat&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;ddkstat&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-002&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;material&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-CommandParse.md&quot;,
+    &quot;story&quot;: &quot;cli-parse&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Repeated option occurrence&quot;,
+    &quot;description&quot;: &quot;The sources define no behavior when --target, --since, or --until appears more than once. Treating it as a usage error is the narrowest choice, since it avoids silently choosing one value.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;usage-error&quot;,
+        &quot;label&quot;: &quot;Usage error, exit 2&quot;
+      },
+      {
+        &quot;value&quot;: &quot;last-wins&quot;,
+        &quot;label&quot;: &quot;Last occurrence wins&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;usage-error&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-003&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-UsageErrors.md&quot;,
+    &quot;story&quot;: &quot;cli-usage&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Help flags&quot;,
+    &quot;description&quot;: &quot;No source defines -h or --help. Treating them as unknown options keeps the exit-code contract complete with no extra surface.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;unknown-option&quot;,
+        &quot;label&quot;: &quot;Unknown option, exit 2&quot;
+      },
+      {
+        &quot;value&quot;: &quot;print-help&quot;,
+        &quot;label&quot;: &quot;Print help, exit 0&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;unknown-option&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-004&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;material&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-LogSkip.md&quot;,
+    &quot;story&quot;: &quot;log-skip&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Which lines register an execution_id&quot;,
+    &quot;description&quot;: &quot;Rule 2 says a duplicate is an execution_id that appeared on an earlier line. Only kept records are counted as the first occurrence here, so a line skipped for a missing field does not block a later valid line with the same id. The sample passes under either reading.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;kept-only&quot;,
+        &quot;label&quot;: &quot;Only kept records register an execution_id&quot;
+      },
+      {
+        &quot;value&quot;: &quot;any-object&quot;,
+        &quot;label&quot;: &quot;Any JSON object line registers its execution_id&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;kept-only&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-005&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-LogRead.md&quot;,
+    &quot;story&quot;: &quot;log-read&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Invalid UTF-8 within a line&quot;,
+    &quot;description&quot;: &quot;A line whose bytes are not valid UTF-8 cannot parse as a JSON object, so it is skipped under the malformed-line rule rather than failing the run. Only an open or read failure of the file is operational (exit 1).&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;skip-line&quot;,
+        &quot;label&quot;: &quot;Skip the line as malformed&quot;
+      },
+      {
+        &quot;value&quot;: &quot;fail-run&quot;,
+        &quot;label&quot;: &quot;Fail the run with exit 1&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;skip-line&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-006&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-FilterDate.md&quot;,
+    &quot;story&quot;: &quot;filter-date&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Inverted date range&quot;,
+    &quot;description&quot;: &quot;When --since is later than --until, no date satisfies both bounds. This follows the AC-004 precedent: the report is header-only or zero-TOTAL with exit 0, and the run is not a usage error.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;zero-match&quot;,
+        &quot;label&quot;: &quot;Zero matching records, exit 0&quot;
+      },
+      {
+        &quot;value&quot;: &quot;usage-error&quot;,
+        &quot;label&quot;: &quot;Usage error, exit 2&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;zero-match&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-architecture.md-stub-dispatch-in-internal/cli-for-the-foundation-step&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Stub dispatch in internal/cli for the foundation step&quot;,
+    &quot;description&quot;: &quot;Run returns usage code 2 for any report name, because no reports exist yet. Later blocks replace this with real dispatch. Should the foundation instead return a distinct code for not-yet-implemented reports?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Run returns usage code 2 for any report name, because no reports exist yet. Later blocks replace this with real dispatch. Should the foundation instead return a distinct code for not-yet-implemented reports?&quot;
+  }
+]
+</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-FilterTarget.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-FilterTarget.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-FilterTarget.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Filter Records by Target</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Keep only log records whose job.target equals the --target value exactly.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogSkip.md, FEATURE-CommandParse.md</td></tr><tr><td>Provides</td><td>target filter predicate</td></tr><tr><td>Consumes</td><td>record parser, parsed options</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Every report applies the same target predicate. When <code>--target &lt;name&gt;</code> is given, only records whose <code>job.target</code> string equals <code>&lt;name&gt;</code> byte for byte are kept. Without the option, every kept record passes.</p>
+<h2>Behavior</h2>
+<ul><li>The predicate is <code>record.Target == targetOption</code> using exact byte comparison. No trimming, case</li></ul>
+<p>folding, or Unicode normalization.</p>
+<ul><li>When <code>--target</code> is absent, the predicate accepts every record.</li><li>The predicate is exposed as a function value that every report aggregation applies before</li></ul>
+<p>aggregating. It is never applied by individual reports on their own.</p>
+<ul><li>The <code>skipped</code> count is not affected by this predicate; it is computed by the parser over the whole</li></ul>
+<p>file (see FEATURE-SkippedCount.md).</p>
+<ul><li><code>--target</code> with an empty string value matches only records whose target is the empty string. Such</li></ul>
+<p>records cannot exist because <code>job.target</code> must be a non-empty string, so the result is zero matches and exit 0.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC filter-target-exact-match ===<br>Intent: A record whose job.target equals the --target value is kept and a record differing only in case or trailing space is not.<br>Requires: executable=python3; scope=test</p>
+<p>import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>lines = [ {&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;a-1&quot;, &quot;started_at&quot;: &quot;2026-10-14T01:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Alpha&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;input_tokens&quot;: 1, &quot;cached_input_tokens&quot;: 0, &quot;output_tokens&quot;: 1, &quot;cost_usd&quot;: 0.1}}}, {&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;a-2&quot;, &quot;started_at&quot;: &quot;2026-10-14T01:00:01.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;alpha&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;input_tokens&quot;: 1, &quot;cached_input_tokens&quot;: 0, &quot;output_tokens&quot;: 1, &quot;cost_usd&quot;: 0.1}}}, {&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;a-3&quot;, &quot;started_at&quot;: &quot;2026-10-14T01:00:02.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Alpha &quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;input_tokens&quot;: 1, &quot;cached_input_tokens&quot;: 0, &quot;output_tokens&quot;: 1, &quot;cost_usd&quot;: 0.1}}}, ]</p>
+<p>fd, path = tempfile.mkstemp(suffix=&quot;.jsonl&quot;) with os.fdopen(fd, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: for obj in lines: fh.write(json.dumps(obj) + &quot;\n&quot;)</p>
+<p>try: code, out, err = cli_runner(&quot;summary&quot;, &quot;--target&quot;, &quot;Alpha&quot;, path) print(out) print(err) assert code == 0, (code, out, err) rows = list(<strong>import</strong>(&quot;csv&quot;).reader(out.splitlines())) header = rows[0] data = rows[1] assert header[0] == &quot;records&quot;, header assert data[0] == &quot;1&quot;, data finally: os.remove(path) === END AC filter-target-exact-match ===</p>
+<p>=== AC filter-target-absent-keeps-all ===<br>Intent: Without --target every valid record is kept by the summary report.<br>Requires: executable=python3; scope=test</p>
+<p>import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>records = [] for i, target in enumerate([&quot;Alpha&quot;, &quot;Beta&quot;, &quot;Gamma&quot;]): records.append({&quot;schema_version&quot;: 1, &quot;execution_id&quot;: f&quot;b-{i}&quot;, &quot;started_at&quot;: &quot;2026-10-14T02:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: target, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;input_tokens&quot;: 1, &quot;cached_input_tokens&quot;: 0, &quot;output_tokens&quot;: 1, &quot;cost_usd&quot;: 0.1}}})</p>
+<p>fd, path = tempfile.mkstemp(suffix=&quot;.jsonl&quot;) with os.fdopen(fd, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: for obj in records: fh.write(json.dumps(obj) + &quot;\n&quot;)</p>
+<p>try: code, out, err = cli_runner(&quot;summary&quot;, path) print(out) print(err) assert code == 0, (code, out, err) import csv rows = list(csv.reader(out.splitlines())) assert rows[1][0] == &quot;3&quot;, rows finally: os.remove(path) === END AC filter-target-absent-keeps-all ===</p>
+<p>=== AC filter-target-no-match-exit-zero ===<br>Intent: A --target value matching no record yields a zero-count summary with exit 0.<br>Requires: executable=python3; scope=test</p>
+<p>import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>record = {&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;c-1&quot;, &quot;started_at&quot;: &quot;2026-10-14T03:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Alpha&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;input_tokens&quot;: 1, &quot;cached_input_tokens&quot;: 0, &quot;output_tokens&quot;: 1, &quot;cost_usd&quot;: 0.1}}}</p>
+<p>fd, path = tempfile.mkstemp(suffix=&quot;.jsonl&quot;) with os.fdopen(fd, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: fh.write(json.dumps(record) + &quot;\n&quot;)</p>
+<p>try: code, out, err = cli_runner(&quot;summary&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, path) print(out) print(err) assert code == 0, (code, out, err) import csv rows = list(csv.reader(out.splitlines())) assert rows[1][0] == &quot;0&quot;, rows finally: os.remove(path) === END AC filter-target-no-match-exit-zero ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The filter compares job.target exactly; it never matches on case, whitespace, or substring.</li><li>The filter never reads or alters the log file.</li><li><code>--target</code> is the only option this predicate consumes.</li></ul></article>
+</main>
+</body>
+</html>

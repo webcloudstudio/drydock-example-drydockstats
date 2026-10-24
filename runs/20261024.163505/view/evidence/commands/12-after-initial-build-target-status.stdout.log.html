@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/12-after-initial-build-target-status.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/12-after-initial-build-target-status.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/12-after-initial-build-target-status.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Drydock status
+
+  Target          /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.163505/workspace/targets/DrydockStats
+  Name            drydock DrydockStats Uat Case
+  Description     Drydock uat - DrydockStats builds a Go reporter for Drydock&#x27;s own LLM execution log (logs/llm.jsonl).
+                  The source is an original brief: read JSON Lines, skip malformed and duplicate records without…
+  Phase           Implement
+  State           Failed: programmatic acceptance failed: log-read-blank-lines
+  Metadata        building · running
+  Sources         3 imported · 26 authored blueprint files
+  Analysis        Ready · 26 stories · 0 questions · 0 blockers
+  Blueprint       ⚠  0 errors · 1 warnings
+    ⚠  Acceptance snippets: FEATURE-LogRead.md [log-read-utf8]: expects &#x27;plan é&#x27;, a value re-typed rather than derived
+       from the input or read back from the system. This criterion is reported but does not gate its story; bind
+       the value to a name and use that name on both sides to make it binding
+  Plan            3 pending · 1 closed/implemented · 22 closed/failed
+  Frontier        (none)
+  Workflow        5 steps
+                  Initialize         complete at 2026-10-24T16:35:07.449+00:00
+                  Import             complete at 2026-10-24T16:35:13.957+00:00
+                  Analyze            complete at 2026-10-24T16:35:44.252+00:00
+                  Plan               complete at 2026-10-24T16:43:00.991+00:00
+                  Build              failed at 2026-10-24T17:00:55.438+00:00
+  Next step       drydock run quarterdeck DrydockStats
+
+========================================================================
+STOPPED: DrydockStats  ·  initial-build-1  ·  2026-10-24T17:00:57Z
+========================================================================
+
+  The build exited 1 with work still on the frontier. Diagnose the failing block from its evidence before rerunning; a score taken over a partial build grades the absence, not the product.
+
+  Clear: delete STOP_NOW.md, or answer y when a command offers to.
+========================================================================
+</pre></article>
+</main>
+</body>
+</html>

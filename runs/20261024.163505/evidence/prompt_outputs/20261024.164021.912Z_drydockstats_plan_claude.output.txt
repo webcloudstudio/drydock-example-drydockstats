@@ -1,0 +1,476 @@
+=== BEGIN ARTIFACT FEATURE-ModelsReport.md ===
+# Feature: Models Report
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produce the per-provider and per-model CSV report over the filtered log records. |
+| Depends On  | ARCHITECTURE.md, FEATURE-LogModel.md, FEATURE-LogNumbers.md, FEATURE-LogFailed.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-FormatCSV.md, FEATURE-FormatCost.md |
+| Provides    | models report |
+| Consumes    | model attribution, record aggregates, CSV and format helpers |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Write one CSV row per provider and model pair over the records that pass the active `--target`, `--since`, and `--until` filters. Each row reports calls, failed calls, summed input, cached, and output tokens, and summed cost. The model of a record comes from `result.stats.model` when present and non-empty, otherwise `job.model`, and the provider comes from `job.llm`.
+
+## Output
+
+Header row, in this exact order:
+
+```
+provider,model,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd
+```
+
+- One data row per distinct `(provider, model)` pair, ordered by provider ascending, then model ascending, by byte value.
+- `calls` counts filtered records in the pair; `failed` counts those with a status other than `succeeded`.
+- Token columns are integer sums; absent or null values count as zero.
+- `cost_usd` is the summed cost written with `%.4f`.
+- A final `TOTAL` row over all filtered records leaves the provider and model cells empty: `TOTAL,,…`.
+- A report with no matching records writes the header and a `TOTAL,,0,0,0,0,0,0.0000` row.
+
+## Acceptance Source
+
+- `sources/run.sh` A4, B5, and C1-style zero-match behavior for this report.
+- `sources/INSTRUCTIONS.md` Output table row `models`.
+
+## Programmatic Acceptance
+
+=== AC models-report-whole-sample ===
+Intent: The models report over the full sample matches the supplied known answer for every pair and the TOTAL row, parsed as CSV.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import os
+import subprocess
+import tempfile
+
+from drydock_go import cli_runner
+
+sample = os.path.join("sources", "llm_sample.jsonl")
+code, out, err = cli_runner("models", sample)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == ["provider", "model", "calls", "failed", "input_tokens", "cached_tokens", "output_tokens", "cost_usd"], rows[0]
+assert rows[-1][0] == "TOTAL" and rows[-1][1] == "", rows[-1]
+assert rows[-1][2] == "33" and rows[-1][3] == "2", rows[-1]
+=== END AC models-report-whole-sample ===
+
+=== AC models-report-target-filter ===
+Intent: With --target ReadingList the models report contains only the ReadingList claude-haiku-5-5 pair and its TOTAL row, parsed as CSV.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import os
+
+from drydock_go import cli_runner
+
+sample = os.path.join("sources", "llm_sample.jsonl")
+code, out, err = cli_runner("models", "--target", "ReadingList", sample)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0][0:2] == ["provider", "model"], rows[0]
+assert len(rows) == 3, rows
+assert rows[1][0:2] == ["claude", "claude-haiku-5-5"], rows[1]
+assert rows[2][0] == "TOTAL" and rows[2][2] == rows[1][2], rows
+=== END AC models-report-target-filter ===
+
+=== AC models-report-zero-match ===
+Intent: A filter matching no record writes the header and a zero TOTAL row with exit 0.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import os
+
+from drydock_go import cli_runner
+
+sample = os.path.join("sources", "llm_sample.jsonl")
+code, out, err = cli_runner("models", "--target", "NoSuchTarget", sample)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert rows[1] == ["TOTAL", "", "0", "0", "0", "0", "0", "0.0000"], rows[1]
+=== END AC models-report-zero-match ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Provider and model cells are never reconstructed from another field; provider comes from `job.llm` only.
+- The TOTAL row is the only row whose provider and model cells are empty.
+- Values are computed from the log read, never from a hardcoded row or count.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-DailyReport.md ===
+# Feature: Daily Report
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produce the per-start-date CSV report over the filtered log records. |
+| Depends On  | ARCHITECTURE.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-LogNumbers.md, FEATURE-LogFailed.md, FEATURE-FormatCSV.md, FEATURE-FormatMinutes.md |
+| Provides    | daily report |
+| Consumes    | record aggregates, CSV and format helpers |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Write one CSV row per start date over the records that pass the active `--target`, `--since`, and `--until` filters. A record's start date is the first 10 characters of `started_at`. Tokens per row are input plus cached plus output.
+
+## Output
+
+Header row, in this exact order:
+
+```
+date,calls,failed,tokens,minutes
+```
+
+- One data row per distinct start date, ordered ascending by byte value of the `YYYY-MM-DD` string.
+- `tokens` is input plus cached plus output tokens summed over the date's records.
+- `minutes` is the summed `elapsed_ms` formatted by the minutes rule (tenths of a minute).
+- A final `TOTAL` row over all filtered records.
+- A report with no matching records writes the header and a `TOTAL,0,0,0,0.0` row.
+
+## Programmatic Acceptance
+
+=== AC daily-report-whole-sample ===
+Intent: The daily report over the full sample matches the supplied known answer for every date and the TOTAL row, parsed as CSV.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import os
+
+from drydock_go import cli_runner
+
+sample = os.path.join("sources", "llm_sample.jsonl")
+code, out, err = cli_runner("daily", sample)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == ["date", "calls", "failed", "tokens", "minutes"], rows[0]
+assert rows[-1][0] == "TOTAL" and rows[-1][1] == "33" and rows[-1][2] == "2", rows[-1]
+dates = [r[0] for r in rows[1:-1]]
+assert dates == sorted(dates), dates
+=== END AC daily-report-whole-sample ===
+
+=== AC daily-report-since-until ===
+Intent: With --since and --until both set to 2026-10-15 the daily report contains only that date and its TOTAL row, parsed as CSV.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import os
+
+from drydock_go import cli_runner
+
+sample = os.path.join("sources", "llm_sample.jsonl")
+code, out, err = cli_runner("daily", "--since", "2026-10-15", "--until", "2026-10-15", sample)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 3, rows
+assert rows[1][0] == "2026-10-15", rows[1]
+assert rows[2][0] == "TOTAL" and rows[2][1] == rows[1][1], rows
+=== END AC daily-report-since-until ===
+
+=== AC daily-report-zero-match ===
+Intent: A filter matching no record writes the header and a zero TOTAL row with exit 0.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import os
+
+from drydock_go import cli_runner
+
+sample = os.path.join("sources", "llm_sample.jsonl")
+code, out, err = cli_runner("daily", "--target", "NoSuchTarget", sample)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert rows[1][0] == "TOTAL" and rows[1][1] == "0", rows[1]
+=== END AC daily-report-zero-match ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Dates are compared by byte value of the `YYYY-MM-DD` string only; no time-zone conversion is applied.
+- Values are computed from the log read, never from a hardcoded row or count.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-FailuresReport.md ===
+# Feature: Failures Report
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Produce the failed-record CSV report over the filtered log records. |
+| Depends On  | ARCHITECTURE.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-LogFailed.md, FEATURE-LogModel.md, FEATURE-FormatCSV.md |
+| Provides    | failures report |
+| Consumes    | failed-record accessors, model attribution, CSV helpers |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Write one CSV row per failed record over the records that pass the active `--target`, `--since`, and `--until` filters. A record is failed when its `status` is any value other than `succeeded`.
+
+## Output
+
+Header row, in this exact order:
+
+```
+started_at,target,command,model,returncode,timed_out
+```
+
+- One data row per failed record, ordered by `started_at` then `execution_id`, ascending by byte value.
+- `model` follows the model attribution rule: `result.stats.model` when present and non-empty, otherwise `job.model`.
+- `returncode` is empty when `result.returncode` is null or absent; otherwise the integer.
+- `timed_out` is `true` or `false`.
+- No TOTAL row.
+- A report with no matching failed records writes the header only.
+
+## Programmatic Acceptance
+
+=== AC failures-report-whole-sample ===
+Intent: The failures report over the full sample matches the two known failed records, parsed as CSV.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import os
+
+from drydock_go import cli_runner
+
+sample = os.path.join("sources", "llm_sample.jsonl")
+code, out, err = cli_runner("failures", sample)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == ["started_at", "target", "command", "model", "returncode", "timed_out"], rows[0]
+assert len(rows) == 3, rows
+assert rows[1][1:3] == ["Toml", "diagnose"], rows[1]
+assert rows[2][1:3] == ["CommonMark", "diagnose"], rows[2]
+assert all(r[0] != "TOTAL" for r in rows), rows
+=== END AC failures-report-whole-sample ===
+
+=== AC failures-report-target-filter ===
+Intent: With --target CommonMark the failures report contains only the CommonMark failed record, with an empty returncode and timed_out true, parsed as CSV.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import os
+
+from drydock_go import cli_runner
+
+sample = os.path.join("sources", "llm_sample.jsonl")
+code, out, err = cli_runner("failures", "--target", "CommonMark", sample)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2, rows
+assert rows[1][1] == "CommonMark", rows[1]
+assert rows[1][4] == "", rows[1]
+assert rows[1][5] == "true", rows[1]
+=== END AC failures-report-target-filter ===
+
+=== AC failures-report-zero-match ===
+Intent: A filter matching no failed record writes only the header with exit 0.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import os
+
+from drydock_go import cli_runner
+
+sample = os.path.join("sources", "llm_sample.jsonl")
+code, out, err = cli_runner("failures", "--target", "NoSuchTarget", sample)
+print(out)
+print(err)
+assert code == 0, (code, out, err)
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 1, rows
+=== END AC failures-report-zero-match ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The failures report never writes a TOTAL row.
+- Values are computed from the log read, never from a hardcoded row or count.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportPipeline.md ===
+# Feature: Report Pipeline
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Assemble the end-to-end ddkstat run from arguments to one written report. |
+| Depends On  | ARCHITECTURE.md, FEATURE-ReadErrors.md, FEATURE-UsageErrors.md, FEATURE-FilterValidate.md, FEATURE-SummaryReport.md, FEATURE-CommandsReport.md, FEATURE-TargetsReport.md, FEATURE-ModelsReport.md, FEATURE-DailyReport.md, FEATURE-FailuresReport.md |
+| Provides    | ddkstat <report> [options] <log> end-to-end |
+| Consumes    | argument parser, reader, parser, filters, six reports, usage and read-failure paths |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Assembly feature. A single run parses arguments, reads the log, skips invalid lines, applies the active filters, aggregates, and writes exactly one selected report to standard output. Diagnostics go to standard error. Exit codes follow the contract in `sources/INSTRUCTIONS.md`: `0` for success, `1` for an unreadable log, `2` for a usage error.
+
+## Programmatic Acceptance
+
+=== AC pipeline-each-report-exits-zero ===
+Intent: Every one of the six reports runs end to end over the sample and exits 0 with non-empty stdout.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import os
+
+from drydock_go import cli_runner
+
+sample = os.path.join("sources", "llm_sample.jsonl")
+for report in ["summary", "commands", "targets", "models", "daily", "failures"]:
+    code, out, err = cli_runner(report, sample)
+    print(report, code, err)
+    assert code == 0, (report, code, out, err)
+    assert out.strip() != "", report
+=== END AC pipeline-each-report-exits-zero ===
+
+=== AC pipeline-usage-error-writes-nothing ===
+Intent: An unknown report exits 2 and writes nothing to standard output.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import os
+
+from drydock_go import cli_runner
+
+sample = os.path.join("sources", "llm_sample.jsonl")
+code, out, err = cli_runner("frobnicate", sample)
+print(err)
+assert code == 2, (code, out, err)
+assert out == "", out
+=== END AC pipeline-usage-error-writes-nothing ===
+
+=== AC pipeline-unreadable-log-writes-nothing ===
+Intent: A log path that does not exist exits 1 and writes nothing to standard output.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+missing = os.path.join(tempfile.mkdtemp(), "no-such-log.jsonl")
+code, out, err = cli_runner("summary", missing)
+print(err)
+assert code == 1, (code, out, err)
+assert out == "", out
+=== END AC pipeline-unreadable-log-writes-nothing ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Only the selected report reaches standard output; diagnostics never do.
+- Stdout is written only after aggregation succeeds.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-TestSuite.md ===
+# Feature: Test Suite
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Provide bin/test.sh, a POSIX sh launcher that runs go vet and go test over the application root. |
+| Depends On  | ARCHITECTURE.md, FEATURE-Entrypoint.md, FEATURE-CommandParse.md, FEATURE-UsageErrors.md, FEATURE-ReadErrors.md, FEATURE-LogRead.md, FEATURE-LogSkip.md, FEATURE-ReportPipeline.md, FEATURE-SummaryReport.md, FEATURE-CommandsReport.md, FEATURE-TargetsReport.md, FEATURE-ModelsReport.md, FEATURE-DailyReport.md, FEATURE-FailuresReport.md |
+| Provides    | bin/test.sh |
+| Consumes    | all implementation packages |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Provide `bin/test.sh`, a POSIX `sh` script that runs `go vet ./...` and `go test ./...` from the application root and exits zero only when both pass. The suite covers each report, each filter, each skip rule, and each exit code using logs written by the tests.
+
+## Programmatic Acceptance
+
+=== AC test-script-exits-zero ===
+Intent: bin/test.sh runs go vet and go test and exits 0 when both pass.
+Suite: scoped
+Requires: executable=sh; scope=test
+
+import subprocess
+
+result = subprocess.run(["sh", "bin/test.sh"], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC test-script-exits-zero ===
+
+=== AC test-script-is-posix-sh ===
+Intent: bin/test.sh begins with a POSIX sh shebang so it runs under any sh.
+Suite: scoped
+Requires: executable=python3; scope=test
+
+import os
+
+with open(os.path.join("bin", "test.sh"), "rb") as f:
+    first = f.readline()
+assert first.startswith(b"#!/bin/sh"), first
+=== END AC test-script-is-posix-sh ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- bin/test.sh is a launcher only; it runs the Go toolchain and never a vendored copy.
+- The suite writes its own logs under temporary directories and never writes to `sources/`.
+=== END ARTIFACT ===

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/11-after-initial-build-build-status.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/11-after-initial-build-build-status.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/11-after-initial-build-build-status.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Next: drydock build DrydockStats
+
+Blueprint: DrydockStats
+Target: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.163505/workspace/targets/DrydockStats
+Rows: &lt;state&gt; &lt;type&gt;  &lt;Name&gt;  [&lt;id&gt;]   — pass [&lt;id&gt;] to --step
+Block: Build Block 1 · Foundational  [block-1]   — [built] story Establish the Go module and project tree.  [foundation] — complete
+
+Block: Build Block 2 · Service  [block-2]   — 0/22 stories complete
+  [FAILED]  story  Provide the ddkstat entry point and the Run dispatcher.  [cli-entry]  &lt;- resume (repairs in place)
+  [FAILED]  story  Parse the report name, options, and the single log path.  [cli-parse]  &lt;- resume (repairs in place)
+  [FAILED]  story  Reject usage errors with exit code 2.  [cli-usage]  &lt;- resume (repairs in place)
+  [FAILED]  story  Write CSV with a header, LF line endings, and TOTAL rows.  [fmt-csv]  &lt;- resume (repairs in place)
+  [FAILED]  story  Format summed cost with four decimal places.  [fmt-cost]  &lt;- resume (repairs in place)
+  [FAILED]  story  Format minutes in tenths of a minute.  [fmt-minutes]  &lt;- resume (repairs in place)
+  [FAILED]  story  Read JSON Lines log records from a file path.  [log-read]  &lt;- resume (repairs in place)
+  [FAILED]  story  Report operational log read failures with exit code 1.  [cli-read-fail]  &lt;- resume (repairs in place)
+  [FAILED]  story  Validate date option values as real calendar dates.  [filter-validate]  &lt;- resume (repairs in place)
+  [FAILED]  story  Parse records and skip non-object, incomplete, and duplicate lines.  [log-skip]  &lt;- resume (repairs in place)
+  [FAILED]  story  Attribute each record to its executed or requested model.  [log-model]  &lt;- resume (repairs in place)
+  [FAILED]  story  Treat absent or null numeric stats as zero.  [log-numbers]  &lt;- resume (repairs in place)
+  [FAILED]  story  Classify a record as failed when its status is not succeeded.  [log-failed]  &lt;- resume (repairs in place)
+  [FAILED]  story  Filter records by an inclusive start-date range.  [filter-date]  &lt;- resume (repairs in place)
+  [FAILED]  story  Filter records by Target name.  [filter-target]  &lt;- resume (repairs in place)
+  [FAILED]  story  Produce the per-start-date report.  [daily-report]  &lt;- resume (repairs in place)
+  [FAILED]  story  Produce the failed-record report.  [failures-report]  &lt;- resume (repairs in place)
+  [FAILED]  story  Produce the per-Target report.  [targets-report]  &lt;- resume (repairs in place)
+  [FAILED]  story  Count skipped lines over the whole file regardless of filters.  [summary-skipped]  &lt;- resume (repairs in place)
+  [FAILED]  story  Produce the per-provider and per-model report.  [models-report]  &lt;- resume (repairs in place)
+  [FAILED]  story  Produce the one-row summary report.  [summary-report]  &lt;- resume (repairs in place)
+  [FAILED]  story  Produce the per-command report.  [commands-report]  &lt;- resume (repairs in place)
+
+Block: Build Block 3 · Feature  [block-3]   — 0/1 stories complete
+  [pending] story  Assemble the end-to-end run from arguments to one written report.  [report-pipeline]
+
+Block: Build Block 4 · Service  [block-4]   — 0/1 stories complete
+  [pending] story  Provide bin/test.sh over go vet and go test.  [bld-test-script]
+
+Block: Build Block 5 · Feature  [block-5]   — 0/1 stories complete
+  [pending] story  Run the supplied grader as the release gate.  [bld-terminal]
+
+Steps: 26 total — 0 done, 1 built (await verify), 0 in review, 3 pending, 0 blocked by questions, 22 failed (0% complete)
+Buildable now: block-2
+Failed (resume with drydock build, or --step &lt;id&gt;; --reset discards work instead): cli-entry, cli-parse, cli-usage, fmt-csv, fmt-cost, fmt-minutes, log-read, cli-read-fail, filter-validate, log-skip, log-model, log-numbers, log-failed, filter-date, filter-target, daily-report, failures-report, targets-report, summary-skipped, models-report, summary-report, commands-report
+Target - committed project workspace git store
+</pre></article>
+</main>
+</body>
+</html>

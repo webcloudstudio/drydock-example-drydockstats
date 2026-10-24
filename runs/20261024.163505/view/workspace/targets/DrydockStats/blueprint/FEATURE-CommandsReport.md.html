@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-CommandsReport.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-CommandsReport.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-CommandsReport.md">Raw file</a></div></header>
+<article class="doc"><h1>Feature: Commands Report</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Produces one row per command, ordered by calls then command name, plus a TOTAL row.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md, FEATURE-LogNumbers.md, FEATURE-LogFailed.md, FEATURE-FormatCSV.md, FEATURE-FormatMinutes.md</td></tr><tr><td>Provides</td><td>commands report</td></tr><tr><td>Consumes</td><td>record aggregates, CSV and format helpers</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>The commands report shows which Drydock commands ran, how often, how many failed, and what tokens and minutes they used.</p>
+<h2>Behavior</h2>
+<ul><li>Header: <code>command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes</code>.</li><li>One row per distinct <code>job.command_name</code> among filtered records.</li><li>Rows are ordered by <code>calls</code> descending, then <code>command</code> ascending by byte value (AC-006).</li><li>Each row&#x27;s <code>minutes</code> is written in tenths of a minute (FEATURE-FormatMinutes.md).</li><li>A final <code>TOTAL</code> row aggregates all filtered records.</li><li>A zero-match run writes the header and one row <code>TOTAL,0,0,0,0,0,0.0</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC commands-ordering-and-total ===<br>Intent: Commands are ordered by calls descending then name ascending, and TOTAL sums the rows.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io</p>
+<p>from drydock_go import cli_runner</p>
+<p>log = &quot;/tmp/ddkstat-commands-order.jsonl&quot; with open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f: f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e1&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:00:00.000Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;plan&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false,&quot;stats&quot;:{&quot;cached_input_tokens&quot;:1,&quot;elapsed_ms&quot;:60000,&quot;input_tokens&quot;:1,&quot;output_tokens&quot;:1,&quot;cost_usd&quot;:0.1,&quot;model&quot;:&quot;haiku&quot;}}}\n&#x27;) f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e2&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:01:00.000Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false,&quot;stats&quot;:{&quot;cached_input_tokens&quot;:1,&quot;elapsed_ms&quot;:60000,&quot;input_tokens&quot;:1,&quot;output_tokens&quot;:1,&quot;cost_usd&quot;:0.1,&quot;model&quot;:&quot;haiku&quot;}}}\n&#x27;) f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e3&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:02:00.000Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false,&quot;stats&quot;:{&quot;cached_input_tokens&quot;:1,&quot;elapsed_ms&quot;:60000,&quot;input_tokens&quot;:1,&quot;output_tokens&quot;:1,&quot;cost_usd&quot;:0.1,&quot;model&quot;:&quot;haiku&quot;}}}\n&#x27;)</p>
+<p>code, out, err = cli_runner(&quot;commands&quot;, log) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert rows[1][0] == &quot;build&quot;, rows[1] assert rows[2][0] == &quot;plan&quot;, rows[2] assert rows[3][0] == &quot;TOTAL&quot;, rows[3] assert rows[3][1] == &quot;3&quot;, rows[3] assert rows[3][3] == &quot;3&quot;, rows[3] === END AC commands-ordering-and-total ===</p>
+<p>=== AC commands-tie-byte-order ===<br>Intent: Commands with equal call counts are ordered by command name in byte order.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io</p>
+<p>from drydock_go import cli_runner</p>
+<p>log = &quot;/tmp/ddkstat-commands-tie.jsonl&quot; with open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f: f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e1&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:00:00.000Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;score release&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false}}\n&#x27;) f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e2&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:01:00.000Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;analyze&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false}}\n&#x27;)</p>
+<p>code, out, err = cli_runner(&quot;commands&quot;, log) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert rows[1][0] == &quot;analyze&quot;, rows[1] assert rows[2][0] == &quot;score release&quot;, rows[2] === END AC commands-tie-byte-order ===</p>
+<p>=== AC commands-zero-match ===<br>Intent: A filter matching nothing yields the header and a zero TOTAL row, exit 0.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io</p>
+<p>from drydock_go import cli_runner</p>
+<p>log = &quot;/tmp/ddkstat-commands-zero.jsonl&quot; with open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f: f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e1&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:00:00.000Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false}}\n&#x27;)</p>
+<p>code, out, err = cli_runner(&quot;commands&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, log) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(io.StringIO(out))) assert rows[0] == [&quot;command&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;input_tokens&quot;, &quot;cached_tokens&quot;, &quot;output_tokens&quot;, &quot;minutes&quot;], rows[0] assert rows[1][0] == &quot;TOTAL&quot;, rows[1] assert rows[1][1] == &quot;0&quot;, rows[1] assert rows[1][6] == &quot;0.0&quot;, rows[1] === END AC commands-zero-match ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Commands are grouped by the exact <code>job.command_name</code> value; no normalization or case folding.</li><li>Filters apply to every row and to TOTAL.</li></ul></article>
+</main>
+</body>
+</html>

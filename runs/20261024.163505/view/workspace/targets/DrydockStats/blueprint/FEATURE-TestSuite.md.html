@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-TestSuite.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-TestSuite.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-TestSuite.md">Raw file</a></div></header>
+<article class="doc"><h1>Feature: Test Suite</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Provide bin/test.sh, a POSIX sh launcher that runs go vet and go test over the application root.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-Entrypoint.md, FEATURE-CommandParse.md, FEATURE-UsageErrors.md, FEATURE-ReadErrors.md, FEATURE-LogRead.md, FEATURE-LogSkip.md, FEATURE-ReportPipeline.md, FEATURE-SummaryReport.md, FEATURE-CommandsReport.md, FEATURE-TargetsReport.md, FEATURE-ModelsReport.md, FEATURE-DailyReport.md, FEATURE-FailuresReport.md</td></tr><tr><td>Provides</td><td>bin/test.sh</td></tr><tr><td>Consumes</td><td>all implementation packages</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide <code>bin/test.sh</code>, a POSIX <code>sh</code> script that runs <code>go vet ./...</code> and <code>go test ./...</code> from the application root and exits zero only when both pass. The suite covers each report, each filter, each skip rule, and each exit code using logs written by the tests.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC test-script-exits-zero ===<br>Intent: bin/test.sh runs go vet and go test and exits 0 when both pass.<br>Suite: scoped<br>Requires: executable=sh; scope=test</p>
+<p>import subprocess</p>
+<p>result = subprocess.run([&quot;sh&quot;, &quot;bin/test.sh&quot;], capture_output=True, text=True) print(result.stdout) print(result.stderr) assert result.returncode == 0 === END AC test-script-exits-zero ===</p>
+<p>=== AC test-script-is-posix-sh ===<br>Intent: bin/test.sh begins with a POSIX sh shebang so it runs under any sh.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import os</p>
+<p>with open(os.path.join(&quot;bin&quot;, &quot;test.sh&quot;), &quot;rb&quot;) as f: first = f.readline() assert first.startswith(b&quot;#!/bin/sh&quot;), first === END AC test-script-is-posix-sh ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>bin/test.sh is a launcher only; it runs the Go toolchain and never a vendored copy.</li><li>The suite writes its own logs under temporary directories and never writes to <code>sources/</code>.</li></ul></article>
+</main>
+</body>
+</html>

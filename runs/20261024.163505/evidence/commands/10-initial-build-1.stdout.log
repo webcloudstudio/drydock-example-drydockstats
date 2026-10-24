@@ -1,0 +1,146 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Build: DrydockStats
+scope: entire project
+frontier: foundation
+git: baseline DrydockStats e441a0ddec98
+git: baseline DrydockStats a7e8b0d84533
+
+BLOCK block-1  name="Block 1 · Foundational"  calls_max=7
+  story=foundation  "Establish the Go module and project tree."
+
+  [call 1/7]  kind=initial  llm=claude/haiku
+    result=ok  rc=0  execution=20261024.164537.480Z-76e318fb
+    acceptance=1/2  failed=arch-main-builds
+git: block-1 | go.md, ARCHITECTURE.md | call=1 | app=05c56d9ab1a7 target=601fca64436b
+
+  [call 2/7]  kind=repair(1/6)  llm=claude/haiku
+    fixing=arch-main-builds
+    result=ok  rc=0  execution=20261024.164604.424Z-baf6e842
+    acceptance=2/2
+git: block-1 | go.md, ARCHITECTURE.md | call=2 | app=66e01eeec7dd target=0f65b8f73f02
+
+  DONE  story=foundation  state=closed/implemented  execution=20261024.164604.424Z-baf6e842  elapsed=1m07s
+git: block-1 | go.md, ARCHITECTURE.md | step_completed | app=unchanged target=4de8a972b506
+
+BLOCK block-2  name="Block 2 · Service"  calls_max=7
+  story=cli-entry  "Provide the ddkstat entry point and the Run dispatcher."
+  story=cli-parse  "Parse the report name, options, and the single log path."
+  story=cli-usage  "Reject usage errors with exit code 2."
+  story=fmt-csv  "Write CSV with a header, LF line endings, and TOTAL rows."
+  story=fmt-cost  "Format summed cost with four decimal places."
+  story=fmt-minutes  "Format minutes in tenths of a minute."
+  story=log-read  "Read JSON Lines log records from a file path."
+  story=cli-read-fail  "Report operational log read failures with exit code 1."
+  story=filter-validate  "Validate date option values as real calendar dates."
+  story=log-skip  "Parse records and skip non-object, incomplete, and duplicate lines."
+  story=log-model  "Attribute each record to its executed or requested model."
+  story=log-numbers  "Treat absent or null numeric stats as zero."
+  story=log-failed  "Classify a record as failed when its status is not succeeded."
+  story=filter-date  "Filter records by an inclusive start-date range."
+  story=filter-target  "Filter records by Target name."
+  story=daily-report  "Produce the per-start-date report."
+  story=failures-report  "Produce the failed-record report."
+  story=targets-report  "Produce the per-Target report."
+  story=summary-skipped  "Count skipped lines over the whole file regardless of filters."
+  story=models-report  "Produce the per-provider and per-model report."
+  story=summary-report  "Produce the one-row summary report."
+  story=commands-report  "Produce the per-command report."
+
+  [call 1/7]  kind=initial  llm=claude/haiku
+    result=ok  rc=0  execution=20261024.165014.823Z-b47df7b4
+    acceptance=51/52  failed=log-read-blank-lines
+git: block-2 | FEATURE-Entrypoint.md, FEATURE-CommandParse.md, FEATURE-UsageErrors.md, FEATURE-FormatCSV.md, FEATURE-FormatCost.md, FEATURE-FormatMinutes.md, FEATURE-LogRead.md, FEATURE-ReadErrors.md, FEATURE-FilterValidate.md, FEATURE-LogSkip.md, FEATURE-LogModel.md, FEATURE-LogNumbers.md, FEATURE-LogFailed.md, FEATURE-FilterDate.md, FEATURE-FilterTarget.md, FEATURE-DailyReport.md, FEATURE-FailuresReport.md, FEATURE-TargetsReport.md, FEATURE-SkippedCount.md, FEATURE-ModelsReport.md, FEATURE-SummaryReport.md, FEATURE-CommandsReport.md | call=1 | app=cedf45afb480 target=c86738da240a
+
+  [call 2/7]  kind=repair(1/6)  llm=claude/haiku
+    fixing=log-read-blank-lines
+    result=ok  rc=0  execution=20261024.165553.280Z-be6617fc  upgraded=prompt_limit haiku->sonnet (162,796 > 98% of 100,000)
+    acceptance=51/52  failed=log-read-blank-lines
+git: block-2 | FEATURE-Entrypoint.md, FEATURE-CommandParse.md, FEATURE-UsageErrors.md, FEATURE-FormatCSV.md, FEATURE-FormatCost.md, FEATURE-FormatMinutes.md, FEATURE-LogRead.md, FEATURE-ReadErrors.md, FEATURE-FilterValidate.md, FEATURE-LogSkip.md, FEATURE-LogModel.md, FEATURE-LogNumbers.md, FEATURE-LogFailed.md, FEATURE-FilterDate.md, FEATURE-FilterTarget.md, FEATURE-DailyReport.md, FEATURE-FailuresReport.md, FEATURE-TargetsReport.md, FEATURE-SkippedCount.md, FEATURE-ModelsReport.md, FEATURE-SummaryReport.md, FEATURE-CommandsReport.md | call=2 | app=unchanged target=5b0273e34f68
+
+  [call 3/7]  kind=repair(2/6)  llm=claude/haiku
+    fixing=log-read-blank-lines
+    result=ok  rc=0  execution=20261024.165821.563Z-d19d2cff  upgraded=prompt_limit haiku->sonnet (214,554 > 98% of 100,000)
+    acceptance=51/52  failed=log-read-blank-lines
+  STOP  reason=stall  flat_calls=2
+git: block-2 | FEATURE-Entrypoint.md, FEATURE-CommandParse.md, FEATURE-UsageErrors.md, FEATURE-FormatCSV.md, FEATURE-FormatCost.md, FEATURE-FormatMinutes.md, FEATURE-LogRead.md, FEATURE-ReadErrors.md, FEATURE-FilterValidate.md, FEATURE-LogSkip.md, FEATURE-LogModel.md, FEATURE-LogNumbers.md, FEATURE-LogFailed.md, FEATURE-FilterDate.md, FEATURE-FilterTarget.md, FEATURE-DailyReport.md, FEATURE-FailuresReport.md, FEATURE-TargetsReport.md, FEATURE-SkippedCount.md, FEATURE-ModelsReport.md, FEATURE-SummaryReport.md, FEATURE-CommandsReport.md | call=3 | app=unchanged target=ff5417e5bc82
+
+  FAILED  story=cli-entry  state=closed/failed  execution=20261024.165821.563Z-d19d2cff  elapsed=14m05s
+git: block-2 | FEATURE-Entrypoint.md, FEATURE-CommandParse.md, FEATURE-UsageErrors.md, FEATURE-FormatCSV.md, FEATURE-FormatCost.md, FEATURE-FormatMinutes.md, FEATURE-LogRead.md, FEATURE-ReadErrors.md, FEATURE-FilterValidate.md, FEATURE-LogSkip.md, FEATURE-LogModel.md, FEATURE-LogNumbers.md, FEATURE-LogFailed.md, FEATURE-FilterDate.md, FEATURE-FilterTarget.md, FEATURE-DailyReport.md, FEATURE-FailuresReport.md, FEATURE-TargetsReport.md, FEATURE-SkippedCount.md, FEATURE-ModelsReport.md, FEATURE-SummaryReport.md, FEATURE-CommandsReport.md | step_completed | app=unchanged target=9fbb0aecf61c
+
+result: 1 built, 22 failed, 0 unchanged
+elapsed: 15 minutes 59 seconds
+
+========================================================================
+BUILD FAILED: DrydockStats  (1 step)
+========================================================================
+
+  Failure
+    Provenance
+      Target: DrydockStats
+      Block: Block 2 · Service [block-2]
+      Story: Provide the ddkstat entry point and the Run dispatcher. [cli-entry]
+    Cause: programmatic acceptance failed: log-read-blank-lines
+    agent summary:
+      - No changes this pass. - All other declared checks stay
+      green, and the implementation follows the log-skip rules.
+    stopped early: 3 of 7 calls · deterministic acceptance score did not improve on 2 consecutive calls
+    acceptance: 51/52 passing · baseline 8/52 · improved
+    Assertion
+      Acceptance checks:
+      Acceptance: log-read-blank-lines
+      Intent: Blank lines are ignored by the line reader and do not appear in the yielded lines.
+      Source: FEATURE-LogRead.md
+      Code: assert fields[0] == "2", out
+    Result
+      Process exit code: 1
+      Error: AssertionError: records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes
+      Stderr:
+            assert fields[0] == "2", out
+                   ^^^^^^^^^^^^^^^^
+        AssertionError: records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes
+        0,2,0,0,,,0,0,0,0.0000,0.0
+    Recovery
+      The agent disputes failing acceptance criteria; the claim is unverified.
+      Run: drydock plan verify DrydockStats
+        Inspect the criteria and evidence before rebuilding.
+      Run: drydock plan repair DrydockStats
+        Repair confirmed mechanical defects, then verify before rebuilding.
+    agent blockers:
+      - `log-read-blank-lines` needs complete fixture records (add
+      `started_at`, `status` and `job`), or the required-field
+      rule in `FEATURE-LogSkip.md` needs to change at replan.
+    execution: 20261024.165821.563Z-d19d2cff
+    evidence: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.163505/workspace/targets/DrydockStats/evidence/block-2.md
+
+  Next
+    The agent disputes failing acceptance criteria; the claim is unverified.
+    Run: drydock plan verify DrydockStats
+      Inspect the criteria and evidence before rebuilding.
+    Run: drydock plan repair DrydockStats
+      Repair confirmed mechanical defects, then verify before rebuilding.
+========================================================================
+
+========================================================================
+POST-LLM FAILURE  ·  build  ·  programmatic acceptance failed: log-read-blank-lines
+========================================================================
+
+  Block "Block 2 · Service" [block-2] failed its acceptance criteria.
+    Story "Read JSON Lines log records from a file path." [log-read] does not meet its own acceptance criteria:
+      - AC log-read-blank-lines — Blank lines are ignored by the line reader and do not appear in the yielded lines.
+          assertion: assert fields[0] == "2", out → AssertionError: records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes
+          raised at: log-read-blank-lines.py:19
+          process exit code: 1
+          error: AssertionError: records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes
+          values at failure:
+  … (14 more lines truncated)
+
+  Recovery
+    The agent disputes failing acceptance criteria; the claim is
+    unverified.
+    Run: drydock plan verify DrydockStats
+      Inspect the criteria and evidence before rebuilding.
+    Run: drydock plan repair DrydockStats
+      Repair confirmed mechanical defects, then verify before rebuilding.
+
+========================================================================
+Target - committed project workspace git store

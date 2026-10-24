@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/evidence/block-1.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/evidence/block-1.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/evidence/block-1.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 1 · Foundational (block-1)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-24</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 9949</li><li>execution id: 20261024.164604.424Z-baf6e842</li></ul>
+<h2>Stories built</h2>
+<ul><li>Establish the Go module and project tree. (foundation) [story]</li></ul>
+<h2>Acceptance tooling authorization</h2>
+<ul><li>ARCHITECTURE.md#arch-go-module: executable=go; scope=test; authorization=existing Target environment</li><li>ARCHITECTURE.md#arch-main-builds: executable=go; scope=test; authorization=existing Target environment</li></ul>
+<h2>Reusable compacts</h2>
+<ul><li>ARCHITECTURE_compact.md</li></ul>
+<h2>Stacked context</h2>
+<ul><li>implements: go.md (SP 7578)</li><li>compass: COMPASS.md (SP 1037)</li><li>implements: ARCHITECTURE.md (SP 1258)</li></ul>
+<h2>Build directory changes</h2>
+<ul><li>bin/test.sh</li><li>cmd/ddkstat/main.go</li><li>go.mod</li><li>internal/.gitkeep</li><li>internal/cli/cli.go</li><li>internal/cli/cli_test.go</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: arch-go-module (ARCHITECTURE.md)</li></ul>
+<p>intent: The application root is a Go module named ddkstat that declares go 1.22 and has no require directives. return code: 1 stderr: --- drydock: values at failure --- self = PosixPath(&#x27;go.mod&#x27;) mode = &#x27;r&#x27; buffering = -1 encoding = &#x27;locale&#x27; errors = None newline = None --- drydock: end values --- Traceback (most recent call last): File &quot;arch-go-module.py&quot;, line 5, in &lt;module&gt; text = (root / &quot;go.mod&quot;).read_text() ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/home/barlo/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/pathlib.py&quot;, line 1027, in read_text with self.open(mode=&#x27;r&#x27;, encoding=encoding, errors=errors) as f: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/home/barlo/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/pathlib.py&quot;, line 1013, in open return io.open(self, mode, buffering, encoding, errors, newline) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^<br>FileNotFoundError: [Errno 2] No such file or directory: &#x27;go.mod&#x27;</p>
+<ul><li>RED: arch-main-builds (ARCHITECTURE.md)</li></ul>
+<p>intent: The ddkstat executable builds from the application root with go build using only the standard library. return code: 1 stdout: go: cannot find main module, but found .git/config in /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats to create a module there, run: cd ../../../.. &amp;&amp; go mod init stderr: --- drydock: values at failure --- result = CompletedProcess(args=[&#x27;go&#x27;, &#x27;build&#x27;, &#x27;-o&#x27;, &#x27;/tmp/tmp9u6cer9s/ddkstat&#x27;, &#x27;./cmd/ddkstat&#x27;], returncode=1, stdout=&#x27;&#x27;, stderr=&#x27;go: cannot find main module, but found .git/config in /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats\n\tto create a module there, run:\n\tcd ../../../.. &amp;&amp; go mod init\n&#x27;) --- drydock: end values --- Traceback (most recent call last): File &quot;arch-main-builds.py&quot;, line 9, in &lt;module&gt; assert result.returncode == 0 ^^^^^^^^^^^^^^^^^^^^^^ AssertionError</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: arch-go-module (ARCHITECTURE.md)</li></ul>
+<p>intent: The application root is a Go module named ddkstat that declares go 1.22 and has no require directives. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: arch-main-builds (ARCHITECTURE.md)</li></ul>
+<p>intent: The ddkstat executable builds from the application root with go build using only the standard library. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<h2>Repair attempts</h2>
+<ul><li>attempt 0 (initial build): failed; 1/2 checks model=haiku; execution 20261024.164537.480Z-76e318fb; reason: programmatic acceptance failed: arch-main-builds</li><li>attempt 1 (repair 1): built; 2/2 checks model=haiku; execution 20261024.164604.424Z-baf6e842</li></ul>
+<h2>Build summary</h2>
+<p>The failing check is <code>arch-main-builds</code>, which needs <code>./cmd/ddkstat</code> to exist and compile. I&#x27;ll add the thin <code>main</code> that the architecture specifies, plus a minimal <code>internal/cli.Run</code> with its usage-error path. The reporting logic belongs to later blocks.RESULT: SUCCESS</p>
+<p>FILES CHANGED:</p>
+<ul><li>cmd/ddkstat/main.go</li><li>internal/cli/cli.go</li><li>internal/cli/cli_test.go</li></ul>
+<p>SUMMARY:</p>
+<ul><li>The repair fixes <code>arch-main-builds</code>. <code>cmd/ddkstat/main.go</code> is a thin <code>main</code> that calls <code>cli.Run(os.Args[1:], os.Stdout, os.Stderr)</code> and passes the result to <code>os.Exit</code>. It is the only place that exits.</li><li><code>internal/cli/cli.go</code> has <code>Run(args []string, stdout, stderr io.Writer) int</code> using a <code>flag.FlagSet</code> with <code>ContinueOnError</code>. It returns 2 for a bad flag, for no arguments (usage on stderr), and for any report name. No report is implemented in this foundation step, so the report-name case is a stub that returns 2. Reporting logic is left for the later blocks.</li><li><code>internal/cli/cli_test.go</code> is a table-driven test. It checks the returned exit code and that stdout is empty for the three usage-error cases.</li><li>Checks run: <code>gofmt -l .</code> printed nothing; <code>go vet ./...</code> passed; <code>go build ./cmd/ddkstat</code> succeeded; <code>sh bin/test.sh</code> exited 0 (<code>internal/cli</code> ok, <code>cmd/ddkstat</code> has no test files).</li><li>I did not run <code>sources/run.sh</code>. It is the terminal story&#x27;s gate and is not part of this block.</li><li><code>ARCHITECTURE.md</code> is still not edited. It sits under the protected <code>blueprint/</code> path, and its module layout already matches what was built.</li></ul>
+<p>BLOCKERS:</p>
+<ul><li>None.</li></ul>
+<p>&lt;reusable-compact filename=&quot;ARCHITECTURE.md&quot;&gt;<br>Module: <code>ddkstat</code>, <code>go 1.22</code>, no <code>require</code> lines (standard library only).<br>Layout: <code>cmd/ddkstat/main.go</code> (process startup only; the sole <code>os.Exit</code>); <code>internal/cli</code> (args, usage errors, dispatch); <code>internal/log</code> (JSON Lines read, parse, skip rules, model attribution, numeric defaults); <code>internal/filter</code> (target and inclusive date-range predicates); <code>internal/report</code> (aggregation and six CSV reports); <code>internal/format</code> (minutes in tenths, cost <code>%.4f</code>, CSV writer); <code>bin/</code> (launchers, holds <code>test.sh</code>).<br>Interface: <code>cli.Run(args []string, stdout, stderr io.Writer) int</code> — 0 success, 1 operational read failure, 2 usage error.<br>Boundaries: only <code>cmd/ddkstat</code> calls <code>os.Exit</code>; no package outside <code>cmd/ddkstat</code> writes to the real stdout/stderr; stdout carries only CSV; diagnostics go to stderr.<br>Acceptance: <code>go build -o &lt;out&gt; ./cmd/ddkstat</code> from the root must succeed; <code>go.mod</code> must contain <code>module ddkstat</code> and <code>go 1.22</code> with no <code>require</code>.<br>Guardrails: no third-party modules; never read <code>sources/run.sh</code> from application code; never hardcode report values; never write to the log being read. &lt;/reusable-compact&gt;</p>
+<p>&lt;blueprint-decisions&gt; [{&quot;spec&quot;:&quot;ARCHITECTURE.md&quot;,&quot;severity&quot;:&quot;Low&quot;,&quot;subject&quot;:&quot;Stub dispatch in internal/cli for the foundation step&quot;,&quot;decision&quot;:&quot;Run returns usage code 2 for any report name, because no reports exist yet. Later blocks replace this with real dispatch. Should the foundation instead return a distinct code for not-yet-implemented reports?&quot;}] &lt;/blueprint-decisions&gt;</p></article>
+</main>
+</body>
+</html>

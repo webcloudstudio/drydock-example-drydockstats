@@ -1,0 +1,22 @@
+The toolchain is Go 1.24.6, which meets the 1.22 floor. The build block covers `go.mod`, `internal/`, and `bin/`. The architecture doc lives under the protected `blueprint/` path, so I won't edit it. I'll create the module files now.RESULT: SUCCESS
+
+FILES CHANGED:
+- go.mod
+- internal/.gitkeep
+- bin/test.sh
+
+SUMMARY:
+- `go.mod` declares `module ddkstat` with `go 1.22` and no `require` lines. The toolchain on the machine is go1.24.6, which meets the floor.
+- `internal/` exists (holds a `.gitkeep` so the empty directory is tracked). `bin/` holds `test.sh`, a POSIX launcher that runs `go test ./...` from the application root.
+- `gofmt -l .` prints nothing. `go vet ./...` has no packages to check yet.
+- I did not edit `ARCHITECTURE.md`. The build instructions ask to document module boundaries there, but that file sits under the protected `blueprint/` path in the Target. The module layout it describes is already written in that file, so nothing is missing.
+- No Go packages exist yet, so `cmd/ddkstat` and the `internal/` packages are left for later blocks.
+- Tests run: none. There are no packages to test yet.
+
+BLOCKERS:
+- `sh bin/test.sh` exits 1 right now. Go reports `"./..." matched no packages` and returns a non-zero status when a module has no packages. This clears once the first package with a `_test.go` file lands in a later block. I did not add a placeholder package to force a green exit, because that would be invented scope.
+- The `ARCHITECTURE.md` documentation step is skipped. It is blocked by the protected-path guardrail, not by a missing input.
+
+<blueprint-decisions>
+[{"spec":"ARCHITECTURE.md","severity":"Low","subject":"Foundation test launcher on an empty tree","decision":"I created bin/test.sh running go test ./... so the declared verification command exists. With no packages yet it exits 1 because Go treats an empty match as an error. I did not add a placeholder package. Should the first behavioral block add the package, or should the launcher treat an empty tree as a pass?"}]
+</blueprint-decisions>

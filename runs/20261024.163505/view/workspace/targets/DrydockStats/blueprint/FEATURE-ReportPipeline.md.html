@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ReportPipeline.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ReportPipeline.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ReportPipeline.md">Raw file</a></div></header>
+<article class="doc"><h1>Feature: Report Pipeline</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Assemble the end-to-end ddkstat run from arguments to one written report.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-ReadErrors.md, FEATURE-UsageErrors.md, FEATURE-FilterValidate.md, FEATURE-SummaryReport.md, FEATURE-CommandsReport.md, FEATURE-TargetsReport.md, FEATURE-ModelsReport.md, FEATURE-DailyReport.md, FEATURE-FailuresReport.md</td></tr><tr><td>Provides</td><td>ddkstat &lt;report&gt; [options] &lt;log&gt; end-to-end</td></tr><tr><td>Consumes</td><td>argument parser, reader, parser, filters, six reports, usage and read-failure paths</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Assembly feature. A single run parses arguments, reads the log, skips invalid lines, applies the active filters, aggregates, and writes exactly one selected report to standard output. Diagnostics go to standard error. Exit codes follow the contract in <code>sources/INSTRUCTIONS.md</code>: <code>0</code> for success, <code>1</code> for an unreadable log, <code>2</code> for a usage error.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC pipeline-each-report-exits-zero ===<br>Intent: Every one of the six reports runs end to end over the sample and exits 0 with non-empty stdout.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import os</p>
+<p>from drydock_go import cli_runner</p>
+<p>sample = os.path.join(&quot;sources&quot;, &quot;llm_sample.jsonl&quot;) for report in [&quot;summary&quot;, &quot;commands&quot;, &quot;targets&quot;, &quot;models&quot;, &quot;daily&quot;, &quot;failures&quot;]: code, out, err = cli_runner(report, sample) print(report, code, err) assert code == 0, (report, code, out, err) assert out.strip() != &quot;&quot;, report === END AC pipeline-each-report-exits-zero ===</p>
+<p>=== AC pipeline-usage-error-writes-nothing ===<br>Intent: An unknown report exits 2 and writes nothing to standard output.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import os</p>
+<p>from drydock_go import cli_runner</p>
+<p>sample = os.path.join(&quot;sources&quot;, &quot;llm_sample.jsonl&quot;) code, out, err = cli_runner(&quot;frobnicate&quot;, sample) print(err) assert code == 2, (code, out, err) assert out == &quot;&quot;, out === END AC pipeline-usage-error-writes-nothing ===</p>
+<p>=== AC pipeline-unreadable-log-writes-nothing ===<br>Intent: A log path that does not exist exits 1 and writes nothing to standard output.<br>Suite: scoped<br>Requires: executable=python3; scope=test</p>
+<p>import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>missing = os.path.join(tempfile.mkdtemp(), &quot;no-such-log.jsonl&quot;) code, out, err = cli_runner(&quot;summary&quot;, missing) print(err) assert code == 1, (code, out, err) assert out == &quot;&quot;, out === END AC pipeline-unreadable-log-writes-nothing ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Only the selected report reaches standard output; diagnostics never do.</li><li>Stdout is written only after aggregation succeeds.</li></ul></article>
+</main>
+</body>
+</html>

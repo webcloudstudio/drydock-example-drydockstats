@@ -1,0 +1,4 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+plan verify: DrydockStats
+  60 acceptance criteria in 26 files: every one can run
+  ⚠  FEATURE-LogRead.md [log-read-utf8]: expects 'plan é', a value re-typed rather than derived from the input or read back from the system

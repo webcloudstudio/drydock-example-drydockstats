@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.165014.823Z_drydockstats_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.165014.823Z_drydockstats_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.165014.823Z_drydockstats_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>The foundation is a stub: `cli.Run` rejects every report. I&#x27;ll build the packages the spec names (`log`, `filter`, `report`, `format`) and wire them into `cli`.Now the CLI: option parsing with repeat detection, interleaved log-path handling so a date after the path is still validated, and exit codes 0/1/2.The usage path currently writes two lines, but the spec asks for one diagnostic line. Fixing that and dropping the now-unused constant.Before writing the tests, I&#x27;ll build and run the grader to see where the implementation stands.All 20 grader checks pass. Next I&#x27;ll replace the stale foundation test (it expected `summary` to be unimplemented) and add unit tests for each package.Before running, I re-derived a few expected values in my report tests by hand and found three wrong: Daily tokens should be 121 and 131 (not 118 and 128), and Targets&#x27; Alpha minutes should be 0.6 (35000 ms rounds to 6 tenths). Correcting those, then running gofmt, vet, and the full suite.One expectation in my format test is wrong: 5997000 ms is exactly 100.0 minutes under the spec&#x27;s formula, so the implementation is right and the test row is wrong. Fixing the test row to a value that really gives 99.9, then rerunning with the real exit status.The `ddkstat` tool is implemented, and the grader passes all 20 checks. The project suite and the race run are green, and `go vet` and `gofmt` are clean.
+
+I did not run the spec&#x27;s Python acceptance criteria through `drydock_go.cli_runner`, because that helper isn&#x27;t present in this build directory. I covered the same behaviours with the Go unit tests and the grader.
+
+**What I built**
+
+- `internal/log`: reads the file line by line, skipping blank lines. Parses each line as a JSON object, skips non-objects, incomplete lines and repeated `execution_id`s with a stderr warning and the line number, and attributes models (executed first, requested as fallback). Null or absent numbers count as zero.
+- `internal/filter`: exact `--target` match, inclusive `--since`/`--until` on the first 10 characters of `started_at`, and strict `YYYY-MM-DD` validation against real calendar dates.
+- `internal/format`: `%.4f` costs, minutes in tenths via `(ms+3000)/6000`, and LF-only CSV writing.
+- `internal/report`: the six reports (summary, commands, targets, models, daily, failures), each with its ordering rules and TOTAL row where specified.
+- `internal/cli`: `Run` dispatches on the report name. Options can appear after the log path, and repeated options are rejected. Usage errors exit 2 with one stderr line and nothing on stdout. An unreadable log exits 1.
+
+**Choices I made**
+
+- Non-numeric values in numeric stat fields are treated as zero. The spec only covers absent and null.
+- Lines are parsed with `UseNumber`, so token counts stay exact.
+- I replaced the foundation&#x27;s `cli_test.go`. It expected `summary` to be unimplemented, which is no longer true.
+
+**Known gap**
+
+- A bare `--` before the log path is not treated as a terminator. The option parser may read the arguments after it as options. This is unlikely in practice, and I did not add a test for it.
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- internal/cli/cli.go
+- internal/cli/cli_test.go
+- internal/log/log.go
+- internal/log/parse.go
+- internal/log/log_test.go
+- internal/log/parse_test.go
+- internal/filter/filter.go
+- internal/filter/filter_test.go
+- internal/format/format.go
+- internal/format/format_test.go
+- internal/report/report.go
+- internal/report/report_test.go
+
+SUMMARY:
+- `sh sources/run.sh`: 20 passed, 0 failed (of 20), exit 0.
+- `sh bin/test.sh`: all packages pass. `go test -race ./...` also passes.
+- Coverage: usage and read-failure exit codes, CSV round-trip through the CLI, skip and duplicate rules, model attribution, numeric defaults, date validation, and every report&#x27;s ordering and zero-match output.
+- No staged assets were modified. `git status` shows only my source changes, and nothing was committed.
+
+&lt;blueprint-decisions&gt;
+[{&quot;spec&quot;:&quot;FEATURE-LogNumbers.md&quot;,&quot;severity&quot;:&quot;Low&quot;,&quot;subject&quot;:&quot;Non-numeric values in numeric stats&quot;,&quot;decision&quot;:&quot;The spec covers absent and null only. I treat any non-number in input_tokens, cached_input_tokens, output_tokens, cost_usd and elapsed_ms as zero, so the record is kept rather than skipped. Is that acceptable?&quot;}]
+&lt;/blueprint-decisions&gt;</pre></article>
+</main>
+</body>
+</html>

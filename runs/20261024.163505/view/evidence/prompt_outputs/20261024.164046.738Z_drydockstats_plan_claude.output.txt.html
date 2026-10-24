@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.164046.738Z_drydockstats_plan_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.164046.738Z_drydockstats_plan_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.164046.738Z_drydockstats_plan_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT VERIFICATION.md ===
+# FEATURE: Release Verification
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Terminal release gate that runs the supplied DrydockStats grader against the completed application. |
+
+## Questions
+
+- None.
+
+## Programmatic Acceptance
+
+=== AC release-grader-passes ===
+Intent: The completed ddkstat application passes the supplied grader, whose exit status is the sole acceptance verdict.
+Suite: full
+Requires: executable=sh; scope=test
+
+import subprocess
+import sys
+
+result = subprocess.run([&quot;sh&quot;, &quot;sources/run.sh&quot;], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0, result.returncode
+=== END AC release-grader-passes ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not modify, rewrite, regenerate, or substitute any file under `sources/`.
+- The grader&#x27;s exit status is the verdict; standard output is not asserted here.
+- The application must build with `go build ./cmd/ddkstat` from the application root using only the standard library.
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>

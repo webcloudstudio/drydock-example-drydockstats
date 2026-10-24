@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-SkippedCount.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-SkippedCount.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-SkippedCount.md">Raw file</a></div></header>
+<article class="doc"><h1>Feature: Whole-File Skipped Count</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Counts skipped log lines over the whole file, independent of any filter.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogSkip.md, FEATURE-FilterTarget.md, FEATURE-FilterDate.md</td></tr><tr><td>Provides</td><td>whole-file skipped count</td></tr><tr><td>Consumes</td><td>record parser, target and date filters</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>The <code>skipped</code> column of the summary report counts skipped lines in the entire log, regardless of <code>--target</code>, <code>--since</code>, or <code>--until</code>. Filters narrow the records a report aggregates; they never change the skipped count.</p>
+<h2>Behavior</h2>
+<ul><li>The skipped count is the number of non-blank lines that the record parser rejects, computed over every line of the file.</li><li>The count is computed before filters are applied, so <code>--target</code> and the date options have no effect on it.</li><li>Blank lines are not counted (see FEATURE-LogRead.md).</li><li>Running the same log with and without filters yields the same skipped count.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC skipped-ignores-target ===<br>Intent: The skipped count is identical with and without a --target filter.<br>Requires: executable=python3; scope=test</p>
+<p>import subprocess</p>
+<p>from drydock_go import cli_runner</p>
+<p>log = &quot;/tmp/ddkstat-skip-fixture.jsonl&quot; with open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f: f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e1&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:37:54.176Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false}}\n&#x27;) f.write(&quot;not json\n&quot;) f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e2&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:37:54.176Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;B&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false}}\n&#x27;)</p>
+<p>code_all, out_all, err_all = cli_runner(&quot;summary&quot;, log) code_f, out_f, err_f = cli_runner(&quot;summary&quot;, &quot;--target&quot;, &quot;A&quot;, log) print(err_all) print(err_f) assert code_all == 0, (code_all, out_all, err_all) assert code_f == 0, (code_f, out_f, err_f)</p>
+<p>skipped_all = out_all.split(&quot;\n&quot;)[1].split(&quot;,&quot;)[1] skipped_f = out_f.split(&quot;\n&quot;)[1].split(&quot;,&quot;)[1] assert skipped_all == &quot;1&quot;, repr(skipped_all) assert skipped_f == skipped_all, (skipped_all, skipped_f) === END AC skipped-ignores-target ===</p>
+<p>=== AC skipped-ignores-date ===<br>Intent: The skipped count is identical with and without date filters.<br>Requires: executable=python3; scope=test</p>
+<p>import subprocess</p>
+<p>from drydock_go import cli_runner</p>
+<p>log = &quot;/tmp/ddkstat-skip-date-fixture.jsonl&quot; with open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f: f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e1&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:37:54.176Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false}}\n&#x27;) f.write(&quot;not json\n&quot;) f.write(&#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;e2&quot;,&quot;started_at&quot;:&quot;2026-10-15T06:37:54.176Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;build&quot;,&quot;target&quot;:&quot;A&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false}}\n&#x27;)</p>
+<p>code_all, out_all, err_all = cli_runner(&quot;summary&quot;, log) code_f, out_f, err_f = cli_runner(&quot;summary&quot;, &quot;--since&quot;, &quot;2026-10-15&quot;, &quot;--until&quot;, &quot;2026-10-15&quot;, log) print(err_all) print(err_f) assert code_all == 0, (code_all, out_all, err_all) assert code_f == 0, (code_f, out_f, err_f)</p>
+<p>skipped_all = out_all.split(&quot;\n&quot;)[1].split(&quot;,&quot;)[1] skipped_f = out_f.split(&quot;\n&quot;)[1].split(&quot;,&quot;)[1] assert skipped_all == &quot;1&quot;, repr(skipped_all) assert skipped_f == skipped_all, (skipped_all, skipped_f) === END AC skipped-ignores-date ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The skipped count never depends on --target, --since, or --until.</li></ul></article>
+</main>
+</body>
+</html>

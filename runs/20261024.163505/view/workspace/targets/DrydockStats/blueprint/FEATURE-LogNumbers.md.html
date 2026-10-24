@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-LogNumbers.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-LogNumbers.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-LogNumbers.md">Raw file</a></div></header>
+<article class="doc"><h1>Feature: Log Numbers</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Treats absent or null token counts, cost, and elapsed time as zero, and keeps a record without result.stats as a record.</td></tr><tr><td>Depends On</td><td>FEATURE-LogSkip.md</td></tr><tr><td>Provides</td><td>Record token, cost, and elapsed accessors defaulting to zero</td></tr><tr><td>Consumes</td><td>record parser</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Let every aggregate sum numeric stats safely, so that partial or absent statistics never fail a run or drop a record.</p>
+<h2>Behavior</h2>
+<ul><li><code>input_tokens</code>, <code>cached_input_tokens</code>, <code>output_tokens</code>, <code>cost_usd</code>, and <code>elapsed_ms</code> each default to zero when absent or <code>null</code>.</li><li>A record with no <code>result.stats</code> object is still a kept record and contributes zero to every numeric aggregate.</li><li>Accessors return these values to the aggregation code; no numeric field causes a skip.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC log-numbers-null-and-absent-are-zero ===<br>Intent: Null and absent numeric stats count as zero in the summary totals and the record is still counted.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>line = &#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;n-1&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:37:54.176Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;plan&quot;,&quot;target&quot;:&quot;T&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false,&quot;stats&quot;:{&quot;cost_usd&quot;:null,&quot;elapsed_ms&quot;:null,&quot;input_tokens&quot;:5,&quot;output_tokens&quot;:7}}}&#x27; with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;log.jsonl&quot;) with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: fh.write(line + &quot;\n&quot;) code, out, err = cli_runner(&quot;summary&quot;, path) print(out) print(err) assert code == 0, (code, out, err) fields = out.splitlines()[1].split(&quot;,&quot;) assert fields[0] == &quot;1&quot;, out assert fields[6] == &quot;5&quot;, out assert fields[7] == &quot;0&quot;, out assert fields[8] == &quot;7&quot;, out assert fields[9] == &quot;0.0000&quot;, out assert fields[10] == &quot;0.0&quot;, out === END AC log-numbers-null-and-absent-are-zero ===</p>
+<p>=== AC log-numbers-no-stats-object ===<br>Intent: A record with no result.stats object is still counted as a record with zero numeric totals.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>line = &#x27;{&quot;schema_version&quot;:1,&quot;execution_id&quot;:&quot;n-2&quot;,&quot;started_at&quot;:&quot;2026-10-14T06:37:54.176Z&quot;,&quot;status&quot;:&quot;succeeded&quot;,&quot;job&quot;:{&quot;command_name&quot;:&quot;plan&quot;,&quot;target&quot;:&quot;T&quot;,&quot;llm&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;haiku&quot;},&quot;result&quot;:{&quot;returncode&quot;:0,&quot;timed_out&quot;:false}}&#x27; with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;log.jsonl&quot;) with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: fh.write(line + &quot;\n&quot;) code, out, err = cli_runner(&quot;summary&quot;, path) print(out) print(err) assert code == 0, (code, out, err) fields = out.splitlines()[1].split(&quot;,&quot;) assert fields[0] == &quot;1&quot;, out assert fields[6] == &quot;0&quot;, out assert fields[9] == &quot;0.0000&quot;, out === END AC log-numbers-no-stats-object ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Missing or null numeric stats are zero, never a skip reason (Rule 3).</li></ul></article>
+</main>
+</body>
+</html>

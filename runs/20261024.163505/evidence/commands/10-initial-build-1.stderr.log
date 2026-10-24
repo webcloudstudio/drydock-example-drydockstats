@@ -1,0 +1,2 @@
+error: build failed for DrydockStats: 22 step(s)
+  cli-entry — closed/failed: programmatic acceptance failed: log-read-blank-lines

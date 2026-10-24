@@ -1,0 +1,315 @@
+=== BEGIN ARTIFACT ANALYSIS.md ===
+# Blueprint Analysis: DrydockStats
+
+## Commander Expectations
+
+- assert the product reads Drydock's LLM execution log (logs/llm.jsonl) and writes six CSV reports
+- assert the product runs with the Go standard library only and no database
+- assert malformed, non-object, incomplete, and duplicate log lines are skipped without failing the run
+- assert every report matches the supplied known answers in sources/run.sh byte for byte
+- assert the Target and date filters narrow every report
+- assert the reporter is invoked as `ddkstat <report> [options] <log>`
+
+## Crew
+
+| Crew | Charge |
+|---|---|
+| Commander | Defines intent and decides what done means. |
+| Team Lead | Confirms epic completeness and stakeholder expectations. |
+| Planning Crew | Authors atomic specifications and the ordered Manifest. |
+| Shipyard Crew | Builds the tickets without synchronous Commander access. |
+
+## Story List
+
+### Feature: Log Ingestion
+
+| ID | Story | High-level AC |
+|---|---|---|
+| LOG-001 | Read JSON Lines log records from a file path | Each non-blank line is parsed as one JSON object; the file is read as UTF-8 |
+| LOG-002 | Skip non-object, incomplete, and duplicate records | Lines that are not objects, lack a required non-empty field, or repeat an earlier execution_id are skipped and counted, with a stderr warning naming the line number, and exit code is unchanged |
+| LOG-003 | Attribute each record to an executed or requested model | Model is result.stats.model when present and non-empty, otherwise job.model |
+| LOG-004 | Treat absent or null numeric stats as zero | Missing or null token counts, cost, and elapsed_ms count as zero; a record without result.stats is still a record |
+| LOG-005 | Classify a record as failed when status is not succeeded | Any status other than `succeeded` counts toward failed |
+
+### Feature: Filtering
+
+| ID | Story | High-level AC |
+|---|---|---|
+| FLT-001 | Filter records by Target name | Only records whose job.target equals the --target value exactly are kept |
+| FLT-002 | Filter records by start date range | --since and --until keep records whose start date (first 10 characters of started_at) is within the inclusive range |
+| FLT-003 | Validate date option values | Dates must be real calendar dates in YYYY-MM-DD form; invalid dates are a usage error (exit 2) |
+
+### Feature: Command Interface
+
+| ID | Story | High-level AC |
+|---|---|---|
+| CLI-001 | Parse report name, options, and single log path | Report comes first, options follow, log path is last; exactly one log path is required |
+| CLI-002 | Reject usage errors with exit code 2 | Unknown report, unknown option, missing option value, invalid date, or missing/extra log path exits 2 with nothing on stdout |
+| CLI-003 | Report operational read failures with exit code 1 | A log that cannot be opened or read exits 1 with nothing on stdout and one diagnostic line on stderr |
+
+### Feature: Summary Report
+
+| ID | Story | High-level AC |
+|---|---|---|
+| SUM-001 | Produce the summary report | One CSV row with header records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes |
+| SUM-002 | Count skipped lines over the whole file | The skipped count ignores filters |
+
+### Feature: Commands Report
+
+| ID | Story | High-level AC |
+|---|---|---|
+| CMD-001 | Produce the commands report | One row per command ordered by calls descending then command ascending, followed by a TOTAL row |
+
+### Feature: Targets Report
+
+| ID | Story | High-level AC |
+|---|---|---|
+| TGT-001 | Produce the targets report | One row per Target ordered ascending, followed by a TOTAL row, with cost and minutes columns |
+
+### Feature: Models Report
+
+| ID | Story | High-level AC |
+|---|---|---|
+| MDL-001 | Produce the models report | One row per provider and model pair ordered by provider then model ascending, followed by a TOTAL row |
+
+### Feature: Daily Report
+
+| ID | Story | High-level AC |
+|---|---|---|
+| DLY-001 | Produce the daily report | One row per start date ascending, tokens as input plus cached plus output, followed by a TOTAL row |
+
+### Feature: Failures Report
+
+| ID | Story | High-level AC |
+|---|---|---|
+| FAL-001 | Produce the failures report | One row per failed record ordered by started_at then execution_id, returncode empty when null or absent, timed_out as true or false |
+
+### Feature: Output Formatting
+
+| ID | Story | High-level AC |
+|---|---|---|
+| FMT-001 | Format minutes in tenths of a minute | Minutes equal (ms + 3000) / 6000 in integer division written as t/10 "." t%10; 95000 ms renders as 1.6 |
+| FMT-002 | Format cost with four decimal places | Summed cost_usd is written with %.4f |
+| FMT-003 | Write CSV with header, LF line endings, and TOTAL rows | Header row first, comma-separated, \n endings, zero-match rows write header and zero TOTAL where applicable |
+
+### Feature: Build and Verification
+
+| ID | Story | High-level AC |
+|---|---|---|
+| BLD-001 | Provide the Go module and ddkstat entry point | Go module root with main package at ./cmd/ddkstat, standard library only, builds with go build |
+| BLD-002 | Provide bin/test.sh over vet and tests | bin/test.sh is POSIX sh, exits zero only when go vet ./... and go test ./... both pass |
+| BLD-003 | Pass the supplied grader | sh sources/run.sh exits zero with all 20 checks passing |
+
+## Surfaced Acceptance Criteria
+
+| ID | Story ID | Criterion |
+|---|---|---|
+| AC-001 | LOG-002 | The reporter writes exactly one stderr warning per skipped line naming its line number, and never writes warnings to stdout |
+| AC-002 | LOG-002 | A duplicate execution_id is skipped only on its later occurrences; the first occurrence is kept |
+| AC-003 | LOG-001 | Blank lines are ignored and not counted as skipped |
+| AC-004 | FLT-002 | A date filter that matches nothing yields a header-only (or zero TOTAL) report with exit 0 |
+| AC-005 | CLI-001 | The log path is the final argument; any argument after it, including a second log path, is a usage error |
+| AC-006 | CMD-001 | Ties in calls are ordered by command name in byte order |
+| AC-007 | FMT-002 | A zero-match cost column renders as 0.0000 and minutes as 0.0 |
+| AC-008 | FAL-001 | The failures report contains no TOTAL row |
+| AC-009 | MDL-001 | The TOTAL row leaves the provider and model cells empty (`TOTAL,,…`) |
+| AC-010 | DLY-001 | Dates are ordered ascending by byte value of the YYYY-MM-DD string |
+
+## Relationship Model
+
+| Source or group | Relationship type | Related source or group | Evidence | Delivery implication |
+|---|---|---|---|---|
+| sources/INSTRUCTIONS.md (Rules 1–9) | instruction-to-test | sources/run.sh | Rule 2 skip conditions and the sample's three skipped lines | Ingestion stories must be verified by the grader and the bin/test.sh suite |
+| sources/run.sh | test-kit-to-implementation | cmd/ddkstat | `go build -o ... ./cmd/ddkstat` and 20 checks | The executable's exact stdout and exit codes are the acceptance surface |
+| sources/llm_sample.jsonl | dependency | sources/run.sh | Known totals in A1–A6, B1–B5, C1–C2, E1, U1–U6 | Reports depend on the sample's 33 valid records and 3 skipped lines |
+| LOG-* stories | parser-to-normalizer | FMT-* and report stories | Rules 3–5 feed each report's sums | Parsing must finish before any report aggregates |
+| FLT-* stories | parser-to-normalizer | every report story | Rule 6: filters apply to every report | Filter application is shared across reports |
+
+## Source Roles
+
+| Path | Role | Plan disposition | Build disposition |
+|---|---|---|---|
+| sources/INSTRUCTIONS.md | normative specification | compass | none |
+| sources/run.sh | conformance harness | context | stage |
+| sources/llm_sample.jsonl | asset | context | stage |
+
+## Planning Instructions
+
+### Delivery Shape
+
+The system is a single Go command-line executable. Input: one JSON Lines file path plus optional `--target`, `--since`, and `--until` filters. Output: one CSV report to standard output, with diagnostics on standard error. Required execution flow: parse arguments, open and read the log, skip invalid lines, apply filters, aggregate, and write one of six reports.
+
+### Story Realization Map
+
+- LOG-001 to LOG-005: `sources/INSTRUCTIONS.md` Rules 1–5 and the Log section; exercised by `sources/llm_sample.jsonl`.
+- FLT-001 to FLT-003: `sources/INSTRUCTIONS.md` Command and Rule 6; date validation per Exit codes section.
+- CLI-001 to CLI-003: `sources/INSTRUCTIONS.md` Command and Exit codes table.
+- SUM-001 to SUM-002: `sources/INSTRUCTIONS.md` Output table row `summary`; `sources/run.sh` A1, B1, C2.
+- CMD-001: Output table row `commands`; `sources/run.sh` A2, B2, C1.
+- TGT-001: Output table row `targets`; `sources/run.sh` A3.
+- MDL-001: Output table row `models`; `sources/run.sh` A4, B5.
+- DLY-001: Output table row `daily`; `sources/run.sh` A5, B3.
+- FAL-001: Output table row `failures`; `sources/run.sh` A6, B4.
+- FMT-001 to FMT-003: Rules 7–9 and Output section.
+- BLD-001 to BLD-003: Stack section, Tests section, and `sources/run.sh` build step.
+
+### Test and Acceptance Strategy
+
+Focused story tests cover each report, filter, skip rule, and exit code using logs written by the tests (`bin/test.sh`). Final verification is the single terminal story BLD-003, which runs the unfiltered grader `sh sources/run.sh`. That story declares `Suite: full`. Other stories run only their owned slice and declare `Suite: scoped`.
+
+### Sequencing and Dependencies
+
+Build BLD-001 first. LOG-001 and LOG-002 precede every report and filter story. LOG-003 through LOG-005 and FLT-* precede report stories. FMT-* precede the report stories that use them. BLD-002 follows all implementation stories. BLD-003 is terminal and depends on every implementation story.
+
+### Source Conflicts and Gaps
+
+None found. The instructions and the grader agree on every output header, ordering rule, and known answer. The grader's check U1 (no arguments) and U6 (two log paths) are consistent with the Command section's requirement of exactly one log path.
+
+## Analysis Notes
+
+generated: 2026-10-24
+blueprint: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261024.163505/workspace/targets/DrydockStats/blueprint
+
+Quality: Ready
+  blockers: 0
+  questions: 0
+  features: 8
+  stories: 26
+  stack: Go 1.22 or newer, standard library only
+  display_name: DrydockStats
+  short_description: not proposed
+
+Two source-complete ambiguities were resolved to the narrowest consistent behavior: a date filter matching nothing emits a zero-row or header-only report with exit 0, and invalid dates are usage errors even when they appear after the log path.
+=== END ARTIFACT ===
+
+=== BEGIN ARTIFACT SEA_TRIALS.md ===
+# Sea Trials: DrydockStats
+
+Project-level acceptance derived from COMPASS and sources.
+
+## st-001: The supplied grader passes
+
+Type: technical
+Required: yes
+Criterion: The completed ddkstat shall make sh sources/run.sh exit zero; that script's exit status is the sole acceptance verdict.
+Verification: proof
+Pattern: ubiquitous
+Command: ["sh", "sources/run.sh"]
+
+## st-002: Test suite passes
+
+Type: technical
+Required: yes
+Criterion: The application shall provide a POSIX-compatible bin/test.sh that exits zero when go vet and every automated test pass.
+Verification: proof
+Pattern: ubiquitous
+
+## st-003: The executable builds with go build
+
+Type: technical
+Required: yes
+Criterion: The application root shall be a Go module from which go build ./cmd/ddkstat produces the ddkstat executable using only the standard library.
+Verification: proof
+Pattern: ubiquitous
+
+## st-004: Malformed and duplicate lines are skipped, not fatal
+
+Type: behavioral
+Required: yes
+Criterion: If a log line is not a JSON object, lacks a required field, or repeats an earlier execution_id, then the application shall skip it, count it in the summary, and still exit zero.
+Verification: proof
+Pattern: unwanted
+
+## st-005: The six reports match the known answers
+
+Type: behavioral
+Required: yes
+Criterion: The application shall compute the summary, commands, targets, models, daily, and failures reports from the log, matching the known answers in sources/run.sh byte for byte.
+Verification: proof
+Pattern: ubiquitous
+
+## st-006: Filters narrow every report
+
+Type: behavioral
+Required: yes
+Criterion: When --target, --since, or --until is given, the application shall compute every report over only the matching records.
+Verification: proof
+Pattern: event
+
+## st-007: The executed model is preferred
+
+Type: behavioral
+Required: yes
+Criterion: The application shall attribute a record to result.stats.model when it is present and to job.model otherwise.
+Verification: proof
+Pattern: ubiquitous
+
+## st-008: Errors map to exit codes
+
+Type: behavioral
+Required: yes
+Criterion: If the log cannot be read, then the application shall exit 1; if the arguments are malformed, then the application shall exit 2; in both cases it shall write nothing to standard output.
+Verification: proof
+Pattern: unwanted
+
+## Questions
+
+- None.
+=== END ARTIFACT ===
+
+=== BEGIN ARTIFACT TECHNOLOGY_STACK.md ===
+# Technology Stack
+
+| Technology | Rigging | Notes |
+|---|---|---|
+| Go 1.22+ | go.md | Standard library only; no third-party modules |
+| Go toolchain (`go build`, `go vet`, `go test`) | — | Build and test gates named in the sources |
+| POSIX sh | — | Used by `bin/test.sh` and the supplied `sources/run.sh` grader |
+=== END ARTIFACT ===
+
+=== BEGIN ARTIFACT COMPASS.md ===
+# COMPASS: DrydockStats
+
+## Compass
+DrydockStats is a standard-library Go command-line reporter for Drydock's LLM execution log (logs/llm.jsonl). It reads one JSON record per LLM call and answers operator questions about call counts, Targets, providers and models, tokens, minutes, cost, and failures, emitting six CSV reports. It serves Drydock operators who need usage and failure accounting without a database.
+
+## Constraints
+- Go 1.22 or newer; standard library only; no database.
+- Application root is a Go module; the executable is the main package at ./cmd/ddkstat.
+- Reports are CSV to standard output; diagnostics go to standard error only.
+- Exit codes: 0 success, 1 unreadable log, 2 usage error.
+- Do not modify sources/run.sh or sources/llm_sample.jsonl.
+
+## Guardrails
+- Never read sources/run.sh or embed a report answer in application code; every value is computed from the log.
+- Never fail the run because of a skipped line; skipping never changes the exit code.
+- Never write anything to standard output on a failing command.
+- Never compare or depend on standard error output.
+- Never use a sample answer to bypass computation.
+=== END ARTIFACT ===
+
+=== BEGIN ARTIFACT discovery-identity.json ===
+{
+  "id": "discovery-identity",
+  "title": "Discovery: Project Identity",
+  "purpose": "Confirm the proposed display name and short description before planning.",
+  "questions": [
+    {
+      "id": "display_name",
+      "label": "Display Name",
+      "prompt": "The display name Drydock will use for this project. Edit to override the proposal.",
+      "input": "text",
+      "proposed": "DrydockStats",
+      "answer": "DrydockStats"
+    },
+    {
+      "id": "short_description",
+      "label": "Short Description",
+      "prompt": "One-sentence description of what this project does. Edit to override the proposal.",
+      "input": "textarea",
+      "proposed": "A standard-library Go command-line reporter that summarizes Drydock's LLM execution log into six CSV reports with Target and date filters.",
+      "answer": "A standard-library Go command-line reporter that summarizes Drydock's LLM execution log into six CSV reports with Target and date filters."
+    }
+  ]
+}
+=== END ARTIFACT ===

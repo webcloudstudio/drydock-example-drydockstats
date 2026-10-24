@@ -1,0 +1,483 @@
+=== BEGIN ARTIFACT FEATURE-LogRead.md ===
+# Feature: Log Read
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Reads a JSON Lines execution log from a file path as UTF-8, one line at a time, ignoring blank lines. |
+| Depends On  | ARCHITECTURE.md |
+| Provides    | logfile line reader for a file path |
+| Consumes    | - |
+
+## Questions
+
+- Q-005 (low, system_choice `skip-line`): a line whose bytes are not valid UTF-8 cannot parse as a JSON object, so it is skipped under the malformed-line rule rather than failing the run. Only an open or read failure of the file is operational (exit 1). Recorded in DECISIONS.json.
+
+## Purpose
+
+Provide the single entry point through which every report reads Drydock's LLM execution log. The reader yields each non-blank line as raw bytes in file order. Parsing, skipping, and aggregation happen downstream.
+
+## Behavior
+
+- The file path is opened and read as UTF-8 bytes, one line at a time.
+- Lines that are empty or contain only whitespace are ignored and are not counted as skipped.
+- Each non-blank line is passed on as raw bytes, with its one-based line number preserved for diagnostics.
+- A file that cannot be opened or read returns an operational error to the caller, which maps it to exit 1.
+- The reader never writes to the log file.
+
+## Programmatic Acceptance
+
+=== AC log-read-blank-lines ===
+Intent: Blank lines are ignored by the line reader and do not appear in the yielded lines.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import subprocess
+import tempfile
+
+from drydock_go import cli_runner
+
+content = '{"execution_id":"a"}\n\n   \n{"execution_id":"b"}\n'
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(content)
+    code, out, err = cli_runner("summary", path)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    rows = out.splitlines()
+    assert rows[0].startswith("records,skipped,"), out
+    fields = rows[1].split(",")
+    assert fields[0] == "2", out
+    assert fields[1] == "0", out
+=== END AC log-read-blank-lines ===
+
+=== AC log-read-utf8 ===
+Intent: The line reader reads the file as UTF-8 and a multibyte character inside a valid record is kept intact.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+record = '{"schema_version":1,"execution_id":"u-1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"plan \u00e9","target":"Caf\u00e9","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cost_usd":0.5,"elapsed_ms":1000,"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}}\n'
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(record)
+    code, out, err = cli_runner("commands", path)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    rows = out.splitlines()
+    assert rows[0] == "command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes", out
+    fields = rows[1].split(",")
+    assert fields[0] == "plan \u00e9", out
+=== END AC log-read-utf8 ===
+
+=== AC log-read-missing-file ===
+Intent: A log path that cannot be opened exits 1 with nothing on stdout.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "no-such-log.jsonl")
+    code, out, err = cli_runner("summary", path)
+    print(out)
+    print(err)
+    assert code == 1, (code, out, err)
+    assert out == "", out
+=== END AC log-read-missing-file ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Blank lines are not counted as skipped (see LOG-002 and Rule 1).
+- The reader never writes to the log being read.
+- Standard library only.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LogSkip.md ===
+# Feature: Log Skip
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Parses each non-blank log line as a JSON object, skips malformed, incomplete, and duplicate records with a stderr warning, and exposes the whole-file skipped count. |
+| Depends On  | FEATURE-LogRead.md |
+| Provides    | record parser with whole-file skipped count |
+| Consumes    | logfile line reader |
+
+## Questions
+
+- Q-004 (material, system_choice `kept-only`): only kept records register an execution_id; a line skipped for a missing field does not block a later valid line with the same id. The sample passes under either reading. Recorded in DECISIONS.json.
+
+## Purpose
+
+Turn raw log lines into kept records and a whole-file skipped count. Malformed and duplicate lines are never fatal; they are skipped, counted, and reported on stderr.
+
+## Behavior
+
+- Each non-blank line is parsed as a JSON object. A line that is not a JSON object is skipped.
+- A line is skipped when any of `execution_id`, `started_at`, `status`, `job.command_name`, or `job.target` is absent or not a non-empty string.
+- A line whose `execution_id` already appeared on an earlier kept record is skipped. The first occurrence is kept.
+- Each skipped line writes exactly one warning to standard error naming its one-based line number. Nothing is written to standard output.
+- Skipping never changes the exit code.
+- The skipped count covers the whole file and is independent of any filter.
+
+## Programmatic Acceptance
+
+=== AC log-skip-counts-and-exit ===
+Intent: Non-object, incomplete, and malformed lines are skipped, counted in the summary, and do not change exit status.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+good = '{"schema_version":1,"execution_id":"k-1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"plan","target":"T","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cost_usd":0.1,"elapsed_ms":1000,"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}}'
+lines = [good, "not json", "[1,2,3]", '{"execution_id":"k-2","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"plan"}}']
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+    code, out, err = cli_runner("summary", path)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    fields = out.splitlines()[1].split(",")
+    assert fields[0] == "1", out
+    assert fields[1] == "3", out
+=== END AC log-skip-counts-and-exit ===
+
+=== AC log-skip-duplicate-first-kept ===
+Intent: A duplicate execution_id is skipped on its later occurrence and the first occurrence is kept.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+first = '{"schema_version":1,"execution_id":"d-1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"plan","target":"T","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cost_usd":0.1,"elapsed_ms":1000,"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}}'
+second = '{"schema_version":1,"execution_id":"d-1","started_at":"2026-10-15T06:37:54.176Z","status":"failed","job":{"command_name":"build","target":"T","llm":"claude","model":"haiku"},"result":{"returncode":1,"timed_out":false,"stats":{"cost_usd":0.9,"elapsed_ms":9000,"input_tokens":9,"cached_input_tokens":0,"output_tokens":9}}}'
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(first + "\n" + second + "\n")
+    code, out, err = cli_runner("summary", path)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    fields = out.splitlines()[1].split(",")
+    assert fields[0] == "1", out
+    assert fields[1] == "1", out
+    assert fields[2] == "1", out
+    assert fields[3] == "0", out
+=== END AC log-skip-duplicate-first-kept ===
+
+=== AC log-skip-warning-per-line ===
+Intent: Each skipped line writes exactly one stderr warning naming its line number, and nothing is written to stdout for skips.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+good = '{"schema_version":1,"execution_id":"w-1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"plan","target":"T","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cost_usd":0.1,"elapsed_ms":1000,"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}}'
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("garbage\n" + good + "\n")
+    code, out, err = cli_runner("summary", path)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    warnings = [line for line in err.splitlines() if line.strip()]
+    assert len(warnings) == 1, err
+    assert "1" in warnings[0], err
+    assert "garbage" not in out, out
+=== END AC log-skip-warning-per-line ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Skipping never changes the exit code (Rule 2).
+- Skipped-line warnings go to standard error only and are never compared by the grader.
+- The skipped count is computed over the whole file regardless of filters (Rule 6).
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LogModel.md ===
+# Feature: Log Model
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Attributes each kept record to its executed model when present and non-empty, otherwise to its requested model. |
+| Depends On  | FEATURE-LogSkip.md |
+| Provides    | Record.Model |
+| Consumes    | record parser |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Name the model that ran each call, so the models and failures reports can group and display it.
+
+## Behavior
+
+- A record's model is `result.stats.model` when that field is present and a non-empty string.
+- Otherwise the model is `job.model`.
+- The model is exposed on each kept record as `Record.Model`.
+
+## Programmatic Acceptance
+
+=== AC log-model-prefers-executed ===
+Intent: A record with result.stats.model reports that executed model in the models report rather than job.model.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+line = '{"schema_version":1,"execution_id":"m-1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"plan","target":"T","llm":"claude","model":"requested-model"},"result":{"returncode":0,"timed_out":false,"stats":{"model":"executed-model","cost_usd":0.1,"elapsed_ms":1000,"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}}'
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(line + "\n")
+    code, out, err = cli_runner("models", path)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    rows = out.splitlines()
+    fields = rows[1].split(",")
+    assert fields[0] == "claude", out
+    assert fields[1] == "executed-model", out
+=== END AC log-model-prefers-executed ===
+
+=== AC log-model-falls-back-to-requested ===
+Intent: A record without result.stats.model reports its job.model in the models report.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+line = '{"schema_version":1,"execution_id":"m-2","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"plan","target":"T","llm":"claude","model":"requested-model"},"result":{"returncode":0,"timed_out":false,"stats":{"cost_usd":0.1,"elapsed_ms":1000,"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}}'
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(line + "\n")
+    code, out, err = cli_runner("models", path)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    fields = out.splitlines()[1].split(",")
+    assert fields[1] == "requested-model", out
+=== END AC log-model-falls-back-to-requested ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The executed model is preferred whenever it is present and non-empty (Rule 4).
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LogNumbers.md ===
+# Feature: Log Numbers
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Treats absent or null token counts, cost, and elapsed time as zero, and keeps a record without result.stats as a record. |
+| Depends On  | FEATURE-LogSkip.md |
+| Provides    | Record token, cost, and elapsed accessors defaulting to zero |
+| Consumes    | record parser |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Let every aggregate sum numeric stats safely, so that partial or absent statistics never fail a run or drop a record.
+
+## Behavior
+
+- `input_tokens`, `cached_input_tokens`, `output_tokens`, `cost_usd`, and `elapsed_ms` each default to zero when absent or `null`.
+- A record with no `result.stats` object is still a kept record and contributes zero to every numeric aggregate.
+- Accessors return these values to the aggregation code; no numeric field causes a skip.
+
+## Programmatic Acceptance
+
+=== AC log-numbers-null-and-absent-are-zero ===
+Intent: Null and absent numeric stats count as zero in the summary totals and the record is still counted.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+line = '{"schema_version":1,"execution_id":"n-1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"plan","target":"T","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cost_usd":null,"elapsed_ms":null,"input_tokens":5,"output_tokens":7}}}'
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(line + "\n")
+    code, out, err = cli_runner("summary", path)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    fields = out.splitlines()[1].split(",")
+    assert fields[0] == "1", out
+    assert fields[6] == "5", out
+    assert fields[7] == "0", out
+    assert fields[8] == "7", out
+    assert fields[9] == "0.0000", out
+    assert fields[10] == "0.0", out
+=== END AC log-numbers-null-and-absent-are-zero ===
+
+=== AC log-numbers-no-stats-object ===
+Intent: A record with no result.stats object is still counted as a record with zero numeric totals.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+line = '{"schema_version":1,"execution_id":"n-2","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"plan","target":"T","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false}}'
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(line + "\n")
+    code, out, err = cli_runner("summary", path)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    fields = out.splitlines()[1].split(",")
+    assert fields[0] == "1", out
+    assert fields[6] == "0", out
+    assert fields[9] == "0.0000", out
+=== END AC log-numbers-no-stats-object ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Missing or null numeric stats are zero, never a skip reason (Rule 3).
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LogFailed.md ===
+# Feature: Log Failed
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Classifies a kept record as failed when its status is any value other than succeeded, and exposes the fields the failures report needs. |
+| Depends On  | FEATURE-LogSkip.md |
+| Provides    | Record.Failed, nullable returncode, timed_out |
+| Consumes    | record parser |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Identify failed calls for the summary, command, target, model, daily, and failures reports.
+
+## Behavior
+
+- A record is failed when `status` is any value other than `succeeded`.
+- The record exposes `started_at`, `job.target`, `job.command_name`, its model (per FEATURE-LogModel), `result.returncode` as nullable, and `result.timed_out` for the failures report.
+- `returncode` is absent or `null` when the record has no return code; `timed_out` is treated as false when absent.
+
+## Programmatic Acceptance
+
+=== AC log-failed-status-classification ===
+Intent: A record whose status is not succeeded is counted as failed in the summary, and a succeeded record is not.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+ok = '{"schema_version":1,"execution_id":"f-1","started_at":"2026-10-14T06:37:54.176Z","status":"succeeded","job":{"command_name":"plan","target":"T","llm":"claude","model":"haiku"},"result":{"returncode":0,"timed_out":false,"stats":{"cost_usd":0.1,"elapsed_ms":1000,"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}}'
+bad = '{"schema_version":1,"execution_id":"f-2","started_at":"2026-10-14T06:38:54.176Z","status":"timeout","job":{"command_name":"plan","target":"T","llm":"claude","model":"haiku"},"result":{"returncode":null,"timed_out":true,"stats":{"cost_usd":0.1,"elapsed_ms":1000,"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}}'
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(ok + "\n" + bad + "\n")
+    code, out, err = cli_runner("summary", path)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    fields = out.splitlines()[1].split(",")
+    assert fields[0] == "2", out
+    assert fields[2] == "1", out
+    assert fields[3] == "1", out
+=== END AC log-failed-status-classification ===
+
+=== AC log-failed-returncode-and-timeout ===
+Intent: The failures report shows an empty returncode for a null return code and true for timed_out.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+bad = '{"schema_version":1,"execution_id":"f-3","started_at":"2026-10-14T06:38:54.176Z","status":"failed","job":{"command_name":"diagnose","target":"T","llm":"claude","model":"sonnet"},"result":{"returncode":null,"timed_out":true,"stats":{"cost_usd":0.1,"elapsed_ms":1000,"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}}'
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "log.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(bad + "\n")
+    code, out, err = cli_runner("failures", path)
+    print(out)
+    print(err)
+    assert code == 0, (code, out, err)
+    fields = out.splitlines()[1].split(",")
+    assert fields[4] == "", out
+    assert fields[5] == "true", out
+=== END AC log-failed-returncode-and-timeout ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- A failed record is any status other than `succeeded` (Rule 5).
+=== END ARTIFACT ===

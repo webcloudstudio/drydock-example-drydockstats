@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-FilterDate.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-FilterDate.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-FilterDate.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Filter Records by Start Date</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Keep only log records whose start date falls within the inclusive --since and --until range.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogSkip.md, FEATURE-CommandParse.md, FEATURE-FilterValidate.md</td></tr><tr><td>Provides</td><td>date range filter predicate</td></tr><tr><td>Consumes</td><td>record parser, parsed options</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Every report applies the same start-date predicate. A record&#x27;s start date is the first 10 characters of its <code>started_at</code> string. When <code>--since</code> or <code>--until</code> is given, only records whose start date lies within the inclusive range are kept.</p>
+<h2>Behavior</h2>
+<ul><li>Start date = <code>started_at[0:10]</code>, compared as a <code>YYYY-MM-DD</code> string. Byte-order comparison of</li></ul>
+<p>validated dates equals chronological order.</p>
+<ul><li><code>--since D</code> keeps records with start date <code>&gt;= D</code>. <code>--until D</code> keeps records with start date <code>&lt;= D</code>.</li></ul>
+<p>Both bounds are inclusive and independently optional.</p>
+<ul><li>Inverted ranges (<code>--since</code> later than <code>--until</code>) match no record and exit 0; the report is</li></ul>
+<p>header-only or zero-TOTAL. This is the narrowest consistent behavior under the AC-004 precedent.</p>
+<ul><li>Option values are validated as real calendar dates by FEATURE-FilterValidate.md before this</li></ul>
+<p>predicate is built; this feature receives only valid dates.</p>
+<ul><li>The <code>skipped</code> count is not affected by this predicate.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC filter-date-inclusive-bounds ===<br>Intent: --since and --until keep records whose start date equals either bound and exclude dates outside the range.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>dates = [&quot;2026-10-13&quot;, &quot;2026-10-14&quot;, &quot;2026-10-15&quot;, &quot;2026-10-16&quot;, &quot;2026-10-17&quot;] records = [] for i, d in enumerate(dates): records.append({&quot;schema_version&quot;: 1, &quot;execution_id&quot;: f&quot;d-{i}&quot;, &quot;started_at&quot;: f&quot;{d}T04:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Alpha&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;input_tokens&quot;: 1, &quot;cached_input_tokens&quot;: 0, &quot;output_tokens&quot;: 1, &quot;cost_usd&quot;: 0.1}}})</p>
+<p>fd, path = tempfile.mkstemp(suffix=&quot;.jsonl&quot;) with os.fdopen(fd, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: for obj in records: fh.write(json.dumps(obj) + &quot;\n&quot;)</p>
+<p>try: code, out, err = cli_runner(&quot;summary&quot;, &quot;--since&quot;, &quot;2026-10-14&quot;, &quot;--until&quot;, &quot;2026-10-16&quot;, path) print(out) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(out.splitlines())) assert rows[1][0] == &quot;3&quot;, rows assert rows[1][4] == &quot;2026-10-14&quot;, rows assert rows[1][5] == &quot;2026-10-16&quot;, rows finally: os.remove(path) === END AC filter-date-inclusive-bounds ===</p>
+<p>=== AC filter-date-since-only ===<br>Intent: --since alone keeps records on or after the bound and nothing earlier.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>dates = [&quot;2026-10-13&quot;, &quot;2026-10-14&quot;, &quot;2026-10-16&quot;] records = [] for i, d in enumerate(dates): records.append({&quot;schema_version&quot;: 1, &quot;execution_id&quot;: f&quot;e-{i}&quot;, &quot;started_at&quot;: f&quot;{d}T04:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Alpha&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;input_tokens&quot;: 1, &quot;cached_input_tokens&quot;: 0, &quot;output_tokens&quot;: 1, &quot;cost_usd&quot;: 0.1}}})</p>
+<p>fd, path = tempfile.mkstemp(suffix=&quot;.jsonl&quot;) with os.fdopen(fd, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: for obj in records: fh.write(json.dumps(obj) + &quot;\n&quot;)</p>
+<p>try: code, out, err = cli_runner(&quot;summary&quot;, &quot;--since&quot;, &quot;2026-10-14&quot;, path) print(out) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(out.splitlines())) assert rows[1][0] == &quot;2&quot;, rows assert rows[1][4] == &quot;2026-10-14&quot;, rows finally: os.remove(path) === END AC filter-date-since-only ===</p>
+<p>=== AC filter-date-inverted-range-exit-zero ===<br>Intent: An inverted range (--since later than --until) matches nothing and exits 0.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>record = {&quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;f-1&quot;, &quot;started_at&quot;: &quot;2026-10-14T05:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Alpha&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1000, &quot;input_tokens&quot;: 1, &quot;cached_input_tokens&quot;: 0, &quot;output_tokens&quot;: 1, &quot;cost_usd&quot;: 0.1}}}</p>
+<p>fd, path = tempfile.mkstemp(suffix=&quot;.jsonl&quot;) with os.fdopen(fd, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: fh.write(json.dumps(record) + &quot;\n&quot;)</p>
+<p>try: code, out, err = cli_runner(&quot;summary&quot;, &quot;--since&quot;, &quot;2026-10-16&quot;, &quot;--until&quot;, &quot;2026-10-14&quot;, path) print(out) print(err) assert code == 0, (code, out, err) rows = list(csv.reader(out.splitlines())) assert rows[1][0] == &quot;0&quot;, rows finally: os.remove(path) === END AC filter-date-inverted-range-exit-zero ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The date predicate compares only the first 10 characters of <code>started_at</code>; it never parses times</li></ul>
+<p>or time zones.</p>
+<ul><li>Filter bounds are never adjusted or widened to make a range match.</li><li>The predicate never reads or alters the log file.</li></ul></article>
+</main>
+</body>
+</html>
