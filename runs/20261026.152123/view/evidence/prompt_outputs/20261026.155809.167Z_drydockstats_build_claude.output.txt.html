@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.155809.167Z_drydockstats_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.155809.167Z_drydockstats_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.155809.167Z_drydockstats_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>The application already exists, so this step is verification. I&#x27;ll run the grader unmodified.The grader passed. I&#x27;ll confirm the run left no changes behind in the working tree.RESULT: SUCCESS
+
+The supplied grader passes unmodified. `sh sources/run.sh` built `./cmd/ddkstat` and ran all 20 checks against `sources/llm_sample.jsonl`: 20 passed, 0 failed, exit 0. I did not change any file, and the working tree is still clean.
+
+FILES CHANGED:
+- None
+
+SUMMARY:
+This was a verification-only block. The existing implementation already satisfies it, so I made no application changes. Checks performed:
+- `sh sources/run.sh`, run unfiltered from the application root: exit 0, 20 of 20 checks passed. The checks cover all six reports (summary, commands, targets, models, daily, failures), the Target and date filters, the empty-filter case, the missing-log operational failure (exit 1), and the usage errors (exit 2).
+- `git status` after the run: no changes.
+
+I did not run `sh bin/test.sh` or `go test`. The verification story&#x27;s declared gate is the grader alone, and this block&#x27;s scope was to run it.
+
+BLOCKERS:
+- None</pre></article>
+</main>
+</body>
+</html>

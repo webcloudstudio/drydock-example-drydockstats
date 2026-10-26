@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.154815.733Z_drydockstats_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.154815.733Z_drydockstats_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.154815.733Z_drydockstats_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>RESULT: SUCCESS
+
+FILES CHANGED:
+- internal/format/format.go
+- internal/format/format_test.go
+
+SUMMARY:
+Added the `internal/format` package with the two pure formatters from FEATURE-ValueFormat.md:
+- `Minutes(ms int64) string` computes `t = (ms + 3000) / 6000` in integer division and returns `t/10`, `.`, `t%10`. So 95000 gives `1.6` and 0 gives `0.0`.
+- `Cost(usd float64) string` returns `fmt.Sprintf(&quot;%.4f&quot;, usd)`.
+
+Tests in `format_test.go`, named as the four declared acceptance checks:
+- `TestMinutesRounding` checks boundary values (0, 2999, 3000, 5999, 6000, 8999, 9000, 95000, and others). Expected values are computed from the formula in the test, plus spot checks for 95000, 2999 and 3000.
+- `TestMinutesZero` checks `Minutes(0) == &quot;0.0&quot;`.
+- `TestCostFourPlaces` checks that `Cost` matches `%.4f` and that the fractional part is exactly four digits, read back from the returned string.
+- `TestCostZero` checks `Cost(0) == &quot;0.0000&quot;`.
+
+Checks run:
+- `gofmt -l internal/format` printed nothing.
+- `go vet ./internal/format` passed.
+- `go test -count=1 -v ./internal/format`: all four tests PASS.
+- `sh bin/test.sh` (vet and test on all packages): all packages `ok`, no failures. The script&#x27;s own exit status was not captured because I piped it through `tail`; the output shows no failing package.
+
+No changes were made outside `internal/format/`, and nothing under `sources/` was touched. No Git operations were run.
+
+BLOCKERS:
+- None.</pre></article>
+</main>
+</body>
+</html>

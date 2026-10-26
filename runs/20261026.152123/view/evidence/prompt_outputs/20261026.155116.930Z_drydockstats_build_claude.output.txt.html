@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.155116.930Z_drydockstats_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.155116.930Z_drydockstats_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.155116.930Z_drydockstats_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>I&#x27;ll start by inspecting the build directory and the staged sources.The report package doesn&#x27;t exist yet. I&#x27;ll read the existing CLI, filter, format, and logread code to see what&#x27;s already there.The existing `cli` package already has the registry and the filter path. What&#x27;s missing is the `internal/report` package and the registration hook. I&#x27;ll confirm the existing tests pass before I change anything.The baseline is green. Next I&#x27;ll write the `internal/report` package: a shared base file, then one file per report.I used a nonexistent `recordFields` type in `Add`. I&#x27;ll fix it to `logread.Record` before going further.Next, `main.go` needs the blank import so the binary registers the writers. The existing &quot;unregistered report&quot; test in `internal/cli` can no longer hold once every report is registered, so I&#x27;ll remove that one test.Now the CLI-level reachability tests for the `internal/cli` acceptance checks. Each one re-registers the real writers first, because the existing tests overwrite the registry globally.Next, the `internal/report` unit tests. I&#x27;ll start with the shared helpers: a record builder, a CSV read-back helper, and a log writer for the filter test.Now the summary tests. The skipped-count test goes through `cli.Run` on a real log file, so the filter path is exercised, not just the aggregate.I left junk in `TestSummarySkippedIgnoresFilters`: a stray `report := cli.Run` and a check that reads back a nil-record writer instead of the CLI&#x27;s stdout. I&#x27;ll rewrite it to parse the CLI&#x27;s own output.Now the remaining report tests, one file per report: targets, commands, models, failures, and daily.All the test files are written. I&#x27;ll run gofmt, vet, and the full test suite.Tests pass. gofmt flags `run_test.go`, most likely a blank line left by the removed test. I&#x27;ll check the diff before applying it.The only gofmt change was a trailing blank line I created when I removed the test, so the diff is mine. Vet is clean. Next I&#x27;ll run the staged grader, `sources/run.sh`, which the COMPASS names as the terminal check. It only reads the sample log.All 20 grader checks pass. Last, I&#x27;ll confirm every test name the specs require exists and passes, and that nothing under `sources/` changed.All six report writers are built and registered, and the grader passes 20 of 20.
+
+Checks run:
+- `sh bin/test.sh` (`go vet` plus `go test ./...`) passes for every package.
+- `sh sources/run.sh` exits 0 with 20 of 20 passing.
+- All 31 test names the specs require (the 27 report unit tests plus the 4 `internal/cli` reachability tests) exist and pass.
+- `sources/` is unchanged.
+
+Choices I made:
+- **Registration:** the `report` package registers its writers from `init()`, and `cmd/ddkstat/main.go` imports it with a blank import. `cli.Run` still never imports `report`.
+- **Re-registration in tests:** I exported `report.Register()` and call it from the new `internal/cli` tests. The existing CLI tests overwrite registry entries and never restore them, so the new tests would otherwise see a stale writer.
+- **Removed test:** I deleted `TestRunUnregisteredReportExit0WritesNothing` from `internal/cli/run_test.go`. It used `daily` as the unregistered report, and once every report is registered that case no longer exists. The `nil` writer branch in `run.go` is still there, but nothing exercises it now.
+- **Shared accumulator:** the grouped reports share one `Totals` type, so the TOTAL rows and the per-group rows are computed the same way.
+- **Output:** the report writers write unquoted text, as the specs require. The tests read the output back with `encoding/csv` rather than matching substrings.
+
+I did not commit anything.
+
+Files changed:
+- cmd/ddkstat/main.go
+- internal/cli/run_test.go
+- internal/cli/reports_test.go
+- internal/report/report.go
+- internal/report/summary.go
+- internal/report/targets.go
+- internal/report/commands.go
+- internal/report/models.go
+- internal/report/failures.go
+- internal/report/daily.go
+- internal/report/helpers_test.go
+- internal/report/summary_test.go
+- internal/report/targets_test.go
+- internal/report/commands_test.go
+- internal/report/models_test.go
+- internal/report/failures_test.go
+- internal/report/daily_test.go
+
+&lt;blueprint-decisions&gt;
+[{&quot;spec&quot;:&quot;FEATURE-ReportSummary.md&quot;,&quot;severity&quot;:&quot;Low&quot;,&quot;subject&quot;:&quot;Writer registration and test isolation&quot;,&quot;decision&quot;:&quot;Report writers register from an init() in internal/report, with an exported report.Register() that re-registers all six. cmd/ddkstat imports the package for its side effect. The new internal/cli tests call report.Register() because existing tests overwrite registry entries globally. I removed TestRunUnregisteredReportExit0WritesNothing, since every known report now has a writer. Is that acceptable, or should registration move on replan?&quot;}]
+&lt;/blueprint-decisions&gt;
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- cmd/ddkstat/main.go
+- internal/cli/run_test.go
+- internal/cli/reports_test.go
+- internal/report/report.go
+- internal/report/summary.go
+- internal/report/targets.go
+- internal/report/commands.go
+- internal/report/models.go
+- internal/report/failures.go
+- internal/report/daily.go
+- internal/report/helpers_test.go
+- internal/report/summary_test.go
+- internal/report/targets_test.go
+- internal/report/commands_test.go
+- internal/report/models_test.go
+- internal/report/failures_test.go
+- internal/report/daily_test.go
+
+SUMMARY:
+Implemented the six ddkstat reports (summary, targets, commands, models, failures, daily) as an `internal/report` package. Each report has a pure aggregate or selection function and a CSV writer registered with `cli.Register`. `go vet ./...` is clean, `go test ./...` passes in every package, and `sh sources/run.sh` passes 20 of 20 against the staged sample log. All 31 required test names pass. Nothing was committed.
+
+BLOCKERS:
+- None.</pre></article>
+</main>
+</body>
+</html>

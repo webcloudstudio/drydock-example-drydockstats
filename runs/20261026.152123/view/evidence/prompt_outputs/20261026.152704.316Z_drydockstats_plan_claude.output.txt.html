@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.152704.316Z_drydockstats_plan_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.152704.316Z_drydockstats_plan_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.152704.316Z_drydockstats_plan_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT FEATURE-ValueFormat.md ===
+# FEATURE: Value Format
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Shared text formatters for minutes (tenths of a minute) and cost (four decimal places). |
+| Depends On  | ARCHITECTURE.md |
+| Provides    | format.Minutes, format.Cost |
+| Consumes    | go.mod |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Every report that prints a minutes column or a cost column uses these two pure functions in `internal/format`, so the rounding rule lives in exactly one place.
+
+## Behavior
+
+- `Minutes(ms int64) string`: let `t = (ms + 3000) / 6000` using integer division. Return `t/10`, a `.`, then `t%10` (for example `95000` ms gives `1.6`, `0` gives `0.0`).
+- `Cost(usd float64) string`: return `fmt.Sprintf(&quot;%.4f&quot;, usd)`, exactly four decimal places (zero gives `0.0000`).
+- Both functions are pure, take no filters and read no input.
+
+## Programmatic Acceptance
+
+=== AC format-minutes-rounding ===
+Intent: Minutes applies the (ms + 3000) / 6000 tenths rule across the rounding boundaries.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/format&quot;, &quot;TestMinutesRounding&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC format-minutes-rounding ===
+
+=== AC format-minutes-zero ===
+Intent: Minutes of zero milliseconds is written as tenths with one decimal digit.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/format&quot;, &quot;TestMinutesZero&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC format-minutes-zero ===
+
+=== AC format-cost-four-places ===
+Intent: Cost always writes exactly four decimal places.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/format&quot;, &quot;TestCostFourPlaces&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC format-cost-four-places ===
+
+=== AC format-cost-zero ===
+Intent: Cost of zero is written with four decimal places.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/format&quot;, &quot;TestCostZero&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC format-cost-zero ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only; no third-party module.
+- Formatters never read a log, a filter, or a report answer; every value comes from the argument.
+- Test expectations are derived from the formula, not typed as hand-calculated answers.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportSummary.md ===
+# FEATURE: Report Summary
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | The summary report: one CSV row of totals over the filtered records plus the whole-file skipped count. |
+| Depends On  | FEATURE-CliExit.md, FEATURE-ValueFormat.md |
+| Provides    | ddkstat summary |
+| Consumes    | cli.Register, format.Minutes, format.Cost, logread.Record |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat summary [options] &lt;log&gt;` answers how many calls ran, how many were skipped, and what they used and cost.
+
+## Behavior
+
+- Header: `records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes`.
+- One data row over the filtered records, `\n` line endings.
+- `records` is the filtered record count; `succeeded` and `failed` split it by the failed rule; token columns are sums; `cost_usd` uses `format.Cost`; `minutes` uses `format.Minutes` of the summed `elapsed_ms`.
+- `skipped` is the whole-file skipped-line count and ignores every filter.
+- `first` and `last` are the earliest and latest start dates of the filtered records, empty when none match.
+- Aggregation (`SummaryAggregate`) and writing (`WriteSummary(w io.Writer, records []logread.Record, skipped int) error`) are separate functions in `internal/report`; `internal/cli` registers the writer as `summary` with `cli.Register`.
+
+## Programmatic Acceptance
+
+=== AC summary-aggregate ===
+Intent: SummaryAggregate sums counts, tokens, cost and duration over records built by the test.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestSummaryAggregate&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC summary-aggregate ===
+
+=== AC summary-empty-first-last ===
+Intent: With no matching record, first and last are empty and counters are zero.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestSummaryEmptyFirstLast&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC summary-empty-first-last ===
+
+=== AC summary-skipped-ignores-filters ===
+Intent: The skipped count stays the whole-file count regardless of target and date filters.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestSummarySkippedIgnoresFilters&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC summary-skipped-ignores-filters ===
+
+=== AC summary-write ===
+Intent: WriteSummary writes the declared header and one row with the declared column order.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestSummaryWrite&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC summary-write ===
+
+=== AC summary-run-via-cli ===
+Intent: cli.Run dispatches the summary report over a test-written log and exits zero with a parseable CSV.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunSummaryReport&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC summary-run-via-cli ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only; no database; the log is never written.
+- No report value is hardcoded; every number comes from the log being read.
+- Skipped-line warnings go to standard error, never into the CSV.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportCommands.md ===
+# FEATURE: Report Commands
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | The commands report: one CSV row per Drydock command with a TOTAL row. |
+| Depends On  | FEATURE-CliExit.md, FEATURE-ValueFormat.md |
+| Provides    | ddkstat commands |
+| Consumes    | cli.Register, format.Minutes, logread.Record |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat commands [options] &lt;log&gt;` shows how often each Drydock command called an LLM and what it consumed.
+
+## Behavior
+
+- Header: `command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes`.
+- One row per `job.command_name`, ordered by calls descending, then command ascending by byte value.
+- Final row `TOTAL,...` over all filtered records.
+- Minutes use `format.Minutes` of the group&#x27;s summed `elapsed_ms`.
+- When no record matches, the output is the header and `TOTAL,0,0,0,0,0,0.0`.
+- Text values are written unquoted and unescaped.
+- `internal/report` holds the aggregate and write functions; `internal/cli` registers the writer as `commands`.
+
+## Programmatic Acceptance
+
+=== AC commands-ordering ===
+Intent: Rows are ordered by calls descending then command ascending, including ties.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsOrdering&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC commands-ordering ===
+
+=== AC commands-total ===
+Intent: The TOTAL row sums calls, failures, tokens and minutes over all filtered records.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsTotal&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC commands-total ===
+
+=== AC commands-empty ===
+Intent: With no matching record the report is the header plus a zero TOTAL row.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsEmpty&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC commands-empty ===
+
+=== AC commands-write ===
+Intent: The writer emits the declared header and columns.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsWrite&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC commands-write ===
+
+=== AC commands-run-via-cli ===
+Intent: cli.Run dispatches the commands report over a test-written log, exits zero and writes parseable CSV.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunCommandsReport&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC commands-run-via-cli ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only; no database; the log is never written.
+- No row, count or total is hardcoded; all values come from the log being read.
+- Text values are never quoted or escaped.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportTargets.md ===
+# FEATURE: Report Targets
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | The targets report: one CSV row per Target with cost and a TOTAL row. |
+| Depends On  | FEATURE-CliExit.md, FEATURE-ValueFormat.md |
+| Provides    | ddkstat targets |
+| Consumes    | cli.Register, format.Minutes, format.Cost, logread.Record |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat targets [options] &lt;log&gt;` shows what each Target consumed and cost.
+
+## Behavior
+
+- Header: `target,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd,minutes`.
+- One row per `job.target`, ordered by target ascending by byte value.
+- Final row `TOTAL,...` over all filtered records, with total cost.
+- Cost uses `format.Cost`; minutes use `format.Minutes`.
+- When no record matches, the output is the header and a TOTAL row of zeros with `0.0000` cost and `0.0` minutes.
+- `internal/report` holds the aggregate and write functions; `internal/cli` registers the writer as `targets`.
+
+## Programmatic Acceptance
+
+=== AC targets-ordering ===
+Intent: Rows are ordered by target ascending in byte order.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsOrdering&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC targets-ordering ===
+
+=== AC targets-total-cost ===
+Intent: The TOTAL row carries the summed cost formatted to four places.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsTotalCost&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC targets-total-cost ===
+
+=== AC targets-empty ===
+Intent: With no matching record the report is the header plus a zero TOTAL row.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsEmpty&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC targets-empty ===
+
+=== AC targets-write ===
+Intent: The writer emits the declared header and columns.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsWrite&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC targets-write ===
+
+=== AC targets-run-via-cli ===
+Intent: cli.Run dispatches the targets report over a test-written log, exits zero and writes parseable CSV.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunTargetsReport&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC targets-run-via-cli ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only; no database; the log is never written.
+- No row, count, cost or total is hardcoded; all values come from the log being read.
+- Target names are written unquoted and unescaped.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportModels.md ===
+# FEATURE: Report Models
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | The models report: one CSV row per provider and executed-model pair with a TOTAL row. |
+| Depends On  | FEATURE-CliExit.md, FEATURE-ValueFormat.md, FEATURE-LogModel.md |
+| Provides    | ddkstat models |
+| Consumes    | cli.Register, format.Cost, logread.Record |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat models [options] &lt;log&gt;` shows which providers and models ran the calls and what they consumed and cost.
+
+## Behavior
+
+- Header: `provider,model,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd`.
+- One row per pair of provider (`job.llm`) and `Record.Model` (the executed model when present and non-empty, otherwise the requested model), ordered by provider then model ascending by byte value.
+- Final row is `TOTAL,,...` with an empty model column, over all filtered records.
+- Cost uses `format.Cost`. There is no minutes column.
+- When no record matches, the output is the header and a TOTAL row of zeros with `0.0000` cost.
+- `internal/report` holds the aggregate and write functions; `internal/cli` registers the writer as `models`.
+
+## Programmatic Acceptance
+
+=== AC models-grouping-executed-model ===
+Intent: Records group under the executed model, falling back to the requested model.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestModelsGroupingUsesExecutedModel&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-grouping-executed-model ===
+
+=== AC models-ordering ===
+Intent: Rows are ordered by provider then model ascending in byte order.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestModelsOrdering&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-ordering ===
+
+=== AC models-total-empty-model-column ===
+Intent: The TOTAL row leaves the model column empty and sums every numeric column.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestModelsTotalEmptyModelColumn&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-total-empty-model-column ===
+
+=== AC models-empty ===
+Intent: With no matching record the report is the header plus a zero TOTAL row.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestModelsEmpty&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-empty ===
+
+=== AC models-write ===
+Intent: The writer emits the declared header and columns.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestModelsWrite&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-write ===
+
+=== AC models-run-via-cli ===
+Intent: cli.Run dispatches the models report over a test-written log, exits zero and writes parseable CSV.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunModelsReport&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-run-via-cli ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only; no database; the log is never written.
+- No row, count, cost or total is hardcoded; all values come from the log being read.
+- Provider and model names are written unquoted and unescaped.
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>

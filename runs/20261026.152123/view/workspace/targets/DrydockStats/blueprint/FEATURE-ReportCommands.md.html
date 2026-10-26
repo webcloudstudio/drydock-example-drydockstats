@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ReportCommands.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ReportCommands.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ReportCommands.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Report Commands</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>The commands report: one CSV row per Drydock command with a TOTAL row.</td></tr><tr><td>Depends On</td><td>FEATURE-CliExit.md, FEATURE-ValueFormat.md</td></tr><tr><td>Provides</td><td>ddkstat commands</td></tr><tr><td>Consumes</td><td>cli.Register, format.Minutes, logread.Record</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>ddkstat commands [options] &lt;log&gt;</code> shows how often each Drydock command called an LLM and what it consumed.</p>
+<h2>Behavior</h2>
+<ul><li>Header: <code>command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes</code>.</li><li>One row per <code>job.command_name</code>, ordered by calls descending, then command ascending by byte value.</li><li>Final row <code>TOTAL,...</code> over all filtered records.</li><li>Minutes use <code>format.Minutes</code> of the group&#x27;s summed <code>elapsed_ms</code>.</li><li>When no record matches, the output is the header and <code>TOTAL,0,0,0,0,0,0.0</code>.</li><li>Text values are written unquoted and unescaped.</li><li><code>internal/report</code> holds the aggregate and write functions; <code>internal/cli</code> registers the writer as <code>commands</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC commands-ordering ===<br>Intent: Rows are ordered by calls descending then command ascending, including ties.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsOrdering&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC commands-ordering ===</p>
+<p>=== AC commands-total ===<br>Intent: The TOTAL row sums calls, failures, tokens and minutes over all filtered records.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsTotal&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC commands-total ===</p>
+<p>=== AC commands-empty ===<br>Intent: With no matching record the report is the header plus a zero TOTAL row.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsEmpty&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC commands-empty ===</p>
+<p>=== AC commands-write ===<br>Intent: The writer emits the declared header and columns.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsWrite&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC commands-write ===</p>
+<p>=== AC commands-run-via-cli ===<br>Intent: cli.Run dispatches the commands report over a test-written log, exits zero and writes parseable CSV.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestRunCommandsReport&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC commands-run-via-cli ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Standard library only; no database; the log is never written.</li><li>No row, count or total is hardcoded; all values come from the log being read.</li><li>Text values are never quoted or escaped.</li></ul></article>
+</main>
+</body>
+</html>

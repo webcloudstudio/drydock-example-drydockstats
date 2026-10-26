@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-LogSkip.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-LogSkip.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-LogSkip.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Log Skip</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Skip malformed, incomplete and duplicate log lines with a stderr warning and no effect on the exit code.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogLines.md</td></tr><tr><td>Provides</td><td>logread.Read skip rules, logread.Result.Skipped</td></tr><tr><td>Consumes</td><td>logread.Read</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Make the reader tolerant. Bad lines are skipped and counted; they never fail the run.</p>
+<h2>Behavior</h2>
+<p><code>logread.Read</code> returns the kept records and <code>Result.Skipped</code>, the whole-file count of skipped lines. A line is skipped when:</p>
+<ul><li>it is not a JSON object (invalid JSON, or valid JSON that is an array, string, number, boolean or null);</li><li>any of <code>execution_id</code>, <code>started_at</code>, <code>status</code>, <code>job.command_name</code>, <code>job.target</code> is absent or not a non-empty string;</li><li>its <code>execution_id</code> was already registered by an earlier kept line.</li></ul>
+<p>Further rules:</p>
+<ul><li>Each skipped line writes one warning to the supplied warning writer naming its 1-based physical line number, counting blank lines.</li><li>A skipped line does not register its <code>execution_id</code>; a malformed line therefore never causes a later line with that id to be skipped.</li><li>The first occurrence of an <code>execution_id</code> is kept.</li><li>Duplicate detection runs over the whole file inside <code>Read</code>, before any filter is applied elsewhere. A later repeat is skipped even when its first occurrence is later filtered out.</li><li>Skipping never changes the exit code; <code>Read</code> returns a non-nil error only for an I/O failure.</li></ul>
+<h2>Required Go tests</h2>
+<p>TestSkipNotObject, TestSkipMissingField, TestSkipDuplicateKeepsFirst, TestMalformedDoesNotRegisterID, TestSkipWarningLineNumber, TestReadDedupesWholeFile, TestSkipEmptyStringField.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC skip-not-object ===<br>Intent: A line that is not a JSON object is skipped and counted.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestSkipNotObject&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC skip-not-object ===</p>
+<p>=== AC skip-missing-field ===<br>Intent: A line lacking a required field is skipped and counted.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestSkipMissingField&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC skip-missing-field ===</p>
+<p>=== AC skip-empty-string-field ===<br>Intent: A required field holding an empty or non-string value causes the line to be skipped.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestSkipEmptyStringField&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC skip-empty-string-field ===</p>
+<p>=== AC skip-duplicate-first-kept ===<br>Intent: A repeated execution_id is skipped and the first occurrence is kept.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestSkipDuplicateKeepsFirst&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC skip-duplicate-first-kept ===</p>
+<p>=== AC skip-malformed-no-register ===<br>Intent: A malformed line does not register its execution_id, so a later valid line with that id is kept.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestMalformedDoesNotRegisterID&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC skip-malformed-no-register ===</p>
+<p>=== AC skip-warning-line-number ===<br>Intent: Each warning names the 1-based physical line number, counting blank lines.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestSkipWarningLineNumber&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC skip-warning-line-number ===</p>
+<p>=== AC skip-dedupe-whole-file ===<br>Intent: Duplicate detection covers the whole file and does not depend on any later filter.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestReadDedupesWholeFile&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC skip-dedupe-whole-file ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Skipping never changes the exit code.</li><li>A malformed line never registers its <code>execution_id</code>.</li><li>Warnings go only to the warning writer (standard error in the CLI) and are never compared.</li></ul></article>
+</main>
+</body>
+</html>

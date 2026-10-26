@@ -1,0 +1,150 @@
+[
+  {
+    "id": "Q-001",
+    "type": "choice",
+    "severity": "low",
+    "origin": "plan",
+    "blueprint": "FEATURE-CliExit.md",
+    "story": "cli-exit",
+    "status": "recommended",
+    "archived": false,
+    "title": "Report dispatch design",
+    "description": "Reports need to plug into Run without Run depending on them. Options: a registry each report story fills, or Run importing all six reports. Registry keeps filter and report stories ordered correctly (filters and CLI before reports).",
+    "options": [
+      {
+        "value": "registry",
+        "label": "Registry populated by each report story"
+      },
+      {
+        "value": "direct",
+        "label": "Run imports all report writers directly"
+      }
+    ],
+    "system_choice": "registry"
+  },
+  {
+    "id": "Q-002",
+    "type": "choice",
+    "severity": "low",
+    "origin": "plan",
+    "blueprint": "FEATURE-CliArgs.md",
+    "story": "cli-args",
+    "status": "recommended",
+    "archived": false,
+    "title": "Usage error output",
+    "description": "Sources fix exit code 2 and empty stdout but not the stderr text. Choosing a one-line usage summary on stderr.",
+    "options": [
+      {
+        "value": "usage-line",
+        "label": "One-line usage summary on stderr"
+      },
+      {
+        "value": "message-only",
+        "label": "Error message only"
+      }
+    ],
+    "system_choice": "usage-line"
+  },
+  {
+    "id": "Q-003",
+    "type": "choice",
+    "severity": "low",
+    "origin": "plan",
+    "blueprint": "FEATURE-LogLines.md",
+    "story": "log-lines",
+    "status": "recommended",
+    "archived": false,
+    "title": "Blank line definition and line length",
+    "description": "A blank line is one empty after trimming whitespace. The reader uses bufio.Reader rather than Scanner so long lines are not rejected by a token limit.",
+    "options": [
+      {
+        "value": "trimmed-reader",
+        "label": "Whitespace-only is blank; bufio.Reader"
+      },
+      {
+        "value": "empty-scanner",
+        "label": "Only empty is blank; bufio.Scanner"
+      }
+    ],
+    "system_choice": "trimmed-reader"
+  },
+  {
+    "id": "Q-004",
+    "type": "choice",
+    "severity": "low",
+    "origin": "plan",
+    "blueprint": "FEATURE-FilterDates.md",
+    "story": "filter-dates",
+    "status": "recommended",
+    "archived": false,
+    "title": "--since later than --until",
+    "description": "Sources do not say. Choosing the narrowest reading: empty result, exit 0, not a usage error.",
+    "options": [
+      {
+        "value": "empty-result",
+        "label": "Empty report, exit 0"
+      },
+      {
+        "value": "usage-error",
+        "label": "Usage error, exit 2"
+      }
+    ],
+    "system_choice": "empty-result"
+  },
+  {
+    "id": "build-feature-cliexit.md-register-behavior-on-duplicate-report-name",
+    "type": "text",
+    "severity": "low",
+    "origin": "build",
+    "blueprint": "FEATURE-CliExit.md",
+    "story": null,
+    "status": "recommended",
+    "archived": false,
+    "title": "Register behavior on duplicate report name",
+    "description": "Register overwrites any writer already registered under the same name, without panicking. Duplicate registration is silent. Is that acceptable, or should it fail loudly on replan?",
+    "options": [],
+    "system_choice": "Register overwrites any writer already registered under the same name, without panicking. Duplicate registration is silent. Is that acceptable, or should it fail loudly on replan?"
+  },
+  {
+    "id": "build-feature-lognumbers.md-wrong-typed-returncode,-timed_out-and-token-values",
+    "type": "text",
+    "severity": "low",
+    "origin": "build",
+    "blueprint": "FEATURE-LogNumbers.md",
+    "story": null,
+    "status": "recommended",
+    "archived": false,
+    "title": "Wrong-typed returncode, timed_out and token values",
+    "description": "A non-integer returncode is treated as nil, a non-boolean timed_out as false, and a non-integer token or elapsed value as zero. A float such as 12.0 in a token field counts as zero. The spec only named absent, null and non-numeric values, so I took the strictest reading. Is that acceptable?",
+    "options": [],
+    "system_choice": "A non-integer returncode is treated as nil, a non-boolean timed_out as false, and a non-integer token or elapsed value as zero. A float such as 12.0 in a token field counts as zero. The spec only named absent, null and non-numeric values, so I took the strictest reading. Is that acceptable?"
+  },
+  {
+    "id": "build-feature-logskip.md-structured-skip-record",
+    "type": "text",
+    "severity": "low",
+    "origin": "build",
+    "blueprint": "FEATURE-LogSkip.md",
+    "story": null,
+    "status": "recommended",
+    "archived": false,
+    "title": "Structured skip record",
+    "description": "Warnings were required on the warning writer only. I also added Result.Skips, a slice of {Line, Reason}, so the warning line-number test can read the line back as a value instead of matching text. Skipped is still the count. Is this acceptable, or should it move out of Result on replan?",
+    "options": [],
+    "system_choice": "Warnings were required on the warning writer only. I also added Result.Skips, a slice of {Line, Reason}, so the warning line-number test can read the line back as a value instead of matching text. Skipped is still the count. Is this acceptable, or should it move out of Result on replan?"
+  },
+  {
+    "id": "build-feature-reportsummary.md-writer-registration-and-test-isolation",
+    "type": "text",
+    "severity": "low",
+    "origin": "build",
+    "blueprint": "FEATURE-ReportSummary.md",
+    "story": null,
+    "status": "recommended",
+    "archived": false,
+    "title": "Writer registration and test isolation",
+    "description": "Report writers register from an init() in internal/report, with an exported report.Register() that re-registers all six. cmd/ddkstat imports the package for its side effect. The new internal/cli tests call report.Register() because existing tests overwrite registry entries globally. I removed TestRunUnregisteredReportExit0WritesNothing, since every known report now has a writer. Is that acceptable, or should registration move on replan?",
+    "options": [],
+    "system_choice": "Report writers register from an init() in internal/report, with an exported report.Register() that re-registers all six. cmd/ddkstat imports the package for its side effect. The new internal/cli tests call report.Register() because existing tests overwrite registry entries globally. I removed TestRunUnregisteredReportExit0WritesNothing, since every known report now has a writer. Is that acceptable, or should registration move on replan?"
+  }
+]

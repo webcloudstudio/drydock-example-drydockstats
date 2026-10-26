@@ -1,0 +1,59 @@
+I'll start by reading the tree: the module layout, the grader script, and whether `bin/test.sh` exists.The grader passes and `bin/test.sh` exists. Next I'll run the test script, check imports for stdlib-only, and read the code behind the behavioral trials.`bin/test.sh` passes, the binary builds, and the dependency list has no non-stdlib packages. Now I'll read the source behind the behavioral trials.The code reads as I'd expect. Before writing probes, I'll fix one thing: my earlier `go build` wrote its binary to `/tmp`, outside `probe_directory`. I'll remove that and keep all probe files under `.drydock-probe`. The probe uses small fixture logs that exercise the malformed, duplicate, and model-precedence paths the grader's sample doesn't cover.```json
+{
+  "criteria": [
+    {
+      "id": "st-001",
+      "verdict": "MET",
+      "rationale": "The governed gate `sh sources/run.sh` exited 0 with `DrydockStats: 20 passed, 0 failed (of 20)`.",
+      "evidence": ["governed_gate full: sh sources/run.sh return_code 0, 20 passed, 0 failed", "sources/run.sh compares every report with cmp and exits 0 only when all checks pass"]
+    },
+    {
+      "id": "st-002",
+      "verdict": "MET",
+      "rationale": "I ran `sh bin/test.sh` against the current tree: `go vet ./...` and `go test ./...` both passed for all six packages, exit 0.",
+      "evidence": ["bin/test.sh: #!/bin/sh, set -eu, runs go vet ./... then go test ./...", "probe run: ok ddkstat/cmd/ddkstat, internal/cli, internal/filter, internal/format, internal/logread, internal/report; rc=0", "test results were reported as (cached); the cache is keyed on file contents, so they reflect the current tree"]
+    },
+    {
+      "id": "st-003",
+      "verdict": "MET",
+      "rationale": "The root is a Go module (`module ddkstat`), `go build ./cmd/ddkstat` exited 0, and the dependency list contains no non-standard-library packages.",
+      "evidence": ["go.mod: module ddkstat, go 1.22", "go build -o ... ./cmd/ddkstat rc=0", "go list -deps ./cmd/ddkstat: no dotted import paths, so stdlib only", "cmd/ddkstat/main.go imports only ddkstat/internal/* and os"]
+    },
+    {
+      "id": "st-004",
+      "verdict": "MET",
+      "rationale": "A probe log with a non-JSON line, a line missing started_at, and a duplicate execution_id exited 0 and reported skipped=3 in the summary, with the records still counted.",
+      "evidence": "probe: mixed.jsonl -> `records,skipped,...` row `2,3,2,0,...`, rc=0; stderr listed 'not a JSON object', 'missing or empty started_at', 'duplicate execution_id'; internal/logread/logread.go Read() counts skips and never changes the exit code"
+    },
+    {
+      "id": "st-005",
+      "verdict": "MET",
+      "rationale": "The governed gate compared all six reports byte for byte against the known answers in sources/run.sh and passed (A1–A6).",
+      "evidence": ["gate stdout: PASS A1 summary, PASS A2 commands, PASS A3 targets, PASS A4 models, PASS A5 daily, PASS A6 failures", "sources/run.sh check() uses cmp -s on stdout and the expected exit code"]
+    },
+    {
+      "id": "st-006",
+      "verdict": "MET",
+      "rationale": "The gate's filtered checks B1–B5 pass, and the probe showed --target narrowing commands to zero rows and --until narrowing daily to the matching date.",
+      "evidence": ["gate: PASS B1 summary --target --since, PASS B2 commands --until, PASS B3 daily --since --until, PASS B4 failures --target, PASS B5 models --target", "probe: `commands --target NoSuch` -> TOTAL,0,...; `daily --until 2026-10-01` -> only 2026-10-01 row", "internal/cli/run.go applies filter.ByTarget and filter.ByDateRange before every report writer"]
+    },
+    {
+      "id": "st-007",
+      "verdict": "MET",
+      "rationale": "A probe with stats.model present used it (claude-x), and a record without stats.model fell back to job.model (haiku-job).",
+      "evidence": ["probe: `models mixed.jsonl` -> `claude,claude-x,1,...` (record a, stats.model present) and `claude,haiku-job,1,...` (record c, no stats.model)", "internal/logread/logread.go parseLine: model = stats.model if non-empty, otherwise job.model", "gate A4 also passes with the known models table"]
+    },
+    {
+      "id": "st-008",
+      "verdict": "MET",
+      "rationale": "A missing log exited 1 and a malformed argument list exited 2, and both wrote zero bytes to stdout.",
+      "evidence": ["probe: `summary nope.jsonl` -> rc=1 stdout_bytes=0, stderr 'cannot open log'", "probe: `summary --since 2026-1-5 mixed.jsonl` -> rc=2 stdout_bytes=0, stderr usage line", "gate E1 (rc 1) and U1–U6 (rc 2) all PASS with empty expected stdout"]
+    }
+  ],
+  "improvements": [
+    "Add malformed and duplicate fixtures to the grader (or to bin/test.sh) so st-004 is enforced by a gate, not only by an ad hoc probe; the shipped sample has only 3 skips and never exercises a missing required field.",
+    "Add a --target or --since/--until check for the targets report in run.sh; B1–B5 cover summary, commands, daily, failures and models but not targets, though the filter is applied before every writer.",
+    "Add a fixture where result.stats.model is absent so the job.model fallback in st-007 is pinned by the gate, not only by the known-answers table."
+  ]
+}
+```

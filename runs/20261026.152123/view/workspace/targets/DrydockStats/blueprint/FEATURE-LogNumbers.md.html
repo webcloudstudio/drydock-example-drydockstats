@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-LogNumbers.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-LogNumbers.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-LogNumbers.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Log Numbers</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Treat absent, null or non-numeric token, cost and duration values as zero.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogSkip.md</td></tr><tr><td>Provides</td><td>logread.Record numeric normalization</td></tr><tr><td>Consumes</td><td>logread.Read</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Aggregation sums these fields, so each record must carry a usable number even when the log omits it.</p>
+<h2>Behavior</h2>
+<p>For <code>result.stats.input_tokens</code>, <code>cached_input_tokens</code>, <code>output_tokens</code>, <code>cost_usd</code> and <code>elapsed_ms</code>:</p>
+<ul><li>absent counts as zero;</li><li>JSON <code>null</code> counts as zero;</li><li>a value of the wrong JSON type (for example a string or boolean) counts as zero;</li><li>a record with no <code>result.stats</code> object at all, or no <code>result</code> object, is still a record with all five values zero.</li></ul>
+<p><code>result.returncode</code> that is <code>null</code> or absent is represented as no return code (<code>ReturnCode</code> is nil). <code>result.timed_out</code> absent counts as false.</p>
+<h2>Required Go tests</h2>
+<p>TestNumbersAbsentAreZero, TestNumbersNullAreZero, TestNumbersNonNumericAreZero, TestNoStatsObjectStillRecord, TestReturnCodeNullIsNil.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC numbers-absent ===<br>Intent: Absent numeric fields count as zero.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestNumbersAbsentAreZero&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC numbers-absent ===</p>
+<p>=== AC numbers-null ===<br>Intent: Null numeric fields, including a null cost_usd, count as zero.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestNumbersNullAreZero&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC numbers-null ===</p>
+<p>=== AC numbers-non-numeric ===<br>Intent: A non-numeric value in a numeric stats field counts as zero.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestNumbersNonNumericAreZero&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC numbers-non-numeric ===</p>
+<p>=== AC numbers-no-stats ===<br>Intent: A record with no result.stats object is still a kept record with zero numbers.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestNoStatsObjectStillRecord&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC numbers-no-stats ===</p>
+<p>=== AC numbers-returncode-null ===<br>Intent: A null or absent returncode is represented as no return code.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestReturnCodeNullIsNil&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC numbers-returncode-null ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>A bad numeric value never causes a line to be skipped; only the required string fields do.</li><li>Standard library only.</li></ul></article>
+</main>
+</body>
+</html>

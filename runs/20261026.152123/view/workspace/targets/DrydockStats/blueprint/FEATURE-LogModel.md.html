@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-LogModel.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-LogModel.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-LogModel.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Log Model</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Attribute each record to the executed model, falling back to the requested model.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogSkip.md</td></tr><tr><td>Provides</td><td>logread.Record.Model</td></tr><tr><td>Consumes</td><td>logread.Read</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Reports group by model, and the model that actually ran is more truthful than the one requested.</p>
+<h2>Behavior</h2>
+<p><code>Record.Model</code> is <code>result.stats.model</code> when that value is present and a non-empty string; otherwise it is <code>job.model</code>. This covers an absent value, an empty string, a non-string value, and a record with no <code>result.stats</code> object. <code>job.model</code> that is absent yields an empty <code>Model</code>; the record is still kept.</p>
+<h2>Required Go tests</h2>
+<p>TestModelPrefersExecuted, TestModelFallsBackWhenAbsent, TestModelFallsBackWhenEmpty, TestModelFallsBackWithoutStats.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC model-prefers-executed ===<br>Intent: result.stats.model is used when present and non-empty.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestModelPrefersExecuted&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC model-prefers-executed ===</p>
+<p>=== AC model-fallback-absent ===<br>Intent: job.model is used when result.stats.model is absent.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestModelFallsBackWhenAbsent&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC model-fallback-absent ===</p>
+<p>=== AC model-fallback-empty ===<br>Intent: job.model is used when result.stats.model is an empty string.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestModelFallsBackWhenEmpty&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC model-fallback-empty ===</p>
+<p>=== AC model-fallback-no-stats ===<br>Intent: job.model is used when the record has no result.stats object.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestModelFallsBackWithoutStats&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC model-fallback-no-stats ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The model is never taken from any field other than <code>result.stats.model</code> and <code>job.model</code>.</li><li>Standard library only.</li></ul></article>
+</main>
+</body>
+</html>

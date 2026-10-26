@@ -1,0 +1,718 @@
+=== BEGIN ARTIFACT FEATURE-ReportDaily.md ===
+# FEATURE: Report Daily
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Writes the daily CSV report with one row per start date and a TOTAL row. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliExit.md, FEATURE-ValueFormat.md |
+| Provides    | ddkstat daily |
+| Consumes    | cli.Register, format.Minutes, logread.Record |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The `daily` report shows, for each start date, how many calls ran, how many failed, how many tokens they used, and how many minutes they took.
+
+## Behavior
+
+- Header: `date,calls,failed,tokens,minutes`.
+- The report covers the records that remain after the filters are applied.
+- One row per start date (the first 10 characters of `started_at`), in ascending byte order.
+- `calls` is the record count. `failed` is the count of records whose status is not `succeeded`.
+- `tokens` is input plus cached plus output tokens, summed over the group.
+- `minutes` is the group's summed `elapsed_ms` formatted by `format.Minutes`.
+- A final `TOTAL` row covers all filtered records.
+- When no record matches, the report writes the header and a `TOTAL` row of zeros with `0.0` minutes.
+- Aggregation (`AggregateDaily`) and writing (`WriteDaily`) are separate functions in `internal/report`.
+- The writer is registered with `cli.Register("daily", ...)`.
+- Output is CSV, `\n` line endings, values unquoted.
+
+## Programmatic Acceptance
+
+=== AC report-daily-unit ===
+Intent: The native unit tests for daily aggregation, ordering, totals, empty input and writing all pass.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+for name in (
+    "TestDailyOrdering",
+    "TestDailyTokensSum",
+    "TestDailyTotal",
+    "TestDailyEmpty",
+    "TestDailyWrite",
+):
+    result = run_test("./internal/report", name)
+    print(name, result.status)
+    assert result.passed, (name, result.status, result.stdout, result.stderr)
+=== END AC report-daily-unit ===
+
+=== AC report-daily-rows ===
+Intent: The daily command emits one row per start date with calls, failed, tokens and minutes derived from the log, followed by a TOTAL row.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from decimal import Decimal
+
+from drydock_go import cli_runner
+
+
+def rec(n, started, cmd, target, status, tin, tc, tout, ms):
+    return {
+        "schema_version": 1,
+        "execution_id": "id-%03d" % n,
+        "started_at": started,
+        "status": status,
+        "job": {"command_name": cmd, "target": target, "llm": "claude", "model": "haiku"},
+        "result": {
+            "returncode": 0 if status == "succeeded" else 1,
+            "timed_out": False,
+            "stats": {
+                "input_tokens": tin,
+                "cached_input_tokens": tc,
+                "output_tokens": tout,
+                "elapsed_ms": ms,
+                "cost_usd": 0.5,
+                "model": "claude-haiku-5-5",
+            },
+        },
+    }
+
+
+recs = [
+    rec(1, "2026-10-15T08:00:00.000Z", "build", "Alpha", "succeeded", 10, 200, 30, 95000),
+    rec(2, "2026-10-14T09:00:00.000Z", "plan", "Beta", "failed", 1, 2, 3, 20000),
+    rec(3, "2026-10-14T10:00:00.000Z", "build", "Alpha", "succeeded", 100, 0, 7, 61000),
+    rec(4, "2026-10-16T11:00:00.000Z", "analyze", "Beta", "succeeded", 5, 5, 5, 0),
+    rec(5, "2026-10-15T12:00:00.000Z", "build", "Beta", "succeeded", 0, 40, 0, 125000),
+]
+
+work = tempfile.mkdtemp()
+path = os.path.join(work, "log.jsonl")
+with open(path, "w", encoding="utf-8") as fh:
+    for r in recs:
+        fh.write(json.dumps(r) + "\n")
+
+
+def expected(group):
+    total_ms = sum(r["result"]["stats"]["elapsed_ms"] for r in group)
+    tenths = (total_ms + 3000) // 6000
+    return (
+        len(group),
+        sum(1 for r in group if r["status"] != "succeeded"),
+        sum(
+            r["result"]["stats"]["input_tokens"]
+            + r["result"]["stats"]["cached_input_tokens"]
+            + r["result"]["stats"]["output_tokens"]
+            for r in group
+        ),
+        Decimal(tenths) / Decimal(10),
+    )
+
+
+code, out, err = cli_runner("daily", path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+header, body = rows[0], rows[1:]
+assert header == ["date", "calls", "failed", "tokens", "minutes"]
+
+dates = sorted({r["started_at"][:10] for r in recs})
+assert [row[0] for row in body[:-1]] == dates
+for row in body[:-1]:
+    group = [r for r in recs if r["started_at"][:10] == row[0]]
+    calls, failed, tokens, minutes = expected(group)
+    assert int(row[1]) == calls
+    assert int(row[2]) == failed
+    assert int(row[3]) == tokens
+    assert Decimal(row[4]) == minutes
+
+total = body[-1]
+calls, failed, tokens, minutes = expected(recs)
+assert total[0] == "TOTAL"
+assert int(total[1]) == calls
+assert int(total[2]) == failed
+assert int(total[3]) == tokens
+assert Decimal(total[4]) == minutes
+=== END AC report-daily-rows ===
+
+=== AC report-daily-filters ===
+Intent: The daily command honours --target, --since and --until, computing every row and the TOTAL over only the matching records.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from decimal import Decimal
+
+from drydock_go import cli_runner
+
+
+def rec(n, started, target, status, tin, ms):
+    return {
+        "schema_version": 1,
+        "execution_id": "id-%03d" % n,
+        "started_at": started,
+        "status": status,
+        "job": {"command_name": "build", "target": target, "llm": "claude", "model": "haiku"},
+        "result": {
+            "returncode": 0,
+            "timed_out": False,
+            "stats": {
+                "input_tokens": tin,
+                "cached_input_tokens": 0,
+                "output_tokens": 0,
+                "elapsed_ms": ms,
+                "cost_usd": 0.1,
+                "model": "claude-haiku-5-5",
+            },
+        },
+    }
+
+
+recs = [
+    rec(1, "2026-10-14T01:00:00.000Z", "Alpha", "succeeded", 11, 60000),
+    rec(2, "2026-10-15T01:00:00.000Z", "Alpha", "failed", 22, 60000),
+    rec(3, "2026-10-15T02:00:00.000Z", "Beta", "succeeded", 33, 60000),
+    rec(4, "2026-10-16T01:00:00.000Z", "Alpha", "succeeded", 44, 60000),
+]
+
+work = tempfile.mkdtemp()
+path = os.path.join(work, "log.jsonl")
+with open(path, "w", encoding="utf-8") as fh:
+    for r in recs:
+        fh.write(json.dumps(r) + "\n")
+
+target = "Alpha"
+since = "2026-10-15"
+until = "2026-10-16"
+kept = [
+    r for r in recs
+    if r["job"]["target"] == target and since <= r["started_at"][:10] <= until
+]
+
+code, out, err = cli_runner("daily", "--target", target, "--since", since, "--until", until, path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+body = rows[1:]
+assert [row[0] for row in body[:-1]] == sorted({r["started_at"][:10] for r in kept})
+assert body[-1][0] == "TOTAL"
+assert int(body[-1][1]) == len(kept)
+assert int(body[-1][2]) == sum(1 for r in kept if r["status"] != "succeeded")
+assert int(body[-1][3]) == sum(r["result"]["stats"]["input_tokens"] for r in kept)
+tenths = (sum(r["result"]["stats"]["elapsed_ms"] for r in kept) + 3000) // 6000
+assert Decimal(body[-1][4]) == Decimal(tenths) / Decimal(10)
+=== END AC report-daily-filters ===
+
+=== AC report-daily-empty ===
+Intent: When no record matches the filter, the daily command exits 0 and writes the header and a TOTAL row of zeros.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from decimal import Decimal
+
+from drydock_go import cli_runner
+
+record = {
+    "schema_version": 1,
+    "execution_id": "id-001",
+    "started_at": "2026-10-14T01:00:00.000Z",
+    "status": "succeeded",
+    "job": {"command_name": "build", "target": "Alpha", "llm": "claude", "model": "haiku"},
+    "result": {"returncode": 0, "timed_out": False, "stats": {"input_tokens": 9, "elapsed_ms": 60000}},
+}
+work = tempfile.mkdtemp()
+path = os.path.join(work, "log.jsonl")
+with open(path, "w", encoding="utf-8") as fh:
+    fh.write(json.dumps(record) + "\n")
+
+code, out, err = cli_runner("daily", "--target", "NoSuchTarget", path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == ["date", "calls", "failed", "tokens", "minutes"]
+assert len(rows) == 2
+total = rows[1]
+assert total[0] == "TOTAL"
+assert int(total[1]) == 0
+assert int(total[2]) == 0
+assert int(total[3]) == 0
+assert Decimal(total[4]) == Decimal(0)
+=== END AC report-daily-empty ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The report reads only values computed from the log; no row, count or total is hardcoded.
+- The report never writes to the log.
+- Text values are written without quoting or escaping.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ReportFailures.md ===
+# FEATURE: Report Failures
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Writes the failures CSV report listing each failed record in start order. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliExit.md, FEATURE-ValueFormat.md |
+| Provides    | ddkstat failures |
+| Consumes    | cli.Register, logread.Record |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The `failures` report lists every failed call so the operator can see which command, Target and model failed, and how.
+
+## Behavior
+
+- Header: `started_at,target,command,model,returncode,timed_out`.
+- One row per failed record (status is not `succeeded`) among the filtered records.
+- Rows are ordered by `started_at`, then `execution_id`, ascending by byte value.
+- `started_at` is written exactly as logged.
+- `model` is `Record.Model`: the executed model when present and non-empty, otherwise the requested model.
+- `returncode` is empty when null or absent, otherwise the integer.
+- `timed_out` is `true` or `false`.
+- There is no `TOTAL` row. When no failed record matches, only the header is written.
+- Selection and ordering (`SelectFailures`) and writing (`WriteFailures`) are separate functions in `internal/report`.
+- The writer is registered with `cli.Register("failures", ...)`.
+
+## Programmatic Acceptance
+
+=== AC report-failures-unit ===
+Intent: The native unit tests for failure selection, ordering, null returncode, timed_out text and empty output all pass.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+for name in (
+    "TestFailuresOrdering",
+    "TestFailuresNullReturncodeEmpty",
+    "TestFailuresTimedOutText",
+    "TestFailuresOnlyFailed",
+    "TestFailuresEmpty",
+):
+    result = run_test("./internal/report", name)
+    print(name, result.status)
+    assert result.passed, (name, result.status, result.stdout, result.stderr)
+=== END AC report-failures-unit ===
+
+=== AC report-failures-rows ===
+Intent: The failures command lists only failed records ordered by started_at then execution_id, with model fallback, empty null returncode and true/false timed_out.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def rec(eid, started, target, cmd, status, rc, timed_out, stats_model):
+    stats = {"input_tokens": 1, "elapsed_ms": 1000}
+    if stats_model is not None:
+        stats["model"] = stats_model
+    return {
+        "schema_version": 1,
+        "execution_id": eid,
+        "started_at": started,
+        "status": status,
+        "job": {"command_name": cmd, "target": target, "llm": "claude", "model": "requested-model"},
+        "result": {"returncode": rc, "timed_out": timed_out, "stats": stats},
+    }
+
+
+recs = [
+    rec("zz-9", "2026-10-15T06:00:00.000Z", "Beta", "diagnose", "failed", None, True, "executed-model"),
+    rec("aa-1", "2026-10-14T02:00:00.000Z", "Alpha", "build", "succeeded", 0, False, "executed-model"),
+    rec("bb-2", "2026-10-14T02:00:00.000Z", "Alpha", "build", "failed", 1, False, None),
+    rec("aa-3", "2026-10-14T02:00:00.000Z", "Alpha", "plan", "failed", 2, False, "executed-model"),
+    rec("cc-4", "2026-10-13T23:00:00.000Z", "Beta", "build", "timeout", 124, True, "executed-model"),
+]
+
+work = tempfile.mkdtemp()
+path = os.path.join(work, "log.jsonl")
+with open(path, "w", encoding="utf-8") as fh:
+    for r in recs:
+        fh.write(json.dumps(r) + "\n")
+
+code, out, err = cli_runner("failures", path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == ["started_at", "target", "command", "model", "returncode", "timed_out"]
+
+failed = sorted(
+    [r for r in recs if r["status"] != "succeeded"],
+    key=lambda r: (r["started_at"], r["execution_id"]),
+)
+body = rows[1:]
+assert len(body) == len(failed)
+for row, r in zip(body, failed):
+    model = r["result"]["stats"].get("model") or r["job"]["model"]
+    rc = r["result"]["returncode"]
+    assert row[0] == r["started_at"]
+    assert row[1] == r["job"]["target"]
+    assert row[2] == r["job"]["command_name"]
+    assert row[3] == model
+    assert row[4] == ("" if rc is None else str(rc))
+    assert row[5] == str(r["result"]["timed_out"]).lower()
+=== END AC report-failures-rows ===
+
+=== AC report-failures-filters ===
+Intent: The failures command honours --target and the inclusive --since/--until date range.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def rec(eid, started, target):
+    return {
+        "schema_version": 1,
+        "execution_id": eid,
+        "started_at": started,
+        "status": "failed",
+        "job": {"command_name": "build", "target": target, "llm": "claude", "model": "m"},
+        "result": {"returncode": 1, "timed_out": False, "stats": {"elapsed_ms": 1}},
+    }
+
+
+recs = [
+    rec("id-1", "2026-10-14T01:00:00.000Z", "Alpha"),
+    rec("id-2", "2026-10-15T01:00:00.000Z", "Alpha"),
+    rec("id-3", "2026-10-15T02:00:00.000Z", "Beta"),
+    rec("id-4", "2026-10-16T01:00:00.000Z", "Alpha"),
+]
+work = tempfile.mkdtemp()
+path = os.path.join(work, "log.jsonl")
+with open(path, "w", encoding="utf-8") as fh:
+    for r in recs:
+        fh.write(json.dumps(r) + "\n")
+
+target = "Alpha"
+since = "2026-10-15"
+until = "2026-10-15"
+kept = [
+    r for r in recs
+    if r["job"]["target"] == target and since <= r["started_at"][:10] <= until
+]
+
+code, out, err = cli_runner("failures", "--target", target, "--since", since, "--until", until, path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert [row[0] for row in rows[1:]] == [r["started_at"] for r in kept]
+=== END AC report-failures-filters ===
+
+=== AC report-failures-empty ===
+Intent: When no failed record matches, the failures command exits 0 and writes only the header row.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+record = {
+    "schema_version": 1,
+    "execution_id": "id-1",
+    "started_at": "2026-10-14T01:00:00.000Z",
+    "status": "succeeded",
+    "job": {"command_name": "build", "target": "Alpha", "llm": "claude", "model": "m"},
+    "result": {"returncode": 0, "timed_out": False},
+}
+work = tempfile.mkdtemp()
+path = os.path.join(work, "log.jsonl")
+with open(path, "w", encoding="utf-8") as fh:
+    fh.write(json.dumps(record) + "\n")
+
+code, out, err = cli_runner("failures", path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 1
+assert rows[0] == ["started_at", "target", "command", "model", "returncode", "timed_out"]
+=== END AC report-failures-empty ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The report has no `TOTAL` row.
+- Every row comes from the log being read; none is hardcoded.
+- The report never writes to the log.
+- Text values are written without quoting or escaping.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-BuildExecutable.md ===
+# FEATURE: Build Executable
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Wires the ddkstat main package and keeps the module standard-library only. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliExit.md |
+| Provides    | cmd/ddkstat |
+| Consumes    | cli.Run |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The Go module root builds the `ddkstat` executable with `go build ./cmd/ddkstat`, using only the standard library.
+
+## Behavior
+
+- `cmd/ddkstat/main.go` is `package main` and contains only `os.Exit(cli.Run(os.Args[1:], os.Stdout, os.Stderr))`.
+- Only this file calls `os.Exit`.
+- `go.mod` declares a module path and a Go version of 1.22 or newer, and has no `require` lines.
+- `go build ./cmd/ddkstat` from the module root exits 0.
+- With no arguments the executable exits 2 with empty standard output.
+
+## Programmatic Acceptance
+
+=== AC build-exe-builds ===
+Intent: go build of ./cmd/ddkstat from the module root succeeds.
+Requires: executable=go; scope=test
+
+import os
+import subprocess
+import tempfile
+
+out_dir = tempfile.mkdtemp()
+binary = os.path.join(out_dir, "ddkstat-build-check")
+result = subprocess.run(
+    ["go", "build", "-o", binary, "./cmd/ddkstat"],
+    capture_output=True,
+    text=True,
+)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+assert os.path.isfile(binary)
+=== END AC build-exe-builds ===
+
+=== AC build-exe-stdlib-only ===
+Intent: The module declares no third-party requirements.
+
+from pathlib import Path
+
+go_mod = Path("go.mod")
+assert go_mod.is_file()
+lines = [line.strip() for line in go_mod.read_text(encoding="utf-8").splitlines()]
+print(lines)
+assert any(line.startswith("module ") for line in lines)
+assert not any(line.startswith("require") for line in lines)
+assert not Path("go.sum").exists() or Path("go.sum").stat().st_size == 0
+assert Path("cmd/ddkstat/main.go").is_file()
+=== END AC build-exe-stdlib-only ===
+
+=== AC build-exe-usage-exit ===
+Intent: The built executable exits 2 and writes nothing to standard output when run with no arguments or an unknown report.
+Requires: executable=go; scope=test
+
+from drydock_go import cli_runner
+
+code, out, err = cli_runner()
+print(out)
+print(err)
+assert code == 2
+assert out == ""
+
+code, out, err = cli_runner("frobnicate", "no-such-log.jsonl")
+print(out)
+print(err)
+assert code == 2
+assert out == ""
+=== END AC build-exe-usage-exit ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- No third-party module and no database.
+- `main.go` holds no application logic.
+- Application code never reads `sources/run.sh`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-TestScript.md ===
+# FEATURE: Test Script
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Provides a POSIX bin/test.sh that runs go vet and go test and exits zero only when both pass. |
+| Depends On  | ARCHITECTURE.md |
+| Provides    | bin/test.sh |
+| Consumes    | go.mod |
+
+## Questions
+
+- None.
+
+## Purpose
+
+One command, `sh bin/test.sh`, gates every behavioral story and the Go test suite.
+
+## Behavior
+
+- `bin/test.sh` is POSIX `sh`: it uses `set -eu` and no bashisms.
+- It changes to the application root, derived from the script's own path, so it works from any current directory.
+- It runs `go vet ./...` and then `go test ./...`.
+- It exits zero only when both commands pass, and non-zero otherwise.
+- It runs the toolchain installed on the machine and never a vendored copy.
+
+## Programmatic Acceptance
+
+=== AC test-script-syntax ===
+Intent: bin/test.sh exists and parses as POSIX sh.
+
+import subprocess
+from pathlib import Path
+
+script = Path("bin/test.sh")
+assert script.is_file()
+result = subprocess.run(["sh", "-n", str(script)], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC test-script-syntax ===
+
+=== AC test-script-passes ===
+Intent: sh bin/test.sh exits zero when go vet and every automated test pass.
+Requires: executable=go; scope=test
+
+import subprocess
+
+result = subprocess.run(["sh", "bin/test.sh"], capture_output=True, text=True, timeout=1200)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC test-script-passes ===
+
+=== AC test-script-any-cwd ===
+Intent: bin/test.sh finds the application root regardless of the caller's working directory.
+Requires: executable=go; scope=test
+
+import os
+import subprocess
+import tempfile
+
+script = os.path.abspath("bin/test.sh")
+elsewhere = tempfile.mkdtemp()
+result = subprocess.run(["sh", script], capture_output=True, text=True, cwd=elsewhere, timeout=1200)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC test-script-any-cwd ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The script contains no bashisms.
+- The script never edits source files or the log.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT VERIFICATION.md ===
+# FEATURE: Verification
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Terminal release gate that runs the supplied grader against the finished ddkstat tool. |
+| Depends On  | FEATURE-ReportSummary.md, FEATURE-ReportCommands.md, FEATURE-ReportTargets.md, FEATURE-ReportModels.md, FEATURE-ReportDaily.md, FEATURE-ReportFailures.md, FEATURE-BuildExecutable.md, FEATURE-TestScript.md |
+| Consumes    | ddkstat summary, ddkstat commands, ddkstat targets, ddkstat models, ddkstat daily, ddkstat failures |
+
+## Questions
+
+- None.
+
+## Purpose
+
+This is the last story in the build. Every report, filter, skip rule and exit code is built by earlier stories. This story proves that they work together by running the supplied grader.
+
+## Behavior
+
+- `sources/run.sh` and `sources/llm_sample.jsonl` are staged in the build directory, unmodified.
+- `sh sources/run.sh` runs from the application root.
+- It builds `./cmd/ddkstat`, runs its 20 checks over the sample log, and exits zero only when the build succeeds and every check passes.
+- A failure is repaired in the member behavior. The staged assets and the known answers are never edited, and no report answer is hardcoded in application code.
+
+## Programmatic Acceptance
+
+=== AC verification-grader ===
+Intent: The supplied grader sources/run.sh runs unfiltered against the finished application and exits zero.
+Suite: full
+Requires: executable=go; scope=test
+
+import subprocess
+import sys
+from pathlib import Path
+
+assert Path("sources/run.sh").is_file()
+assert Path("sources/llm_sample.jsonl").is_file()
+
+result = subprocess.run(
+    ["sh", "sources/run.sh"],
+    capture_output=True,
+    text=True,
+    timeout=1800,
+)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0
+=== END AC verification-grader ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not modify, rewrite, regenerate or substitute any file under `sources/`.
+- Application code does not read `sources/run.sh` and does not embed a report row, count or total.
+- The log being read is never written to.
+=== END ARTIFACT ===

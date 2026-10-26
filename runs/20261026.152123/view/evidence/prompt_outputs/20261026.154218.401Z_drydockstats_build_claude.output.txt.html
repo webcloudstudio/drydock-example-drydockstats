@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.154218.401Z_drydockstats_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.154218.401Z_drydockstats_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.154218.401Z_drydockstats_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>The `internal/filter` package doesn&#x27;t exist yet, so I&#x27;ll create it with the two pure functions and the nine named tests. Checking the Go toolchain first.RESULT: SUCCESS
+
+FILES CHANGED:
+- internal/filter/filter.go
+- internal/filter/filter_test.go
+
+SUMMARY:
+Added `internal/filter` with two pure functions, `ByTarget` and `ByDateRange`, matching the FEATURE-FilterTarget and FEATURE-FilterDates specs. Neither does I/O or modifies its input. Both return a non-nil slice, and an empty slice on no match or when `since` is after `until`.
+
+- `ByTarget` keeps records whose `Target` equals the name exactly, case-sensitive. An empty name keeps everything.
+- `ByDateRange` keeps records whose `Date` is within `[since, until]`, inclusive, compared as strings. An empty bound is unset.
+
+Tests: the nine named tests required by the specs (`TestByTargetExact`, `TestByTargetCaseSensitive`, `TestByTargetNoMatch`, `TestByTargetUnset`, `TestSinceInclusive`, `TestUntilInclusive`, `TestRangeBothBounds`, `TestSinceAfterUntilEmpty`, `TestBoundsUnset`), plus three extra: empty input, and input-not-modified for each function. Each test reads back the returned ExecutionIDs and compares them to the expected list.
+
+Checks run:
+- `sh bin/test.sh` (`go vet ./...` and `go test ./...`): all four packages report `ok`.
+- `go test -race -count=1 -v ./internal/filter/`: all 12 tests pass.
+
+Note: `sources/run.sh` was not run. It needs the CLI wiring and report writers from later blocks, and the spec reserves it for the terminal story. No Git operations were performed.</pre></article>
+</main>
+</body>
+</html>

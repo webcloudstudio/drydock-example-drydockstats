@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.153331.491Z_drydockstats_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.153331.491Z_drydockstats_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.153331.491Z_drydockstats_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>The block is the foundation: `go.mod`, the `cmd/ddkstat`, `internal/` and `bin/` directories, and a test runner. `bin/test.sh` is what COMPASS&#x27;s verification protocol calls, and ARCHITECTURE fixes its contents as `go vet ./...` then `go test ./...`. The `arch-*` acceptance checks cover the go.mod contents, the directories, and the absence of go.sum and vendor. I&#x27;ll create those files now.The runner passes, but with no test files it proves nothing about the layout. I&#x27;ll add a Go test that reads the layout back from disk, so `bin/test.sh` checks the same things the acceptance assertions do.The go-version check I just wrote is wrong: the prefix test would accept `1.20` and `1.21`. I&#x27;ll replace it with a numeric comparison.The file&#x27;s current contents match what I intended (the `fmt` import came from my own edit). Final check that the module is clean and the runner still passes:RESULT: SUCCESS
+
+FILES CHANGED:
+- go.mod
+- cmd/ddkstat/main.go
+- cmd/ddkstat/layout_test.go
+- bin/test.sh
+
+SUMMARY:
+The foundation is in place: a root Go module, the `cmd/ddkstat`, `internal/` and `bin/` directories, and a test runner.
+
+- `go.mod` declares `module ddkstat` and `go 1.22`, with no `require` lines. There is no `go.sum` and no `vendor/`.
+- `cmd/ddkstat/main.go` is an empty `package main` stub. It is the only package that may call `os.Exit`, and the reporting pipeline will replace it in later blocks.
+- `internal/` is an empty directory for the packages later blocks add. Git does not track empty directories, so it will not appear in a commit until a later block adds a file to it.
+- `bin/test.sh` is a POSIX sh runner that runs `go vet ./...` then `go test ./...`, as ARCHITECTURE specifies. It takes no tee log, since that would create runtime files in the build directory.
+- `cmd/ddkstat/layout_test.go` reads the module and layout back from disk and checks the same three things as the `arch-*` acceptance assertions: the module name and Go version, the directories, and the absence of vendor and go.sum entries.
+
+Checks run: `gofmt -l .` printed nothing, `go vet ./...` passed, and `sh bin/test.sh` exited 0 with all three layout tests passing. I did not run `sources/run.sh`, because it is the terminal story and needs the full `ddkstat` implementation. I did not commit, per the build instructions.
+
+Choices to review:
+- I placed the layout test in `cmd/ddkstat` because the root has no Go package and `internal/` should hold only application code. A later block can move it if that is wrong.
+- I used POSIX sh for `bin/test.sh` to follow ARCHITECTURE, which overrides the bash template in the stack.</pre></article>
+</main>
+</body>
+</html>

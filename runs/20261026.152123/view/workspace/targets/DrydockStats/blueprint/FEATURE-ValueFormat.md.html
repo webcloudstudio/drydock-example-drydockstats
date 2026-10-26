@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ValueFormat.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ValueFormat.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ValueFormat.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Value Format</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Shared text formatters for minutes (tenths of a minute) and cost (four decimal places).</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>format.Minutes, format.Cost</td></tr><tr><td>Consumes</td><td>go.mod</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Every report that prints a minutes column or a cost column uses these two pure functions in <code>internal/format</code>, so the rounding rule lives in exactly one place.</p>
+<h2>Behavior</h2>
+<ul><li><code>Minutes(ms int64) string</code>: let <code>t = (ms + 3000) / 6000</code> using integer division. Return <code>t/10</code>, a <code>.</code>, then <code>t%10</code> (for example <code>95000</code> ms gives <code>1.6</code>, <code>0</code> gives <code>0.0</code>).</li><li><code>Cost(usd float64) string</code>: return <code>fmt.Sprintf(&quot;%.4f&quot;, usd)</code>, exactly four decimal places (zero gives <code>0.0000</code>).</li><li>Both functions are pure, take no filters and read no input.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC format-minutes-rounding ===<br>Intent: Minutes applies the (ms + 3000) / 6000 tenths rule across the rounding boundaries.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/format&quot;, &quot;TestMinutesRounding&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC format-minutes-rounding ===</p>
+<p>=== AC format-minutes-zero ===<br>Intent: Minutes of zero milliseconds is written as tenths with one decimal digit.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/format&quot;, &quot;TestMinutesZero&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC format-minutes-zero ===</p>
+<p>=== AC format-cost-four-places ===<br>Intent: Cost always writes exactly four decimal places.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/format&quot;, &quot;TestCostFourPlaces&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC format-cost-four-places ===</p>
+<p>=== AC format-cost-zero ===<br>Intent: Cost of zero is written with four decimal places.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/format&quot;, &quot;TestCostZero&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC format-cost-zero ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Standard library only; no third-party module.</li><li>Formatters never read a log, a filter, or a report answer; every value comes from the argument.</li><li>Test expectations are derived from the formula, not typed as hand-calculated answers.</li></ul></article>
+</main>
+</body>
+</html>

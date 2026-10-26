@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-CliExit.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-CliExit.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-CliExit.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Cli Exit</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Assemble the ddkstat pipeline in cli.Run and map usage and read failures to exit codes 2 and 1.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-CliDates.md, FEATURE-LogNumbers.md, FEATURE-LogModel.md, FEATURE-FilterTarget.md, FEATURE-FilterDates.md</td></tr><tr><td>Provides</td><td>cli.Run, cli.Register</td></tr><tr><td>Consumes</td><td>cli.ParseArgs, logread.Read, filter.ByTarget, filter.ByDateRange</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>cli.Run</code> is the single entry point behind <code>cmd/ddkstat/main.go</code>. It runs the pipeline: parse arguments, read the log, apply filters, dispatch to the registered report writer. Report stories plug in through a registry so <code>Run</code> never imports them.</p>
+<h2>Interface</h2>
+<ul><li><code>func Run(args []string, stdout, stderr io.Writer) int</code></li><li><code>func Register(name string, fn func(w io.Writer, records []logread.Record, skipped int) error)</code></li></ul>
+<h2>Rules</h2>
+<ol><li>Usage error: write one usage-summary line to stderr, nothing to stdout, return 2.</li><li>Log cannot be opened or read: write one diagnostic line to stderr, nothing to stdout, return 1. The log is only</li></ol>
+<p>ever opened for reading.</p>
+<ol><li>Otherwise read records (skip warnings go to stderr), apply <code>ByTarget</code> then <code>ByDateRange</code>, and call the writer</li></ol>
+<p>registered under the report name. <code>skipped</code> is the whole-file count, unaffected by filters.</p>
+<ol><li>Report output is buffered and flushed to stdout only when the writer succeeds. A writer error writes one line to</li></ol>
+<p>stderr, nothing to stdout, and returns 1.</p>
+<ol><li>A report name with no registered writer writes nothing and returns 0 until its report story lands.</li><li>Skipped lines never change the exit code.</li><li><code>Run</code> never calls <code>os.Exit</code>; only <code>cmd/ddkstat/main.go</code> does.</li></ol>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-exit-usage-code ===<br>Intent: A usage error returns exit code 2.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestRunUsageErrorExit2&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-exit-usage-code ===</p>
+<p>=== AC cli-exit-usage-stdout-empty ===<br>Intent: A usage error writes nothing to standard output.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestRunUsageErrorWritesNothingToStdout&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-exit-usage-stdout-empty ===</p>
+<p>=== AC cli-exit-missing-log-code ===<br>Intent: An unreadable log returns exit code 1.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestRunMissingLogExit1&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-exit-missing-log-code ===</p>
+<p>=== AC cli-exit-missing-log-stdout-empty ===<br>Intent: An unreadable log writes nothing to standard output.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestRunMissingLogWritesNothingToStdout&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-exit-missing-log-stdout-empty ===</p>
+<p>=== AC cli-exit-skipped-lines-ok ===<br>Intent: A log containing skipped lines still exits 0.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestRunSkippedLinesStillExit0&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-exit-skipped-lines-ok ===</p>
+<p>=== AC cli-exit-filter-order ===<br>Intent: The registered writer receives records narrowed by the target and date filters and the whole-file skipped count.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestRunFilterOrder&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-exit-filter-order ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Never write to the log being read.</li><li>A failing command writes nothing to stdout and exactly one diagnostic line to stderr.</li><li>Diagnostics go to stderr and are never compared by the grader.</li><li><code>Run</code> does not import any report package; reports register themselves.</li></ul></article>
+</main>
+</body>
+</html>

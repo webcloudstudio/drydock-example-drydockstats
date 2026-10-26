@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ReportTargets.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ReportTargets.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ReportTargets.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Report Targets</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>The targets report: one CSV row per Target with cost and a TOTAL row.</td></tr><tr><td>Depends On</td><td>FEATURE-CliExit.md, FEATURE-ValueFormat.md</td></tr><tr><td>Provides</td><td>ddkstat targets</td></tr><tr><td>Consumes</td><td>cli.Register, format.Minutes, format.Cost, logread.Record</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>ddkstat targets [options] &lt;log&gt;</code> shows what each Target consumed and cost.</p>
+<h2>Behavior</h2>
+<ul><li>Header: <code>target,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd,minutes</code>.</li><li>One row per <code>job.target</code>, ordered by target ascending by byte value.</li><li>Final row <code>TOTAL,...</code> over all filtered records, with total cost.</li><li>Cost uses <code>format.Cost</code>; minutes use <code>format.Minutes</code>.</li><li>When no record matches, the output is the header and a TOTAL row of zeros with <code>0.0000</code> cost and <code>0.0</code> minutes.</li><li><code>internal/report</code> holds the aggregate and write functions; <code>internal/cli</code> registers the writer as <code>targets</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC targets-ordering ===<br>Intent: Rows are ordered by target ascending in byte order.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsOrdering&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC targets-ordering ===</p>
+<p>=== AC targets-total-cost ===<br>Intent: The TOTAL row carries the summed cost formatted to four places.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsTotalCost&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC targets-total-cost ===</p>
+<p>=== AC targets-empty ===<br>Intent: With no matching record the report is the header plus a zero TOTAL row.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsEmpty&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC targets-empty ===</p>
+<p>=== AC targets-write ===<br>Intent: The writer emits the declared header and columns.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsWrite&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC targets-write ===</p>
+<p>=== AC targets-run-via-cli ===<br>Intent: cli.Run dispatches the targets report over a test-written log, exits zero and writes parseable CSV.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestRunTargetsReport&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC targets-run-via-cli ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Standard library only; no database; the log is never written.</li><li>No row, count, cost or total is hardcoded; all values come from the log being read.</li><li>Target names are written unquoted and unescaped.</li></ul></article>
+</main>
+</body>
+</html>

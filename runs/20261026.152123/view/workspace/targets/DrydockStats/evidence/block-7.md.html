@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/evidence/block-7.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/evidence/block-7.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/evidence/block-7.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 7 · Service (block-7)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-26</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 4750</li><li>execution id: 20261026.154625.159Z-e7211486</li></ul>
+<h2>Stories built</h2>
+<ul><li>Wire the ddkstat main package and keep the module standard-library only. (build-exe) [story]</li></ul>
+<h2>Acceptance tooling authorization</h2>
+<ul><li>FEATURE-BuildExecutable.md#build-exe-builds: executable=go; scope=test; authorization=existing Target environment</li><li>FEATURE-BuildExecutable.md#build-exe-usage-exit: executable=go; scope=test; authorization=existing Target environment</li></ul>
+<h2>Stacked context</h2>
+<ul><li>stack: go_compact.md (SP 2105)</li><li>compass: COMPASS.md (SP 1037)</li><li>implements: FEATURE-BuildExecutable.md (SP 976)</li><li>context: ARCHITECTURE_compact.md (SP 493)</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>GREEN (prepassed): build-exe-builds (FEATURE-BuildExecutable.md)</li></ul>
+<p>intent: go build of ./cmd/ddkstat from the module root succeeds. return code: 0</p>
+<ul><li>GREEN (prepassed): build-exe-stdlib-only (FEATURE-BuildExecutable.md)</li></ul>
+<p>intent: The module declares no third-party requirements. return code: 0 stdout: [&#x27;module ddkstat&#x27;, &#x27;&#x27;, &#x27;go 1.22&#x27;]</p>
+<ul><li>GREEN (prepassed): build-exe-usage-exit (FEATURE-BuildExecutable.md)</li></ul>
+<p>intent: The built executable exits 2 and writes nothing to standard output when run with no arguments or an unknown report. return code: 0 stdout: usage: ddkstat {summary|commands|targets|models|daily|failures} [--target NAME] [--since DATE] [--until DATE] LOG</p>
+<p>usage: ddkstat {summary|commands|targets|models|daily|failures} [--target NAME] [--since DATE] [--until DATE] LOG</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: build-exe-builds (FEATURE-BuildExecutable.md)</li></ul>
+<p>intent: go build of ./cmd/ddkstat from the module root succeeds. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: build-exe-stdlib-only (FEATURE-BuildExecutable.md)</li></ul>
+<p>intent: The module declares no third-party requirements. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0 stdout: [&#x27;module ddkstat&#x27;, &#x27;&#x27;, &#x27;go 1.22&#x27;]</p>
+<ul><li>PASS: build-exe-usage-exit (FEATURE-BuildExecutable.md)</li></ul>
+<p>intent: The built executable exits 2 and writes nothing to standard output when run with no arguments or an unknown report. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0 stdout: usage: ddkstat {summary|commands|targets|models|daily|failures} [--target NAME] [--since DATE] [--until DATE] LOG</p>
+<p>usage: ddkstat {summary|commands|targets|models|daily|failures} [--target NAME] [--since DATE] [--until DATE] LOG</p>
+<h2>Build summary</h2>
+<p>The module already has most of the packages from earlier blocks. Next I&#x27;ll read the existing main package, its layout test, the CLI, and the test runner.<code>main.go</code> and <code>go.mod</code> already match the spec, so this step may be verification-only. I&#x27;ll run the declared gate, <code>sh bin/test.sh</code>, and check the build and the usage exit directly.The build block is already in place, so this step required no code changes. I checked it by running the declared gate and the acceptance checks directly.</p>
+<p>RESULT: SUCCESS</p>
+<p>FILES CHANGED:</p>
+<ul><li>(none)</li></ul>
+<p>SUMMARY: Verification-only step; the existing implementation already satisfies FEATURE-BuildExecutable.md.</p>
+<ul><li><code>cmd/ddkstat/main.go</code> is <code>package main</code> and contains only <code>os.Exit(cli.Run(os.Args[1:], os.Stdout, os.Stderr))</code>, with no application logic.</li><li><code>go.mod</code> declares <code>module ddkstat</code> and <code>go 1.22</code>, with no <code>require</code> lines. There is no <code>go.sum</code> and no <code>vendor/</code>.</li><li><code>go build ./cmd/ddkstat</code> from the module root exits 0 (toolchain go1.24.6).</li><li>Running with no arguments exits 2 with 0 bytes on stdout. Running with an unknown report and a log path also exits 2 with 0 bytes on stdout.</li><li><code>sh bin/test.sh</code> (<code>go vet ./...</code> then <code>go test ./...</code>) exits 0 across all four packages. The test results were served from cache, so they were not re-executed in this run.</li><li>I did not run <code>sources/run.sh</code>. It is the terminal story&#x27;s check and is scoped to run once, last.</li><li>No files were written, and no Git history was touched.</li></ul>
+<p>BLOCKERS:</p>
+<ul><li>None.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,244 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Build: DrydockStats
+scope: entire project
+frontier: foundation
+git: baseline DrydockStats 5790004f04c1
+git: baseline DrydockStats e41fcd2703a3
+
+BLOCK block-1  name="Block 1 · Foundational"  calls_max=7
+  story=foundation  "Stand up the Go module, directory layout and test runner every other story builds into."
+
+  [call 1/7]  kind=initial  llm=claude/claude-haiku-5-5
+    result=ok  rc=0  execution=20261026.153331.491Z-c5c8a0e5
+    status  3/3 checks passed
+      story=foundation  3/3 checks passed
+        check=arch-go-mod  PASS
+        check=arch-layout  PASS
+        check=arch-no-vendor  PASS
+git: block-1 | go.md, ARCHITECTURE.md | call=1 | app=23a95b70f6fc target=263c7241a838
+
+  DONE  story=foundation  state=closed/implemented  execution=20261026.153331.491Z-c5c8a0e5  elapsed=1m02s
+git: block-1 | go.md, ARCHITECTURE.md | step_completed | app=unchanged target=b59a7d344bf8
+
+BLOCK block-2  name="Block 2 · Service"  calls_max=7
+  story=log-lines  "Read the JSON Lines log into records, ignoring blank lines and classifying failed calls."
+  story=cli-args  "Parse the report name, options and log path into a validated invocation."
+  story=test-script  "Provide bin/test.sh running go vet and go test."
+
+  [call 1/7]  kind=initial  llm=claude/claude-haiku-5-5
+    result=ok  rc=0  execution=20261026.153448.328Z-8705eec6
+    status  15/15 checks passed
+      story=log-lines  4/4 checks passed
+        check=lines-blank  PASS
+        check=lines-failed-status  PASS
+        check=lines-start-date  PASS
+        check=lines-started-at-lenient  PASS
+      story=cli-args  8/8 checks passed
+        check=cli-args-report-and-log  PASS
+        check=cli-args-options  PASS
+        check=cli-args-repeated-option  PASS
+        check=cli-args-option-before-report  PASS
+        check=cli-args-unknown-report  PASS
+        check=cli-args-unknown-option  PASS
+        check=cli-args-missing-value  PASS
+        check=cli-args-log-path-count  PASS
+      story=test-script  3/3 checks passed
+        check=test-script-syntax  PASS
+        check=test-script-passes  PASS
+        check=test-script-any-cwd  PASS
+git: block-2 | FEATURE-LogLines.md, FEATURE-CliArgs.md, FEATURE-TestScript.md | call=1 | app=56a5250634c6 target=8bdf37588b29
+
+  DONE  story=log-lines  state=closed/implemented  execution=20261026.153448.328Z-8705eec6  elapsed=2m33s
+git: block-2 | FEATURE-LogLines.md, FEATURE-CliArgs.md, FEATURE-TestScript.md | step_completed | app=unchanged target=fbd7ca673896
+
+BLOCK block-3  name="Block 3 · Service"  calls_max=7
+  story=log-skip  "Skip malformed, incomplete and duplicate lines with a stderr warning and no effect on the exit code."
+  story=cli-dates  "Validate --since and --until as real YYYY-MM-DD calendar dates."
+
+  [call 1/7]  kind=initial  llm=claude/claude-haiku-5-5
+    result=ok  rc=0  execution=20261026.153728.666Z-8cc11b51
+    status  12/12 checks passed
+      story=log-skip  7/7 checks passed
+        check=skip-not-object  PASS
+        check=skip-missing-field  PASS
+        check=skip-empty-string-field  PASS
+        check=skip-duplicate-first-kept  PASS
+        check=skip-malformed-no-register  PASS
+        check=skip-warning-line-number  PASS
+        check=skip-dedupe-whole-file  PASS
+      story=cli-dates  5/5 checks passed
+        check=cli-dates-valid  PASS
+        check=cli-dates-invalid-month  PASS
+        check=cli-dates-invalid-day  PASS
+        check=cli-dates-wrong-shape  PASS
+        check=cli-dates-missing-value  PASS
+git: block-3 | FEATURE-LogSkip.md, FEATURE-CliDates.md | call=1 | app=78ddd44452fe target=1b34034b0c83
+
+  DONE  story=log-skip  state=closed/implemented  execution=20261026.153728.666Z-8cc11b51  elapsed=2m21s
+git: block-3 | FEATURE-LogSkip.md, FEATURE-CliDates.md | step_completed | app=unchanged target=401935728cef
+
+BLOCK block-4  name="Block 4 · Service"  calls_max=7
+  story=log-numbers  "Treat absent, null or non-numeric token, cost and duration values as zero."
+  story=log-model  "Attribute each record to the executed model, falling back to the requested model."
+
+  [call 1/7]  kind=initial  llm=claude/claude-haiku-5-5
+    result=ok  rc=0  execution=20261026.153951.393Z-ca9280c6
+    status  9/9 checks passed
+      story=log-numbers  5/5 checks passed
+        check=numbers-absent  PASS
+        check=numbers-null  PASS
+        check=numbers-non-numeric  PASS
+        check=numbers-no-stats  PASS
+        check=numbers-returncode-null  PASS
+      story=log-model  4/4 checks passed
+        check=model-prefers-executed  PASS
+        check=model-fallback-absent  PASS
+        check=model-fallback-empty  PASS
+        check=model-fallback-no-stats  PASS
+git: block-4 | FEATURE-LogNumbers.md, FEATURE-LogModel.md | call=1 | app=cc9da5d00c4b target=96247f88ae94
+
+  DONE  story=log-numbers  state=closed/implemented  execution=20261026.153951.393Z-ca9280c6  elapsed=2m28s
+git: block-4 | FEATURE-LogNumbers.md, FEATURE-LogModel.md | step_completed | app=unchanged target=de0a5a2c66b1
+
+BLOCK block-5  name="Block 5 · Service"  calls_max=7
+  story=filter-target  "Filter records by exact job.target match."
+  story=filter-dates  "Filter records by inclusive start-date range."
+
+  [call 1/7]  kind=initial  llm=claude/claude-haiku-5-5
+    result=ok  rc=0  execution=20261026.154218.401Z-9a1eb74b
+    status  9/9 checks passed
+      story=filter-target  4/4 checks passed
+        check=filter-target-exact  PASS
+        check=filter-target-case-sensitive  PASS
+        check=filter-target-no-match  PASS
+        check=filter-target-unset  PASS
+      story=filter-dates  5/5 checks passed
+        check=filter-dates-since-inclusive  PASS
+        check=filter-dates-until-inclusive  PASS
+        check=filter-dates-both-bounds  PASS
+        check=filter-dates-since-after-until  PASS
+        check=filter-dates-bounds-unset  PASS
+git: block-5 | FEATURE-FilterTarget.md, FEATURE-FilterDates.md | call=1 | app=cde24a71bd75 target=771906456012
+
+  DONE  story=filter-target  state=closed/implemented  execution=20261026.154218.401Z-9a1eb74b  elapsed=1m44s
+git: block-5 | FEATURE-FilterTarget.md, FEATURE-FilterDates.md | step_completed | app=unchanged target=c786c726a74e
+
+BLOCK block-6  name="Block 6 · Service"  calls_max=7
+  story=cli-exit  "Assemble the Run pipeline and map failures to exit codes 0, 1 and 2."
+
+  [call 1/7]  kind=initial  llm=claude/claude-haiku-5-5
+    result=ok  rc=0  execution=20261026.154406.567Z-62543540
+    status  6/6 checks passed
+      story=cli-exit  6/6 checks passed
+        check=cli-exit-usage-code  PASS
+        check=cli-exit-usage-stdout-empty  PASS
+        check=cli-exit-missing-log-code  PASS
+        check=cli-exit-missing-log-stdout-empty  PASS
+        check=cli-exit-skipped-lines-ok  PASS
+        check=cli-exit-filter-order  PASS
+git: block-6 | FEATURE-CliExit.md | call=1 | app=7152aca1a686 target=c9dbb83d7e2e
+
+  DONE  story=cli-exit  state=closed/implemented  execution=20261026.154406.567Z-62543540  elapsed=2m14s
+git: block-6 | FEATURE-CliExit.md | step_completed | app=unchanged target=7da89ab2f070
+
+BLOCK block-7  name="Block 7 · Service"  calls_max=7
+  story=build-exe  "Wire the ddkstat main package and keep the module standard-library only."
+
+  [call 1/7]  kind=initial  llm=claude/claude-haiku-5-5
+    result=ok  rc=0  execution=20261026.154625.159Z-e7211486
+    status  3/3 checks passed
+      story=build-exe  3/3 checks passed
+        check=build-exe-builds  PASS
+        check=build-exe-stdlib-only  PASS
+        check=build-exe-usage-exit  PASS
+git: block-7 | FEATURE-BuildExecutable.md | call=1 | app=unchanged target=14bae98e3397
+
+  DONE  story=build-exe  state=closed/implemented  execution=20261026.154625.159Z-e7211486  elapsed=1m51s
+git: block-7 | FEATURE-BuildExecutable.md | step_completed | app=unchanged target=1100daadef93
+
+BLOCK block-8  name="Block 8 · Service"  calls_max=7
+  story=value-format  "Provide shared minutes and cost text formatters."
+
+  [call 1/7]  kind=initial  llm=claude/claude-haiku-5-5
+    result=ok  rc=0  execution=20261026.154815.733Z-f0d51a42
+    status  4/4 checks passed
+      story=value-format  4/4 checks passed
+        check=format-minutes-rounding  PASS
+        check=format-minutes-zero  PASS
+        check=format-cost-four-places  PASS
+        check=format-cost-zero  PASS
+git: block-8 | FEATURE-ValueFormat.md | call=1 | app=a0508802520c target=8ceb2d6d3a2e
+
+  DONE  story=value-format  state=closed/implemented  execution=20261026.154815.733Z-f0d51a42  elapsed=1m51s
+git: block-8 | FEATURE-ValueFormat.md | step_completed | app=unchanged target=f739abdeb68a
+
+BLOCK block-9  name="Block 9 · Service"  calls_max=7
+  story=report-summary  "Write the one-row summary report."
+  story=report-targets  "Write the targets report with cost and a TOTAL row."
+  story=report-commands  "Write the commands report with a TOTAL row."
+  story=report-models  "Write the models report grouped by provider and model with a TOTAL row."
+  story=report-failures  "Write the failures report listing each failed record."
+  story=report-daily  "Write the daily report with token totals and a TOTAL row."
+
+  [call 1/7]  kind=initial  llm=claude/claude-haiku-5-5
+    result=ok  rc=0  execution=20261026.155116.930Z-7029aa95
+    status  29/29 checks passed
+      story=report-summary  5/5 checks passed
+        check=summary-aggregate  PASS
+        check=summary-empty-first-last  PASS
+        check=summary-skipped-ignores-filters  PASS
+        check=summary-write  PASS
+        check=summary-run-via-cli  PASS
+      story=report-targets  5/5 checks passed
+        check=targets-ordering  PASS
+        check=targets-total-cost  PASS
+        check=targets-empty  PASS
+        check=targets-write  PASS
+        check=targets-run-via-cli  PASS
+      story=report-commands  5/5 checks passed
+        check=commands-ordering  PASS
+        check=commands-total  PASS
+        check=commands-empty  PASS
+        check=commands-write  PASS
+        check=commands-run-via-cli  PASS
+      story=report-models  6/6 checks passed
+        check=models-grouping-executed-model  PASS
+        check=models-ordering  PASS
+        check=models-total-empty-model-column  PASS
+        check=models-empty  PASS
+        check=models-write  PASS
+        check=models-run-via-cli  PASS
+      story=report-failures  4/4 checks passed
+        check=report-failures-unit  PASS
+        check=report-failures-rows  PASS
+        check=report-failures-filters  PASS
+        check=report-failures-empty  PASS
+      story=report-daily  4/4 checks passed
+        check=report-daily-unit  PASS
+        check=report-daily-rows  PASS
+        check=report-daily-filters  PASS
+        check=report-daily-empty  PASS
+git: block-9 | FEATURE-ReportSummary.md, FEATURE-ReportTargets.md, FEATURE-ReportCommands.md, FEATURE-ReportModels.md, FEATURE-ReportFailures.md, FEATURE-ReportDaily.md | call=1 | app=164af066a70d target=6a771e81852e
+
+  DONE  story=report-summary  state=closed/implemented  execution=20261026.155116.930Z-7029aa95  elapsed=7m51s
+git: block-9 | FEATURE-ReportSummary.md, FEATURE-ReportTargets.md, FEATURE-ReportCommands.md, FEATURE-ReportModels.md, FEATURE-ReportFailures.md, FEATURE-ReportDaily.md | step_completed | app=unchanged target=970f0a69c47a
+
+BLOCK block-10  name="Block 10 · Feature"  calls_max=7
+  story=verification  "Run the supplied grader against the finished tool as the terminal gate."
+
+  [call 1/7]  kind=initial  llm=claude/claude-haiku-5-5
+    result=ok  rc=0  execution=20261026.155809.167Z-3d56068f
+    status  1/1 checks passed
+      story=verification  1/1 checks passed
+        check=verification-grader  PASS  cases=20/20 passed
+      Case counts are per check; scopes may overlap and are not additive.
+git: block-10 | VERIFICATION.md | call=1 | app=unchanged target=394a961bfeaa
+
+  DONE  story=verification  state=closed/implemented  execution=20261026.155809.167Z-3d56068f  elapsed=2m58s
+git: block-10 | VERIFICATION.md | step_completed | app=unchanged target=e4f8ea8e899a
+git: build complete DrydockStats a8a9a6aa4fc9
+git: build complete DrydockStats 0b6968590864
+
+result: 20 built, 0 failed, 0 unchanged
+elapsed: 28 minutes 33 seconds
+Target - committed project workspace git store

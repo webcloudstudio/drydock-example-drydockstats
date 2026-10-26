@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.153951.393Z_drydockstats_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.153951.393Z_drydockstats_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.153951.393Z_drydockstats_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>Now the existing implementation, which the previous blocks produced.The existing `logread` package has two gaps against the specs. A string or boolean in a numeric field fails the whole line, so the line is skipped instead of counted as zero. And `Record.Model` is only `stats.model`, with no fallback to `job.model`. I&#x27;ll fix both in `logread.go`, then add the named tests.Now the tests. I&#x27;ll append them to the existing `logread_test.go`, which needs a Read first.Now I&#x27;ll run the project&#x27;s own gate (`bin/test.sh`, which is `go vet` plus `go test`) and check formatting.All gates pass. The sample log has 3 expected skips (check A1), and this change could alter that count if any sample line has a wrong-typed numeric. I&#x27;ll check that with a throwaway test file that I delete straight after.The `logread` numeric and model rules are implemented, and `sh bin/test.sh` passes (exit 0). `sources/run.sh` is not expected to pass yet, since `cmd/ddkstat` is still a stub until a later block.
+
+Changes in `internal/logread/logread.go`:
+- **Numbers:** absent, `null`, or wrong-typed `input_tokens`, `cached_input_tokens`, `output_tokens`, `cost_usd` and `elapsed_ms` now count as zero. Before, a string in one of these fields dropped the whole line.
+- **Missing objects:** a missing or non-object `result` or `stats` still yields a kept record with zero numbers.
+- **Return code:** `returncode` that is `null` or absent is nil.
+- **Model:** `Record.Model` is `stats.model` when it is a non-empty string, otherwise `job.model`. `RequestedModel` still holds `job.model`.
+- Required string fields (`execution_id`, `started_at`, `status`, `job.command_name`, `job.target`) still skip the line when they are missing, empty, or the wrong type.
+
+Tests added to `internal/logread/logread_test.go` under the names the specs require: `TestNumbersAbsentAreZero`, `TestNumbersNullAreZero`, `TestNumbersNonNumericAreZero`, `TestNoStatsObjectStillRecord`, `TestReturnCodeNullIsNil`, and the four `TestModel*` tests. I also added a few extra boundary tests. The new tests pass, and so does the existing suite.
+
+I also checked the staged sample log with a temporary test file, which I deleted afterwards. It still gives 33 records and 3 skips, which matches check A1 in `run.sh`.
+
+Choices I made that the specs don&#x27;t settle:
+- A non-integer `returncode` is treated as nil, and a non-boolean `timed_out` is treated as false.
+- A non-string `job.llm` or `job.model` becomes an empty string instead of skipping the line.
+- Token and elapsed fields must be JSON integers. A value such as `12.0` counts as zero.
+
+I did not commit anything.
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- internal/logread/logread.go
+- internal/logread/logread_test.go
+
+SUMMARY:
+Implemented log-numbers and log-model in `internal/logread`. Numeric fields are decoded leniently and default to zero. `Record.Model` falls back to `job.model`. Added the named tests for both stories plus boundary cases. `sh bin/test.sh` exits 0. The sample log still yields 33 records and 3 skips. `sources/run.sh` is not run because `cmd/ddkstat` is still a stub, which belongs to a later block.
+
+&lt;blueprint-decisions&gt;
+[{&quot;spec&quot;:&quot;FEATURE-LogNumbers.md&quot;,&quot;severity&quot;:&quot;Low&quot;,&quot;subject&quot;:&quot;Wrong-typed returncode, timed_out and token values&quot;,&quot;decision&quot;:&quot;A non-integer returncode is treated as nil, a non-boolean timed_out as false, and a non-integer token or elapsed value as zero. A float such as 12.0 in a token field counts as zero. The spec only named absent, null and non-numeric values, so I took the strictest reading. Is that acceptable?&quot;}]
+&lt;/blueprint-decisions&gt;</pre></article>
+</main>
+</body>
+</html>

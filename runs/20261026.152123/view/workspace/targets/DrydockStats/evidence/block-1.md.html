@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/evidence/block-1.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/evidence/block-1.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/evidence/block-1.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 1 · Foundational (block-1)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-26</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 13838</li><li>execution id: 20261026.153331.491Z-c5c8a0e5</li></ul>
+<h2>Stories built</h2>
+<ul><li>Stand up the Go module, directory layout and test runner every other story builds into. (foundation) [story]</li></ul>
+<h2>Stacked context</h2>
+<ul><li>implements: go.md (SP 7578)</li><li>compass: COMPASS.md (SP 1037)</li><li>implements: ARCHITECTURE.md (SP 2170)</li><li>stack: common.md (SP 2776)</li></ul>
+<h2>Build directory changes</h2>
+<ul><li>bin/test.sh</li><li>cmd/ddkstat/layout_test.go</li><li>cmd/ddkstat/main.go</li><li>go.mod</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: arch-go-mod (ARCHITECTURE.md)</li></ul>
+<p>intent: The root go.mod declares module ddkstat, Go 1.22 or newer, and no third-party requirement. return code: 1 stderr: --- drydock: values at failure --- self = PosixPath(&#x27;go.mod&#x27;) mode = &#x27;r&#x27; buffering = -1 encoding = &#x27;locale&#x27; errors = None newline = None --- drydock: end values --- Traceback (most recent call last): File &quot;arch-go-mod.py&quot;, line 3, in &lt;module&gt; text = Path(&quot;go.mod&quot;).read_text() ^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/home/barlo/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/pathlib.py&quot;, line 1027, in read_text with self.open(mode=&#x27;r&#x27;, encoding=encoding, errors=errors) as f: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/home/barlo/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/pathlib.py&quot;, line 1013, in open return io.open(self, mode, buffering, encoding, errors, newline) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^<br>FileNotFoundError: [Errno 2] No such file or directory: &#x27;go.mod&#x27;</p>
+<ul><li>RED: arch-layout (ARCHITECTURE.md)</li></ul>
+<p>intent: The directories every later story builds into exist. return code: 1 stderr: --- drydock: values at failure --- d = &#x27;cmd/ddkstat&#x27; --- drydock: end values --- Traceback (most recent call last): File &quot;arch-layout.py&quot;, line 4, in &lt;module&gt; assert Path(d).is_dir(), d ^^^^^^^^^^^^^^^^<br>AssertionError: cmd/ddkstat</p>
+<ul><li>GREEN (prepassed): arch-no-vendor (ARCHITECTURE.md)</li></ul>
+<p>intent: The module is standard-library only and has no go.sum dependency entries. return code: 0</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: arch-go-mod (ARCHITECTURE.md)</li></ul>
+<p>intent: The root go.mod declares module ddkstat, Go 1.22 or newer, and no third-party requirement. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: arch-layout (ARCHITECTURE.md)</li></ul>
+<p>intent: The directories every later story builds into exist. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: arch-no-vendor (ARCHITECTURE.md)</li></ul>
+<p>intent: The module is standard-library only and has no go.sum dependency entries. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<h2>Build summary</h2>
+<p>The block is the foundation: <code>go.mod</code>, the <code>cmd/ddkstat</code>, <code>internal/</code> and <code>bin/</code> directories, and a test runner. <code>bin/test.sh</code> is what COMPASS&#x27;s verification protocol calls, and ARCHITECTURE fixes its contents as <code>go vet ./...</code> then <code>go test ./...</code>. The <code>arch-*</code> acceptance checks cover the go.mod contents, the directories, and the absence of go.sum and vendor. I&#x27;ll create those files now.The runner passes, but with no test files it proves nothing about the layout. I&#x27;ll add a Go test that reads the layout back from disk, so <code>bin/test.sh</code> checks the same things the acceptance assertions do.The go-version check I just wrote is wrong: the prefix test would accept <code>1.20</code> and <code>1.21</code>. I&#x27;ll replace it with a numeric comparison.The file&#x27;s current contents match what I intended (the <code>fmt</code> import came from my own edit). Final check that the module is clean and the runner still passes:RESULT: SUCCESS</p>
+<p>FILES CHANGED:</p>
+<ul><li>go.mod</li><li>cmd/ddkstat/main.go</li><li>cmd/ddkstat/layout_test.go</li><li>bin/test.sh</li></ul>
+<p>SUMMARY:<br>The foundation is in place: a root Go module, the <code>cmd/ddkstat</code>, <code>internal/</code> and <code>bin/</code> directories, and a test runner.</p>
+<ul><li><code>go.mod</code> declares <code>module ddkstat</code> and <code>go 1.22</code>, with no <code>require</code> lines. There is no <code>go.sum</code> and no <code>vendor/</code>.</li><li><code>cmd/ddkstat/main.go</code> is an empty <code>package main</code> stub. It is the only package that may call <code>os.Exit</code>, and the reporting pipeline will replace it in later blocks.</li><li><code>internal/</code> is an empty directory for the packages later blocks add. Git does not track empty directories, so it will not appear in a commit until a later block adds a file to it.</li><li><code>bin/test.sh</code> is a POSIX sh runner that runs <code>go vet ./...</code> then <code>go test ./...</code>, as ARCHITECTURE specifies. It takes no tee log, since that would create runtime files in the build directory.</li><li><code>cmd/ddkstat/layout_test.go</code> reads the module and layout back from disk and checks the same three things as the <code>arch-*</code> acceptance assertions: the module name and Go version, the directories, and the absence of vendor and go.sum entries.</li></ul>
+<p>Checks run: <code>gofmt -l .</code> printed nothing, <code>go vet ./...</code> passed, and <code>sh bin/test.sh</code> exited 0 with all three layout tests passing. I did not run <code>sources/run.sh</code>, because it is the terminal story and needs the full <code>ddkstat</code> implementation. I did not commit, per the build instructions.</p>
+<p>Choices to review:</p>
+<ul><li>I placed the layout test in <code>cmd/ddkstat</code> because the root has no Go package and <code>internal/</code> should hold only application code. A later block can move it if that is wrong.</li><li>I used POSIX sh for <code>bin/test.sh</code> to follow ARCHITECTURE, which overrides the bash template in the stack.</li></ul></article>
+</main>
+</body>
+</html>

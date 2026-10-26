@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/ARCHITECTURE_compact.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/ARCHITECTURE_compact.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/ARCHITECTURE_compact.md">Raw file</a></div></header>
+<article class="doc"><p>&lt;!-- Compacted from ARCHITECTURE.md sha256=50e4c308b6e72eb915ea39843b4bfe2277ccd8adc8f1a3b1c07e6688d66829cb on 2026-10-26 by drydock build agent --&gt;</p>
+<p>Module <code>ddkstat</code>, go 1.22+, no <code>require</code> lines, no go.sum entries, no vendor/.<br>Packages: cmd/ddkstat (only os.Exit caller), internal/logread, internal/filter, internal/format, internal/report, internal/cli. logread.Read(r io.Reader, warn io.Writer) (Result, error); Result{Records []Record, Skipped int}; error only on reader failure. logread.Record: ExecutionID, StartedAt, Date (first 10 chars), Status, Failed (status != &quot;succeeded&quot;), Command, Target, Provider, Model, InputTokens, CachedTokens, OutputTokens (int64), CostUSD (float64), ElapsedMS (int64), ReturnCode (*int, nil if null/absent), TimedOut (bool). cli.Run(args []string, stdout, stderr io.Writer) int; exit 0 ok, 1 unreadable log, 2 usage. Report writers: cli.Register(name, fn func(w io.Writer, records []logread.Record, skipped int) error).<br>Reports: summary, commands, targets, models, daily, failures. Options: --target, --since, --until, then one log path. Only cmd/ddkstat/main.go calls os.Exit. Output buffered; stdout written only on success. Diagnostics to stderr, never compared. Never write to the log; never read sources/run.sh; no hardcoded report values.</p></article>
+</main>
+</body>
+</html>

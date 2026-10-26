@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-CliArgs.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-CliArgs.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-CliArgs.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Cli Args</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Parse the report name, options, and log path of a ddkstat invocation into a validated Options value.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>cli.ParseArgs, cli.Options, cli.UsageError</td></tr><tr><td>Consumes</td><td>go.mod</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>internal/cli</code> turns the raw argument list into an <code>Options</code> value or a usage error. It performs no I/O and never exits the process. Date value validation is owned by FEATURE-CliDates.md and layered onto this parser.</p>
+<h2>Interface</h2>
+<pre><code>ddkstat &lt;report&gt; [--target &lt;name&gt;] [--since &lt;YYYY-MM-DD&gt;] [--until &lt;YYYY-MM-DD&gt;] &lt;log&gt;</code></pre>
+<ul><li><code>type Options struct { Report, Target, Since, Until, LogPath string }</code></li><li><code>func ParseArgs(args []string) (Options, error)</code>; every failure is a <code>*UsageError</code> (<code>errors.As</code>-detectable).</li><li><code>args</code> excludes the program name.</li></ul>
+<h2>Rules</h2>
+<ol><li>The first argument is the report and must be one of <code>summary</code>, <code>commands</code>, <code>targets</code>, <code>models</code>, <code>daily</code>, <code>failures</code>.</li><li>After the report come zero or more options, each of <code>--target</code>, <code>--since</code>, <code>--until</code> followed by exactly one value.</li><li>Exactly one log path follows; it is the last argument.</li><li>A repeated option takes its last value.</li><li>An option placed before the report name is a usage error (it is not a known report).</li><li>An unknown report, an unknown option, a missing option value, a missing log path, or an extra positional</li></ol>
+<p>argument is a usage error.</p>
+<ol><li>Parsing uses a hand-rolled loop or a local <code>flag.FlagSet</code> with <code>flag.ContinueOnError</code>; it never touches the</li></ol>
+<p>global flag set and never calls <code>os.Exit</code>.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-args-report-and-log ===<br>Intent: A report name followed by a log path parses into Options with that report and path.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestParseReportAndLog&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-args-report-and-log ===</p>
+<p>=== AC cli-args-options ===<br>Intent: The --target, --since and --until options populate Options.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestParseOptions&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-args-options ===</p>
+<p>=== AC cli-args-repeated-option ===<br>Intent: A repeated option takes its last value.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestParseRepeatedOptionLastWins&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-args-repeated-option ===</p>
+<p>=== AC cli-args-option-before-report ===<br>Intent: An option placed before the report name is a usage error.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestParseOptionBeforeReportIsUsageError&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-args-option-before-report ===</p>
+<p>=== AC cli-args-unknown-report ===<br>Intent: An unknown report name is a usage error.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestParseUnknownReport&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-args-unknown-report ===</p>
+<p>=== AC cli-args-unknown-option ===<br>Intent: An unknown option is a usage error.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestParseUnknownOption&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-args-unknown-option ===</p>
+<p>=== AC cli-args-missing-value ===<br>Intent: An option with no value is a usage error.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestParseMissingValue&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-args-missing-value ===</p>
+<p>=== AC cli-args-log-path-count ===<br>Intent: A missing log path and an extra log path are both usage errors.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestParseLogPathCount&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-args-log-path-count ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Standard library only; no third-party module.</li><li>ParseArgs performs no I/O and never calls <code>os.Exit</code>.</li><li>Option order is fixed: report first, then options, then the single log path.</li></ul></article>
+</main>
+</body>
+</html>

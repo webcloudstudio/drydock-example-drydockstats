@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/VERIFICATION.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/VERIFICATION.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/VERIFICATION.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Verification</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Terminal release gate that runs the supplied grader against the finished ddkstat tool.</td></tr><tr><td>Depends On</td><td>FEATURE-ReportSummary.md, FEATURE-ReportCommands.md, FEATURE-ReportTargets.md, FEATURE-ReportModels.md, FEATURE-ReportDaily.md, FEATURE-ReportFailures.md, FEATURE-BuildExecutable.md, FEATURE-TestScript.md</td></tr><tr><td>Consumes</td><td>ddkstat summary, ddkstat commands, ddkstat targets, ddkstat models, ddkstat daily, ddkstat failures</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>This is the last story in the build. Every report, filter, skip rule and exit code is built by earlier stories. This story proves that they work together by running the supplied grader.</p>
+<h2>Behavior</h2>
+<ul><li><code>sources/run.sh</code> and <code>sources/llm_sample.jsonl</code> are staged in the build directory, unmodified.</li><li><code>sh sources/run.sh</code> runs from the application root.</li><li>It builds <code>./cmd/ddkstat</code>, runs its 20 checks over the sample log, and exits zero only when the build succeeds and every check passes.</li><li>A failure is repaired in the member behavior. The staged assets and the known answers are never edited, and no report answer is hardcoded in application code.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC verification-grader ===<br>Intent: The supplied grader sources/run.sh runs unfiltered against the finished application and exits zero.<br>Suite: full<br>Requires: executable=go; scope=test</p>
+<p>import subprocess import sys from pathlib import Path</p>
+<p>assert Path(&quot;sources/run.sh&quot;).is_file() assert Path(&quot;sources/llm_sample.jsonl&quot;).is_file()</p>
+<p>result = subprocess.run( [&quot;sh&quot;, &quot;sources/run.sh&quot;], capture_output=True, text=True, timeout=1800, ) print(result.stdout) print(result.stderr, file=sys.stderr) assert result.returncode == 0 === END AC verification-grader ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Do not modify, rewrite, regenerate or substitute any file under <code>sources/</code>.</li><li>Application code does not read <code>sources/run.sh</code> and does not embed a report row, count or total.</li><li>The log being read is never written to.</li></ul></article>
+</main>
+</body>
+</html>

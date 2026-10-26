@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-FilterTarget.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-FilterTarget.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-FilterTarget.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Filter Target</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Keep only records whose job.target equals a given name exactly.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogNumbers.md, FEATURE-LogModel.md</td></tr><tr><td>Provides</td><td>filter.ByTarget</td></tr><tr><td>Consumes</td><td>logread.Record</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>A pure function in <code>internal/filter</code> that narrows a record slice by Target. It performs no I/O and knows nothing about reports; every report receives its output through the CLI pipeline.</p>
+<h2>Interface</h2>
+<p><code>func ByTarget(records []logread.Record, name string) []logread.Record</code></p>
+<h2>Rules</h2>
+<ol><li>A record is kept when <code>Record.Target == name</code> exactly; comparison is case-sensitive.</li><li>An empty <code>name</code> means no <code>--target</code> was given and all records are returned.</li><li>No match returns an empty slice, never an error.</li><li>Input order is preserved and the input slice is not modified.</li></ol>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC filter-target-exact ===<br>Intent: Only records whose Target equals the name are kept.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/filter&quot;, &quot;TestByTargetExact&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC filter-target-exact ===</p>
+<p>=== AC filter-target-case-sensitive ===<br>Intent: Target matching is case-sensitive.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/filter&quot;, &quot;TestByTargetCaseSensitive&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC filter-target-case-sensitive ===</p>
+<p>=== AC filter-target-no-match ===<br>Intent: A name matching no record yields an empty result.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/filter&quot;, &quot;TestByTargetNoMatch&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC filter-target-no-match ===</p>
+<p>=== AC filter-target-unset ===<br>Intent: An empty name leaves every record in place.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/filter&quot;, &quot;TestByTargetUnset&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC filter-target-unset ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The filter is a pure function: no I/O, no global state.</li><li>It does not depend on any report implementation; reports verify it later through CLI output.</li></ul></article>
+</main>
+</body>
+</html>

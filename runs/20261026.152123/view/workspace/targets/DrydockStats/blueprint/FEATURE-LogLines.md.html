@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-LogLines.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-LogLines.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-LogLines.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Log Lines</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Read the JSON Lines log into records, ignoring blank lines and classifying failed calls.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>logread.Read, logread.Record</td></tr><tr><td>Consumes</td><td>go.mod</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Turn a JSON Lines stream into <code>logread.Record</code> values. Each non-blank UTF-8 line is one JSON object. This story establishes the reader, the <code>Record</code> type and the failed-call classification; later stories add skip rules, numeric normalization and model attribution.</p>
+<h2>Behavior</h2>
+<ul><li>Read with <code>bufio.Reader</code> so no line-length limit applies.</li><li>A line that is empty after trimming whitespace is blank: ignored, not counted, but it still advances the 1-based physical line number.</li><li>Each object is decoded into a <code>Record</code> with <code>ExecutionID</code>, <code>StartedAt</code>, <code>Status</code>, <code>Command</code> (<code>job.command_name</code>), <code>Target</code> (<code>job.target</code>), <code>Provider</code> (<code>job.llm</code>), token counts, cost, <code>ElapsedMS</code>, <code>ReturnCode</code> (nullable) and <code>TimedOut</code>.</li><li><code>Failed</code> is true when <code>Status</code> is not <code>succeeded</code>.</li><li><code>Date</code> is the first 10 characters of <code>StartedAt</code>; <code>started_at</code> is accepted as any non-empty string with no further timestamp validation. A string shorter than 10 characters yields the whole string.</li></ul>
+<h2>Required Go tests</h2>
+<p>TestReadBlankLines, TestReadFailedStatus, TestReadStartDate, TestReadStartedAtNotValidated. Tests build their input as strings and call <code>logread.Read</code> with a <code>bytes.Buffer</code> warning writer.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC lines-blank ===<br>Intent: Blank lines are ignored and not counted as records or skips.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestReadBlankLines&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC lines-blank ===</p>
+<p>=== AC lines-failed-status ===<br>Intent: A record whose status is not succeeded is classified as failed.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestReadFailedStatus&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC lines-failed-status ===</p>
+<p>=== AC lines-start-date ===<br>Intent: The record date is the first 10 characters of started_at.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestReadStartDate&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC lines-start-date ===</p>
+<p>=== AC lines-started-at-lenient ===<br>Intent: started_at is accepted as any non-empty string without timestamp validation.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestReadStartedAtNotValidated&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC lines-started-at-lenient ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Never write to the log being read.</li><li>Blank lines are not counted anywhere but still count toward physical line numbers.</li><li>Standard library only.</li></ul></article>
+</main>
+</body>
+</html>

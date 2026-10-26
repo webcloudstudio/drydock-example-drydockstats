@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-CliDates.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-CliDates.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-CliDates.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Cli Dates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Validate --since and --until values as real YYYY-MM-DD calendar dates during argument parsing.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-CliArgs.md</td></tr><tr><td>Provides</td><td>cli.ParseArgs date validation</td></tr><tr><td>Consumes</td><td>cli.ParseArgs</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>A date option must be a real calendar date written <code>YYYY-MM-DD</code>. Anything else is a usage error that maps to exit code 2 in FEATURE-CliExit.md.</p>
+<h2>Rules</h2>
+<ol><li>A value is valid only when <code>time.Parse(&quot;2006-01-02&quot;, v)</code> succeeds and the parsed time formatted with the same</li></ol>
+<p>layout equals <code>v</code> exactly (rejecting shapes such as <code>2026-1-5</code>).</p>
+<ol><li><code>2026-13-01</code> (bad month), <code>2026-02-30</code> (bad day), <code>2026-1-5</code> (wrong shape), and an empty value are usage errors.</li><li>A valid date passes through to <code>Options.Since</code> or <code>Options.Until</code> unchanged.</li><li>A missing value after <code>--since</code> or <code>--until</code> is a usage error.</li><li>Validation is applied while parsing, so <code>ParseArgs</code> returns the usage error before any log is opened.</li></ol>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-dates-valid ===<br>Intent: A real calendar date is accepted and stored unchanged.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestDateValid&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-dates-valid ===</p>
+<p>=== AC cli-dates-invalid-month ===<br>Intent: A date with an impossible month is a usage error.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestDateInvalidMonth&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-dates-invalid-month ===</p>
+<p>=== AC cli-dates-invalid-day ===<br>Intent: A date with an impossible day of month is a usage error.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestDateInvalidDay&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-dates-invalid-day ===</p>
+<p>=== AC cli-dates-wrong-shape ===<br>Intent: A date not written as zero-padded YYYY-MM-DD is a usage error.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestDateWrongShape&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-dates-wrong-shape ===</p>
+<p>=== AC cli-dates-missing-value ===<br>Intent: A date option with no value is a usage error.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestDateMissingValue&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC cli-dates-missing-value ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Standard library only.</li><li>A <code>--since</code> later than <code>--until</code> is not a validation error here; see FEATURE-FilterDates.md.</li></ul></article>
+</main>
+</body>
+</html>

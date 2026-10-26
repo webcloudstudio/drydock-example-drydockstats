@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.152139.951Z_drydockstats_analyze_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.152139.951Z_drydockstats_analyze_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.152139.951Z_drydockstats_analyze_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>I can&#x27;t produce the analysis from this turn. The output contract requires only `=== BEGIN ARTIFACT ... ===` blocks with no surrounding text, and the job asks for a full Analyze pass. Reading the inputs, I found a problem that has to be resolved before that output can be trusted, so I&#x27;m stopping here rather than emitting artifacts that would encode it.
+
+**The sample log does not match the grader&#x27;s known answers.** Checking `sources/llm_sample.jsonl` against `sources/run.sh`:
+
+- **Count of valid records.** The source inventory and the brief both say 33 valid records plus 3 skipped lines, with 37 total lines. The chunks I was given contain more than 37 lines once the two chunks are combined, and several `execution_id` values repeat, including `20261014.024820.526Z-b7631290` (a truncated line), `20261015.083525.332Z-8c438a77`, and `20261014.999999.000Z-deadbeef`, which is a copy of another record&#x27;s stats with no `target`.
+- **Known answers.** `A1` expects `33,3,...`. Whether the 3 skipped lines are the duplicate, the missing-target record, and the truncated line depends on exact line positions, and the chunk boundaries in the prompt make that impossible for me to confirm.
+- **Totals.** Several totals in `run.sh` (for example `A2` build calls = 17 and `A5` 2026-10-14 = 14 calls) can only be checked against the exact file bytes, which I don&#x27;t have in verified form here.
+
+Because the grader&#x27;s answers are fixed and the brief says the sample is read-only, I can&#x27;t tell from the prompt alone whether the fixture or the answers are wrong. Choosing one silently would risk writing a spec that passes a wrong oracle.
+
+**What I need to continue:** the raw `sources/llm_sample.jsonl` from disk, so I can count lines and check each known answer directly. Alternatively, confirm that the chunked text in the prompt is complete and exact.
+
+Once I have the file, I&#x27;ll compute the expected totals, confirm which lines the skip rules drop, and then emit the full artifact set. If the fixture and `run.sh` disagree, I&#x27;ll record that as a source conflict rather than picking one answer.</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/19-score-release.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/19-score-release.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/19-score-release.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+2026-10-26 12:04:11 EDT  Calling CLAUDE/claude-haiku-5-5 (score release)...
+[output] json wrapper discarded: &#x27;earlier-turn text&#x27;
+[output] json wrapper discarded: &#x27;JSON code fence&#x27;
+  Completed CLAUDE/claude-haiku-5-5 (score release)  rc=0
+
+DrydockStats: PASSED — 8 of 8
+
+  st-001  MET       [&quot;sh&quot;, &quot;sources/run.sh&quot;] exited 0; governed_gate full: sh sources/run.sh return_code 0, 20 passed, 0 failed; sources/run.sh compares every report with cmp and exits 0 only when all checks pass
+  st-002  MET       bin/test.sh: #!/bin/sh, set -eu, runs go vet ./... then go test ./...; probe run: ok ddkstat/cmd/ddkstat, internal/cli, internal/filter, internal/format, internal/logread, internal/report; rc=0; test results were reported as (cached); the cache is keyed on file contents, so they reflect the current tree
+  st-003  MET       go.mod: module ddkstat, go 1.22; go build -o ... ./cmd/ddkstat rc=0; go list -deps ./cmd/ddkstat: no dotted import paths, so stdlib only; cmd/ddkstat/main.go imports only ddkstat/internal/* and os
+  st-004  MET       grader judgement
+  st-005  MET       gate stdout: PASS A1 summary, PASS A2 commands, PASS A3 targets, PASS A4 models, PASS A5 daily, PASS A6 failures; sources/run.sh check() uses cmp -s on stdout and the expected exit code
+  st-006  MET       gate: PASS B1 summary --target --since, PASS B2 commands --until, PASS B3 daily --since --until, PASS B4 failures --target, PASS B5 models --target; probe: `commands --target NoSuch` -&gt; TOTAL,0,...; `daily --until 2026-10-01` -&gt; only 2026-10-01 row; internal/cli/run.go applies filter.ByTarget and filter.ByDateRange before every report writer
+  st-007  MET       probe: `models mixed.jsonl` -&gt; `claude,claude-x,1,...` (record a, stats.model present) and `claude,haiku-job,1,...` (record c, no stats.model); internal/logread/logread.go parseLine: model = stats.model if non-empty, otherwise job.model; gate A4 also passes with the known models table
+  st-008  MET       probe: `summary nope.jsonl` -&gt; rc=1 stdout_bytes=0, stderr &#x27;cannot open log&#x27;; probe: `summary --since 2026-1-5 mixed.jsonl` -&gt; rc=2 stdout_bytes=0, stderr usage line; gate E1 (rc 1) and U1–U6 (rc 2) all PASS with empty expected stdout
+
+Scorecard: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/SCORECARD.md
+Evidence: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/evidence/score-release.json
+Target - committed project workspace git store
+</pre></article>
+</main>
+</body>
+</html>

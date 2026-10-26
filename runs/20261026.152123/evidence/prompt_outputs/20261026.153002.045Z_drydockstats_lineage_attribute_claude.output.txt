@@ -1,0 +1,42 @@
+<requirement name="build-go-executable" stories="build-exe,foundation">
+Builds ./cmd/ddkstat with `go build` and compares every report's exit code and standard output
+</requirement>
+<requirement name="summary-report" stories="report-summary,value-format,log-lines,log-numbers,log-skip,cli-args,cli-exit">
+check A1 0 summary "$LOG" <<'EOF'
+</requirement>
+<requirement name="commands-report" stories="report-commands,value-format,log-numbers">
+check A2 0 commands "$LOG" <<'EOF'
+</requirement>
+<requirement name="targets-report" stories="report-targets,value-format,log-numbers">
+check A3 0 targets "$LOG" <<'EOF'
+</requirement>
+<requirement name="models-report" stories="report-models,log-model,value-format,log-numbers">
+check A4 0 models "$LOG" <<'EOF'
+</requirement>
+<requirement name="daily-report" stories="report-daily,filter-dates,log-numbers">
+check A5 0 daily "$LOG" <<'EOF'
+</requirement>
+<requirement name="failures-report" stories="report-failures,log-lines">
+check A6 0 failures "$LOG" <<'EOF'
+</requirement>
+<requirement name="skip-bad-lines" stories="log-skip,log-lines">
+Standard error is never compared.
+</requirement>
+<requirement name="filter-by-target" stories="filter-target,cli-args">
+check B1 0 summary --target Toml --since 2026-10-15 "$LOG" <<'EOF'
+</requirement>
+<requirement name="filter-by-date-range" stories="filter-dates,cli-dates,cli-args">
+check B3 0 daily --since 2026-10-15 --until 2026-10-15 "$LOG" <<'EOF'
+</requirement>
+<requirement name="empty-filter-result" stories="filter-target,report-commands,report-summary,cli-exit">
+check C1 0 commands --target NoSuchTarget "$LOG" <<'EOF'
+</requirement>
+<requirement name="missing-log-exit-1" stories="cli-exit,log-lines">
+check E1 1 summary "$MISSING" < /dev/null
+</requirement>
+<requirement name="usage-errors-exit-2" stories="cli-exit,cli-args,cli-dates">
+check U1 2 < /dev/null
+</requirement>
+<requirement name="grader-passes-all" stories="verification,test-script">
+Exit 0 only when the build succeeds and every check passes.
+</requirement>

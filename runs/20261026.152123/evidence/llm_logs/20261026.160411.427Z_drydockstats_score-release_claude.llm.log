@@ -1,0 +1,3 @@
+2026-10-26 12:04:11 EDT  Calling CLAUDE/claude-haiku-5-5 (score release)...
+  Completed CLAUDE/claude-haiku-5-5 (score release)  rc=0
+    elapsed=48.2s   provider=45.9s   turns=6   cached=89,535 (100% hit)   uncached=10   write 26,417   out=7,221   cost=$0.0098   tps=149.9

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/18-score-build-report.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/18-score-build-report.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/18-score-build-report.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+
+Build report: DrydockStats
+  evidence: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/evidence
+  usage:    /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/logs/llm.jsonl
+
+  Blueprint acceptance (last `score ac`): PASS 83  FAIL 0  UNVERIFIED 0  PREPASSED 8  (91 AC)
+
+  Block                     Build AC  Calls     Cached  Uncached     Hit   Output     Time
+  ────────────────────────────────────────────────────────────────────────────────────────
+  ✓ Block 1 · Foundational       3/3      1    199,114        14  100.0%    5,869      46s
+  ✓ Block 2 · Service          15/15      1    373,432        20  100.0%   21,087   1m 43s
+  ✓ Block 3 · Service          12/12      1    252,097        16  100.0%   13,653   1m 15s
+  ✓ Block 4 · Service            9/9      1    318,043        18  100.0%   17,476   1m 24s
+  ✓ Block 5 · Service            9/9      1     78,041         8  100.0%    4,633      29s
+  ✓ Block 6 · Service            6/6      1    230,215        16  100.0%   10,071      52s
+  ✓ Block 7 · Service            3/3      1     71,708         8  100.0%    2,143      23s
+  ✓ Block 8 · Service            4/4      1     61,780         8  100.0%    3,610      26s
+  ✓ Block 9 · Service          29/29      1  1,245,755        36  100.0%   48,075   4m 11s
+  ✓ Block 10 · Feature           1/1      1     67,680         8  100.0%    1,295      18s
+  ────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL                        91/91     10  2,897,865       152  100.0%  127,912  11m 51s
+
+  Blocks: 10/10 verified · 10 on first call · 0 repaired
+  Model:  claude-haiku-5-5
+  Tokens: 2,897,865 cached · 152 uncached · 127,912 out
+
+</pre></article>
+</main>
+</body>
+</html>

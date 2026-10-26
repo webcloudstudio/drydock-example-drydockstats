@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ReportModels.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ReportModels.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ReportModels.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Report Models</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>The models report: one CSV row per provider and executed-model pair with a TOTAL row.</td></tr><tr><td>Depends On</td><td>FEATURE-CliExit.md, FEATURE-ValueFormat.md, FEATURE-LogModel.md</td></tr><tr><td>Provides</td><td>ddkstat models</td></tr><tr><td>Consumes</td><td>cli.Register, format.Cost, logread.Record</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>ddkstat models [options] &lt;log&gt;</code> shows which providers and models ran the calls and what they consumed and cost.</p>
+<h2>Behavior</h2>
+<ul><li>Header: <code>provider,model,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd</code>.</li><li>One row per pair of provider (<code>job.llm</code>) and <code>Record.Model</code> (the executed model when present and non-empty, otherwise the requested model), ordered by provider then model ascending by byte value.</li><li>Final row is <code>TOTAL,,...</code> with an empty model column, over all filtered records.</li><li>Cost uses <code>format.Cost</code>. There is no minutes column.</li><li>When no record matches, the output is the header and a TOTAL row of zeros with <code>0.0000</code> cost.</li><li><code>internal/report</code> holds the aggregate and write functions; <code>internal/cli</code> registers the writer as <code>models</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC models-grouping-executed-model ===<br>Intent: Records group under the executed model, falling back to the requested model.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestModelsGroupingUsesExecutedModel&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC models-grouping-executed-model ===</p>
+<p>=== AC models-ordering ===<br>Intent: Rows are ordered by provider then model ascending in byte order.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestModelsOrdering&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC models-ordering ===</p>
+<p>=== AC models-total-empty-model-column ===<br>Intent: The TOTAL row leaves the model column empty and sums every numeric column.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestModelsTotalEmptyModelColumn&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC models-total-empty-model-column ===</p>
+<p>=== AC models-empty ===<br>Intent: With no matching record the report is the header plus a zero TOTAL row.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestModelsEmpty&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC models-empty ===</p>
+<p>=== AC models-write ===<br>Intent: The writer emits the declared header and columns.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestModelsWrite&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC models-write ===</p>
+<p>=== AC models-run-via-cli ===<br>Intent: cli.Run dispatches the models report over a test-written log, exits zero and writes parseable CSV.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestRunModelsReport&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC models-run-via-cli ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Standard library only; no database; the log is never written.</li><li>No row, count, cost or total is hardcoded; all values come from the log being read.</li><li>Provider and model names are written unquoted and unescaped.</li></ul></article>
+</main>
+</body>
+</html>

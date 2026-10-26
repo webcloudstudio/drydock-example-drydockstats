@@ -1,0 +1,524 @@
+=== BEGIN ARTIFACT ARCHITECTURE.md ===
+# ARCHITECTURE: DrydockStats
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Package layout, boundaries and pipeline of the ddkstat command-line reporter for Drydock's LLM execution log. |
+| Depends On  | None |
+| Provides    | go.mod, internal/, cmd/ddkstat/, bin/ |
+| Consumes    | None |
+
+## Questions
+
+- None.
+
+## Purpose
+
+ddkstat reads a JSON Lines log (`logs/llm.jsonl`) and writes one of six CSV reports to standard output. It is a single-process, single-threaded CLI. It has no database, no network access and no configuration files. It never writes to the log it reads.
+
+## Technology Stack
+
+Derived from `TECHNOLOGY_STACK.md`:
+
+| Technology | Where it applies |
+|---|---|
+| Go 1.22 or newer, standard library only | All application code under `cmd/` and `internal/`. |
+| go test and go vet | Test runner behind `bin/test.sh`; tests live beside the code in `*_test.go`. |
+| JSON Lines | Input format, decoded with `encoding/json`, one object per physical line. |
+| POSIX sh | `bin/test.sh` and the supplied grader `sources/run.sh`. |
+
+No third-party module is permitted. `go.mod` declares the module `ddkstat`, a `go` directive of 1.22 or newer, and no `require` lines.
+
+## Layout
+
+```text
+go.mod                    module ddkstat
+cmd/ddkstat/main.go       package main; the only caller of os.Exit
+internal/logread/         read, validate, dedupe and normalize log records
+internal/filter/          pure record filters (target, date range)
+internal/format/          minutes and cost text formatting
+internal/report/          one aggregate-and-write function per report
+internal/cli/             Run, argument parsing, report registry
+bin/test.sh               go vet ./... then go test ./...
+sources/                  read-only scoring assets; never touched by application code
+```
+
+## Module Ownership
+
+| Module | Owns | May access |
+|---|---|---|
+| `internal/logread` | Opening-agnostic reading of an `io.Reader`, line classification, skip and duplicate rules, numeric normalization, model attribution | `encoding/json`, `bufio`, `io`, `strings` |
+| `internal/filter` | Target and date-range predicates over `[]logread.Record` | `logread` types only |
+| `internal/format` | `Minutes` and `Cost` text | `fmt` |
+| `internal/report` | Aggregation and CSV writing for each report | `logread`, `format`, `io` |
+| `internal/cli` | Argument parsing, exit-code mapping, opening the log file read-only, report registry | `os`, `flag`, `time`, all internal packages |
+| `cmd/ddkstat` | Process start and `os.Exit` | `internal/cli` |
+
+Persistence, configuration files, file stores and external services: none. The log file is opened read-only by `internal/cli` and passed to `logread` as an `io.Reader`.
+
+## Pipeline
+
+Parse arguments, read the log, drop skipped and duplicate lines, filter, aggregate, format. Parsing, aggregating and formatting are separate functions, each unit-tested.
+
+## Shared Types and Interfaces
+
+`logread.Read(r io.Reader, warn io.Writer) (Result, error)` returns `Result{Records []Record, Skipped int}`. The error is non-nil only when reading from `r` fails.
+
+`logread.Record` carries: `ExecutionID`, `StartedAt`, `Date` (first 10 characters of `StartedAt`), `Status`, `Failed`, `Command`, `Target`, `Provider`, `Model`, `InputTokens`, `CachedTokens`, `OutputTokens` (all `int64`), `CostUSD` (`float64`), `ElapsedMS` (`int64`), `ReturnCode` (`*int`, nil when null or absent) and `TimedOut` (`bool`).
+
+`cli.Run(args []string, stdout, stderr io.Writer) int` is the single entry point; exit codes are 0 success, 1 unreadable log, 2 usage error. Report writers register with `cli.Register(name, fn)` where `fn(w io.Writer, records []logread.Record, skipped int) error`.
+
+## Technical Decisions
+
+- Text is compared by byte value; CSV values are written without quoting.
+- A failing command writes nothing to standard output and one diagnostic line to standard error; stdout is buffered and flushed only on success.
+- Diagnostics (skip warnings, usage line, errors) go to standard error and are never compared.
+- No report answer, count or total is embedded in application code; every value comes from the log being read.
+
+## Programmatic Acceptance
+
+=== AC arch-go-mod ===
+Intent: The root go.mod declares module ddkstat, Go 1.22 or newer, and no third-party requirement.
+
+from pathlib import Path
+
+text = Path("go.mod").read_text()
+lines = [ln.strip() for ln in text.splitlines()]
+assert any(ln.startswith("module ") for ln in lines), text
+go_lines = [ln for ln in lines if ln.startswith("go ")]
+assert len(go_lines) == 1, text
+major, minor = go_lines[0].split()[1].split(".")[:2]
+assert (int(major), int(minor)) >= (1, 22), go_lines
+assert not any(ln.startswith("require") for ln in lines), text
+=== END AC arch-go-mod ===
+
+=== AC arch-layout ===
+Intent: The directories every later story builds into exist.
+
+from pathlib import Path
+
+for d in ("cmd/ddkstat", "internal", "bin"):
+    assert Path(d).is_dir(), d
+=== END AC arch-layout ===
+
+=== AC arch-no-vendor ===
+Intent: The module is standard-library only and has no go.sum dependency entries.
+
+from pathlib import Path
+
+sum_path = Path("go.sum")
+if sum_path.exists():
+    assert sum_path.read_text().strip() == "", sum_path.read_text()
+assert not Path("vendor").exists()
+=== END AC arch-no-vendor ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only; no third-party module and no database.
+- Only `cmd/ddkstat/main.go` calls `os.Exit`.
+- Application code never reads `sources/run.sh` and never embeds a report row, count or total.
+- The log being read is never written to.
+- Nothing under `sources/` is modified, regenerated or substituted.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LogLines.md ===
+# FEATURE: Log Lines
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Read the JSON Lines log into records, ignoring blank lines and classifying failed calls. |
+| Depends On  | ARCHITECTURE.md |
+| Provides    | logread.Read, logread.Record |
+| Consumes    | go.mod |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Turn a JSON Lines stream into `logread.Record` values. Each non-blank UTF-8 line is one JSON object. This story establishes the reader, the `Record` type and the failed-call classification; later stories add skip rules, numeric normalization and model attribution.
+
+## Behavior
+
+- Read with `bufio.Reader` so no line-length limit applies.
+- A line that is empty after trimming whitespace is blank: ignored, not counted, but it still advances the 1-based physical line number.
+- Each object is decoded into a `Record` with `ExecutionID`, `StartedAt`, `Status`, `Command` (`job.command_name`), `Target` (`job.target`), `Provider` (`job.llm`), token counts, cost, `ElapsedMS`, `ReturnCode` (nullable) and `TimedOut`.
+- `Failed` is true when `Status` is not `succeeded`.
+- `Date` is the first 10 characters of `StartedAt`; `started_at` is accepted as any non-empty string with no further timestamp validation. A string shorter than 10 characters yields the whole string.
+
+## Required Go tests
+
+TestReadBlankLines, TestReadFailedStatus, TestReadStartDate, TestReadStartedAtNotValidated. Tests build their input as strings and call `logread.Read` with a `bytes.Buffer` warning writer.
+
+## Programmatic Acceptance
+
+=== AC lines-blank ===
+Intent: Blank lines are ignored and not counted as records or skips.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestReadBlankLines")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC lines-blank ===
+
+=== AC lines-failed-status ===
+Intent: A record whose status is not succeeded is classified as failed.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestReadFailedStatus")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC lines-failed-status ===
+
+=== AC lines-start-date ===
+Intent: The record date is the first 10 characters of started_at.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestReadStartDate")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC lines-start-date ===
+
+=== AC lines-started-at-lenient ===
+Intent: started_at is accepted as any non-empty string without timestamp validation.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestReadStartedAtNotValidated")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC lines-started-at-lenient ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Never write to the log being read.
+- Blank lines are not counted anywhere but still count toward physical line numbers.
+- Standard library only.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LogSkip.md ===
+# FEATURE: Log Skip
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Skip malformed, incomplete and duplicate log lines with a stderr warning and no effect on the exit code. |
+| Depends On  | ARCHITECTURE.md, FEATURE-LogLines.md |
+| Provides    | logread.Read skip rules, logread.Result.Skipped |
+| Consumes    | logread.Read |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Make the reader tolerant. Bad lines are skipped and counted; they never fail the run.
+
+## Behavior
+
+`logread.Read` returns the kept records and `Result.Skipped`, the whole-file count of skipped lines. A line is skipped when:
+
+- it is not a JSON object (invalid JSON, or valid JSON that is an array, string, number, boolean or null);
+- any of `execution_id`, `started_at`, `status`, `job.command_name`, `job.target` is absent or not a non-empty string;
+- its `execution_id` was already registered by an earlier kept line.
+
+Further rules:
+
+- Each skipped line writes one warning to the supplied warning writer naming its 1-based physical line number, counting blank lines.
+- A skipped line does not register its `execution_id`; a malformed line therefore never causes a later line with that id to be skipped.
+- The first occurrence of an `execution_id` is kept.
+- Duplicate detection runs over the whole file inside `Read`, before any filter is applied elsewhere. A later repeat is skipped even when its first occurrence is later filtered out.
+- Skipping never changes the exit code; `Read` returns a non-nil error only for an I/O failure.
+
+## Required Go tests
+
+TestSkipNotObject, TestSkipMissingField, TestSkipDuplicateKeepsFirst, TestMalformedDoesNotRegisterID, TestSkipWarningLineNumber, TestReadDedupesWholeFile, TestSkipEmptyStringField.
+
+## Programmatic Acceptance
+
+=== AC skip-not-object ===
+Intent: A line that is not a JSON object is skipped and counted.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestSkipNotObject")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-not-object ===
+
+=== AC skip-missing-field ===
+Intent: A line lacking a required field is skipped and counted.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestSkipMissingField")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-missing-field ===
+
+=== AC skip-empty-string-field ===
+Intent: A required field holding an empty or non-string value causes the line to be skipped.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestSkipEmptyStringField")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-empty-string-field ===
+
+=== AC skip-duplicate-first-kept ===
+Intent: A repeated execution_id is skipped and the first occurrence is kept.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestSkipDuplicateKeepsFirst")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-duplicate-first-kept ===
+
+=== AC skip-malformed-no-register ===
+Intent: A malformed line does not register its execution_id, so a later valid line with that id is kept.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestMalformedDoesNotRegisterID")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-malformed-no-register ===
+
+=== AC skip-warning-line-number ===
+Intent: Each warning names the 1-based physical line number, counting blank lines.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestSkipWarningLineNumber")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-warning-line-number ===
+
+=== AC skip-dedupe-whole-file ===
+Intent: Duplicate detection covers the whole file and does not depend on any later filter.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestReadDedupesWholeFile")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-dedupe-whole-file ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Skipping never changes the exit code.
+- A malformed line never registers its `execution_id`.
+- Warnings go only to the warning writer (standard error in the CLI) and are never compared.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LogNumbers.md ===
+# FEATURE: Log Numbers
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Treat absent, null or non-numeric token, cost and duration values as zero. |
+| Depends On  | ARCHITECTURE.md, FEATURE-LogSkip.md |
+| Provides    | logread.Record numeric normalization |
+| Consumes    | logread.Read |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Aggregation sums these fields, so each record must carry a usable number even when the log omits it.
+
+## Behavior
+
+For `result.stats.input_tokens`, `cached_input_tokens`, `output_tokens`, `cost_usd` and `elapsed_ms`:
+
+- absent counts as zero;
+- JSON `null` counts as zero;
+- a value of the wrong JSON type (for example a string or boolean) counts as zero;
+- a record with no `result.stats` object at all, or no `result` object, is still a record with all five values zero.
+
+`result.returncode` that is `null` or absent is represented as no return code (`ReturnCode` is nil). `result.timed_out` absent counts as false.
+
+## Required Go tests
+
+TestNumbersAbsentAreZero, TestNumbersNullAreZero, TestNumbersNonNumericAreZero, TestNoStatsObjectStillRecord, TestReturnCodeNullIsNil.
+
+## Programmatic Acceptance
+
+=== AC numbers-absent ===
+Intent: Absent numeric fields count as zero.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestNumbersAbsentAreZero")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC numbers-absent ===
+
+=== AC numbers-null ===
+Intent: Null numeric fields, including a null cost_usd, count as zero.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestNumbersNullAreZero")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC numbers-null ===
+
+=== AC numbers-non-numeric ===
+Intent: A non-numeric value in a numeric stats field counts as zero.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestNumbersNonNumericAreZero")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC numbers-non-numeric ===
+
+=== AC numbers-no-stats ===
+Intent: A record with no result.stats object is still a kept record with zero numbers.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestNoStatsObjectStillRecord")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC numbers-no-stats ===
+
+=== AC numbers-returncode-null ===
+Intent: A null or absent returncode is represented as no return code.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestReturnCodeNullIsNil")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC numbers-returncode-null ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- A bad numeric value never causes a line to be skipped; only the required string fields do.
+- Standard library only.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LogModel.md ===
+# FEATURE: Log Model
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Attribute each record to the executed model, falling back to the requested model. |
+| Depends On  | ARCHITECTURE.md, FEATURE-LogSkip.md |
+| Provides    | logread.Record.Model |
+| Consumes    | logread.Read |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Reports group by model, and the model that actually ran is more truthful than the one requested.
+
+## Behavior
+
+`Record.Model` is `result.stats.model` when that value is present and a non-empty string; otherwise it is `job.model`. This covers an absent value, an empty string, a non-string value, and a record with no `result.stats` object. `job.model` that is absent yields an empty `Model`; the record is still kept.
+
+## Required Go tests
+
+TestModelPrefersExecuted, TestModelFallsBackWhenAbsent, TestModelFallsBackWhenEmpty, TestModelFallsBackWithoutStats.
+
+## Programmatic Acceptance
+
+=== AC model-prefers-executed ===
+Intent: result.stats.model is used when present and non-empty.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestModelPrefersExecuted")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC model-prefers-executed ===
+
+=== AC model-fallback-absent ===
+Intent: job.model is used when result.stats.model is absent.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestModelFallsBackWhenAbsent")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC model-fallback-absent ===
+
+=== AC model-fallback-empty ===
+Intent: job.model is used when result.stats.model is an empty string.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestModelFallsBackWhenEmpty")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC model-fallback-empty ===
+
+=== AC model-fallback-no-stats ===
+Intent: job.model is used when the record has no result.stats object.
+
+from drydock_go import run_test
+
+result = run_test("./internal/logread", "TestModelFallsBackWithoutStats")
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC model-fallback-no-stats ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The model is never taken from any field other than `result.stats.model` and `job.model`.
+- Standard library only.
+=== END ARTIFACT ===

@@ -1,0 +1,19 @@
+The module already has most of the packages from earlier blocks. Next I'll read the existing main package, its layout test, the CLI, and the test runner.`main.go` and `go.mod` already match the spec, so this step may be verification-only. I'll run the declared gate, `sh bin/test.sh`, and check the build and the usage exit directly.The build block is already in place, so this step required no code changes. I checked it by running the declared gate and the acceptance checks directly.
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- (none)
+
+SUMMARY:
+Verification-only step; the existing implementation already satisfies FEATURE-BuildExecutable.md.
+- `cmd/ddkstat/main.go` is `package main` and contains only `os.Exit(cli.Run(os.Args[1:], os.Stdout, os.Stderr))`, with no application logic.
+- `go.mod` declares `module ddkstat` and `go 1.22`, with no `require` lines. There is no `go.sum` and no `vendor/`.
+- `go build ./cmd/ddkstat` from the module root exits 0 (toolchain go1.24.6).
+- Running with no arguments exits 2 with 0 bytes on stdout. Running with an unknown report and a log path also exits 2 with 0 bytes on stdout.
+- `sh bin/test.sh` (`go vet ./...` then `go test ./...`) exits 0 across all four packages. The test results were served from cache, so they were not re-executed in this run.
+- I did not run `sources/run.sh`. It is the terminal story's check and is scoped to run once, last.
+- No files were written, and no Git history was touched.
+
+BLOCKERS:
+- None.

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompts/20261026.153728.666Z_drydockstats_build_claude.prompt.md</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompts/20261026.153728.666Z_drydockstats_build_claude.prompt.md</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompts/20261026.153728.666Z_drydockstats_build_claude.prompt.md">Raw file</a></div></header>
+<article class="doc"><h1>System Instructions</h1>
+<p>This prompt is divided into three sections:</p>
+<ol><li><strong>System Instructions</strong> (this section) — structural orientation only. Do not treat this</li></ol>
+<p>section as task input.</p>
+<ol><li><strong>Input Context</strong> — begins with the heading <code># Input Context</code>. All blocks are wrapped in</li></ol>
+<p><code>&lt;pblock&gt;</code> tags. Two block types:</p>
+<ul><li>File blocks: <code>&lt;pblock filename=&quot;&lt;name&gt;&quot; role=&quot;&lt;role&gt;&quot; guidance=&quot;...&quot;&gt;</code> — optional</li></ul>
+<p><code>guidance</code> attribute carries context-specific instructions; content is in a fenced block.</p>
+<ul><li>Metadata/section blocks: <code>&lt;pblock label=&quot;&lt;label&gt;&quot; kind=&quot;&lt;kind&gt;&quot;&gt;</code> — job parameters,</li></ul>
+<p>rules, instructions, or group headers.</p>
+<ol><li><strong>Agent Task</strong> — begins with the heading <code># Agent Task</code>. Defines your persona, constraints,</li></ol>
+<p>and required outputs. Read all input context before acting on this section.</p>
+<h1>Input Context</h1>
+<p>&lt;pblock label=&quot;Build block job&quot; kind=&quot;job&quot;&gt;</p>
+<h2>Build block job</h2>
+<ul><li>TARGET: DrydockStats</li><li>BUILD_DIRECTORY: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/build/DrydockStats</li><li>WORKING_DIRECTORY: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/build/DrydockStats</li><li>BUILD_BLOCK: Block 3 · Service (block-3)</li><li>STORIES: Skip malformed, incomplete and duplicate lines with a stderr warning and no effect on the exit code. (log-skip), Validate --since and --until as real YYYY-MM-DD calendar dates. (cli-dates)</li><li>DATE: 2026-10-26</li><li>BUILD_SCOPE: exactly one MANIFEST.md build block</li></ul>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock label=&quot;Stories in this block&quot; kind=&quot;section&quot;&gt;</p>
+<h2>Stories in this block</h2>
+<ul><li>Skip malformed, incomplete and duplicate lines with a stderr warning and no effect on the exit code. (log-skip) [story]</li><li>Validate --since and --until as real YYYY-MM-DD calendar dates. (cli-dates) [story]</li></ul>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock label=&quot;Files on disk&quot; kind=&quot;section&quot;&gt;</p>
+<h2>Files on disk in the build directory</h2>
+<ul><li>sources/llm_sample.jsonl</li><li>sources/run.sh</li></ul>
+<p>These are the only imported files present on disk. Every other file named in this prompt is supplied as prompt context and is not on disk; read it here and do not report it as a missing input.</p>
+<p>&lt;/pblock&gt;</p>
+<h2>COMPASS - Target Orientation</h2>
+<p>&lt;pblock filename=&quot;COMPASS.md&quot; role=&quot;compass&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/COMPASS.md&quot; guidance=&quot;Important: This is the core project intent, constraints, and guardrails. It should have presecedence in conflicts.&quot;&gt;</p>
+<pre><code># COMPASS: DrydockStats
+
+## Compass
+
+Build a command-line reporter for Drydock&#x27;s LLM execution log, the Go executable `./cmd/ddkstat`,
+as described in `sources/INSTRUCTIONS.md`. It reads a JSON Lines log, skips malformed and
+duplicate lines without failing, and writes six CSV reports (summary, commands, targets, models,
+daily, failures), each narrowed by optional Target and date filters.
+
+Correctness is measured by `sources/run.sh`: it builds the executable with `go build` and makes
+20 checks of exit code and standard output against `sources/llm_sample.jsonl`. The goal is every
+check passing. The finished tool also runs against a real `logs/llm.jsonl`.
+
+## Constraints
+
+- Implement in Go 1.22 or newer with the standard library only. No third-party modules.
+- The application root is a Go module; the executable&#x27;s main package is `./cmd/ddkstat`.
+- Parsing the log, aggregating, and formatting are separate, unit-tested functions.
+- Diagnostics go to standard error and are never compared.
+
+## Guardrails
+
+- Do not modify, rewrite, regenerate, or substitute any file under `sources/`.
+- Do not read `sources/run.sh` from application code, and do not hardcode a report row, a count,
+  or a total. Every value comes from the log being read.
+- Never write to the log being read.
+
+## Verification Protocol
+
+| Story kind | Command | Asserts |
+|---|---|---|
+| Every behavioral story | `sh bin/test.sh` | exit `0` |
+| Terminal story (once, last) | `sh sources/run.sh` | exit `0` |
+
+&lt;!-- drydock:build-write-guardrail:start --&gt;
+## Build Write Guardrail
+
+- Authorized build directory: `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/build/DrydockStats`
+- Authorized Target directory: `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats`
+- Build agents have permission to create, modify, and remove files required by the active build block inside these authorized directories.
+- No path outside these authorized directories may be modified.
+- Protected Drydock artifacts:
+  - `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/MANIFEST.md`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/COMPASS.md`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/QuarterDeck/`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/evidence/`
+&lt;!-- drydock:build-write-guardrail:end --&gt;</code></pre>
+<p>&lt;/pblock&gt;</p>
+<h2>STACK - Technology HOW</h2>
+<p>&lt;pblock filename=&quot;go_compact.md&quot; role=&quot;stack&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/Rigging/languages/go/go_compact.md&quot;&gt;</p>
+<pre><code>&lt;!-- Compacted from Rigging/languages/go/go.md sha256=aa96c7155b26f091e4f2ee9b7a47ff2202fc7c162254f2b8676779198c7147da on 2026-10-18 by Rigging maintenance --&gt;
+
+## Foundation Contract
+
+The published shape of this foundation. It is built before every other foundation: a web server,
+a database, or a CLI is built *into* this tree, this environment, and this test runner. Carried
+verbatim into `go_compact.md`.
+
+- source_root: internal/
+- test_command: go test ./...
+- environment: the module declared in `go.mod`; no vendored toolchain
+- dependencies: `go.mod`
+
+```
+project/
+  go.mod                  # module path; the Go toolchain version
+  cmd/                    # one directory per binary, each package main
+  internal/               # application packages; not importable outside this module
+  bin/                    # launchers; each runs the toolchain, never a vendored copy
+```
+
+Application foundations add packages under `internal/`. The generated persistence library is a
+separate module at `persistence/`, linked by the root `go.mod`.
+
+### Native application layouts and fixtures
+
+Initialize the root `go.mod` in the language foundation before the DATABASE block.
+Use `cmd/app/main.go` for process startup, `internal/cli` for CLI behavior, and
+`internal/appserver` for HTTP behavior. The root application module requires
+`drydock.local/persistence v0.0.0` with `replace drydock.local/persistence =&gt; ./persistence`;
+the generated persistence directory owns its nested module. Run both module test suites.
+
+For a CLI, expose `Run(args []string, stdout, stderr io.Writer) int`, use a local
+`flag.FlagSet` with `flag.ContinueOnError`, and test with `bytes.Buffer`. Only main calls
+`os.Exit`. For HTTP, expose `NewHandler(...) http.Handler` using `net/http.ServeMux`.
+Use `httptest.NewRecorder` and `httptest.NewRequest` for handler tests, or
+`httptest.NewServer` with `t.Cleanup(server.Close)` when testing a real HTTP client.
+Keep business logic in application packages and persistence access in the shipped library.
+
+### How do we execute and measure Acceptance Criteria in this language?
+
+An Acceptance Criterion (AC) is an executable check of Blueprint-required behavior. Native tests
+use `testing` in `*_test.go`; the project gate is `go test ./...`. Within the existing Blueprint
+Python AC container, execute a named test through the shipped helper:
+
+```python
+from drydock_go import run_test
+result = run_test(&quot;./internal/orders&quot;, &quot;TestCreateOrder&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+```
+
+Drydock stages this helper beside the criterion. It runs `go test -json -count=1 -run` with an
+exact test name, retains output and per-test outcomes, and rejects absent/skipped tests as proof.
+The enclosing AC provides identity, timeout, result storage and repair state. Compilation errors
+remain distinct from assertion failures in `result.status`. Coverage and persistence observations
+require explicit instrumentation per criterion; unavailable observations are unknown.
+
+A criterion that exercises the command line runs the built executable through the same helper,
+never `go run`, which reports every non-zero program exit as 1:
+
+```python
+from drydock_go import cli_runner
+code, out, err = cli_runner(&quot;--top&quot;, &quot;0&quot;, &quot;data.csv&quot;)
+assert code == 2, (code, out, err)
+```
+
+`cli_runner` builds the single `./cmd/&lt;name&gt;` main package once with `go build` and returns
+`(exit_code, stdout, stderr)`; pass `package=&quot;./cmd/&lt;name&gt;&quot;` when there are several, and `input=`
+for standard input. A failed build settles the criterion as `execution-error`.
+
+### How does this language provide the shared persistence contract?
+
+Use the shipped module in `Rigging/languages/go/persistence/`. Drydock copies it to the Target&#x27;s
+`persistence/`, generates `schema.go`, `testing.go` and a schema command from `DATABASE.md`, and
+links it into the existing root `go.mod` as `drydock.local/persistence`. Driver versions and sums
+are shipped; SQLite uses `go-sqlite3` (a C compiler and CGO are required), PostgreSQL uses `lib/pq`.
+Run `go mod download` during dependency provisioning; execution requires these modules available.
+
+Call `persistence.OpenDatabase(ctx, dsn)`, then typed methods such as
+`db.Tickets.List(ctx, persistence.TicketsListInput{Status: &quot;open&quot;})`. Methods return a value and
+an error. Optional inputs use pointers; read results are generated structs. Undeclared operations
+and unsupported field types fail explicitly. Use `OpenSession(ctx, dsn)` for native database criteria;
+empty DSN selects the configured, provisioned application store. Defer its cleanup and check the
+returned error: it rolls back on success and failure, never applies schema or deletes the store.
+Pass the same Store to the feature. Other connections and external effects require committed,
+idempotent criteria with owned records and supported cleanup. Both engines retain autocommit
+outside explicit rollback scopes.
+
+The Go library and generator are verified on SQLite and PostgreSQL. Keep application SQL inside
+the library; agents write callers. The language foundation must create `go.mod` before the
+DATABASE step. Python Blueprint AC containers invoke the native Go tests through `run_test`.
+
+---
+
+## Consumer Rules
+
+- Use `gofmt`, explicit errors, small consumer-owned interfaces and owned goroutine lifetimes.
+- Keep business logic in `internal/` and entry points in `cmd/`; commit `go.mod` and `go.sum`.
+- Gate with `go vet ./...`, `go build ./...` and `go test -race ./...`.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<h2>CONTEXT - Read-Only Support</h2>
+<p>&lt;pblock filename=&quot;ARCHITECTURE_compact.md&quot; role=&quot;context&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/ARCHITECTURE_compact.md&quot;&gt;</p>
+<pre><code>&lt;!-- Compacted from ARCHITECTURE.md sha256=50e4c308b6e72eb915ea39843b4bfe2277ccd8adc8f1a3b1c07e6688d66829cb on 2026-10-26 by drydock build agent --&gt;
+
+Module `ddkstat`, go 1.22+, no `require` lines, no go.sum entries, no vendor/.
+Packages: cmd/ddkstat (only os.Exit caller), internal/logread, internal/filter, internal/format, internal/report, internal/cli.
+logread.Read(r io.Reader, warn io.Writer) (Result, error); Result{Records []Record, Skipped int}; error only on reader failure.
+logread.Record: ExecutionID, StartedAt, Date (first 10 chars), Status, Failed (status != &quot;succeeded&quot;), Command, Target, Provider, Model, InputTokens, CachedTokens, OutputTokens (int64), CostUSD (float64), ElapsedMS (int64), ReturnCode (*int, nil if null/absent), TimedOut (bool).
+cli.Run(args []string, stdout, stderr io.Writer) int; exit 0 ok, 1 unreadable log, 2 usage. Report writers: cli.Register(name, fn func(w io.Writer, records []logread.Record, skipped int) error).
+Reports: summary, commands, targets, models, daily, failures. Options: --target, --since, --until, then one log path.
+Only cmd/ddkstat/main.go calls os.Exit. Output buffered; stdout written only on success. Diagnostics to stderr, never compared.
+Never write to the log; never read sources/run.sh; no hardcoded report values.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<h2>IMPLEMENTS - Authoritative Step Specifications</h2>
+<p>&lt;pblock label=&quot;Implementation recency anchor&quot; kind=&quot;section&quot;&gt; The files in this section are the load-bearing specifications for this build block. Build these files exactly. Treat earlier sections as constraints and context.</p>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-LogSkip.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/FEATURE-LogSkip.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Log Skip
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Skip malformed, incomplete and duplicate log lines with a stderr warning and no effect on the exit code. |
+| Depends On  | ARCHITECTURE.md, FEATURE-LogLines.md |
+| Provides    | logread.Read skip rules, logread.Result.Skipped |
+| Consumes    | logread.Read |
+
+## Purpose
+
+Make the reader tolerant. Bad lines are skipped and counted; they never fail the run.
+
+## Behavior
+
+`logread.Read` returns the kept records and `Result.Skipped`, the whole-file count of skipped lines. A line is skipped when:
+
+- it is not a JSON object (invalid JSON, or valid JSON that is an array, string, number, boolean or null);
+- any of `execution_id`, `started_at`, `status`, `job.command_name`, `job.target` is absent or not a non-empty string;
+- its `execution_id` was already registered by an earlier kept line.
+
+Further rules:
+
+- Each skipped line writes one warning to the supplied warning writer naming its 1-based physical line number, counting blank lines.
+- A skipped line does not register its `execution_id`; a malformed line therefore never causes a later line with that id to be skipped.
+- The first occurrence of an `execution_id` is kept.
+- Duplicate detection runs over the whole file inside `Read`, before any filter is applied elsewhere. A later repeat is skipped even when its first occurrence is later filtered out.
+- Skipping never changes the exit code; `Read` returns a non-nil error only for an I/O failure.
+
+## Required Go tests
+
+TestSkipNotObject, TestSkipMissingField, TestSkipDuplicateKeepsFirst, TestMalformedDoesNotRegisterID, TestSkipWarningLineNumber, TestReadDedupesWholeFile, TestSkipEmptyStringField.
+
+## Programmatic Acceptance
+
+=== AC skip-not-object ===
+Intent: A line that is not a JSON object is skipped and counted.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/logread&quot;, &quot;TestSkipNotObject&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-not-object ===
+
+=== AC skip-missing-field ===
+Intent: A line lacking a required field is skipped and counted.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/logread&quot;, &quot;TestSkipMissingField&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-missing-field ===
+
+=== AC skip-empty-string-field ===
+Intent: A required field holding an empty or non-string value causes the line to be skipped.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/logread&quot;, &quot;TestSkipEmptyStringField&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-empty-string-field ===
+
+=== AC skip-duplicate-first-kept ===
+Intent: A repeated execution_id is skipped and the first occurrence is kept.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/logread&quot;, &quot;TestSkipDuplicateKeepsFirst&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-duplicate-first-kept ===
+
+=== AC skip-malformed-no-register ===
+Intent: A malformed line does not register its execution_id, so a later valid line with that id is kept.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/logread&quot;, &quot;TestMalformedDoesNotRegisterID&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-malformed-no-register ===
+
+=== AC skip-warning-line-number ===
+Intent: Each warning names the 1-based physical line number, counting blank lines.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/logread&quot;, &quot;TestSkipWarningLineNumber&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-warning-line-number ===
+
+=== AC skip-dedupe-whole-file ===
+Intent: Duplicate detection covers the whole file and does not depend on any later filter.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/logread&quot;, &quot;TestReadDedupesWholeFile&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC skip-dedupe-whole-file ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Skipping never changes the exit code.
+- A malformed line never registers its `execution_id`.
+- Warnings go only to the warning writer (standard error in the CLI) and are never compared.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-CliDates.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/FEATURE-CliDates.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Cli Dates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Validate --since and --until values as real YYYY-MM-DD calendar dates during argument parsing. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliArgs.md |
+| Provides    | cli.ParseArgs date validation |
+| Consumes    | cli.ParseArgs |
+
+## Purpose
+
+A date option must be a real calendar date written `YYYY-MM-DD`. Anything else is a usage error that maps to
+exit code 2 in FEATURE-CliExit.md.
+
+## Rules
+
+1. A value is valid only when `time.Parse(&quot;2006-01-02&quot;, v)` succeeds and the parsed time formatted with the same
+   layout equals `v` exactly (rejecting shapes such as `2026-1-5`).
+2. `2026-13-01` (bad month), `2026-02-30` (bad day), `2026-1-5` (wrong shape), and an empty value are usage errors.
+3. A valid date passes through to `Options.Since` or `Options.Until` unchanged.
+4. A missing value after `--since` or `--until` is a usage error.
+5. Validation is applied while parsing, so `ParseArgs` returns the usage error before any log is opened.
+
+## Programmatic Acceptance
+
+=== AC cli-dates-valid ===
+Intent: A real calendar date is accepted and stored unchanged.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestDateValid&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-dates-valid ===
+
+=== AC cli-dates-invalid-month ===
+Intent: A date with an impossible month is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestDateInvalidMonth&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-dates-invalid-month ===
+
+=== AC cli-dates-invalid-day ===
+Intent: A date with an impossible day of month is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestDateInvalidDay&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-dates-invalid-day ===
+
+=== AC cli-dates-wrong-shape ===
+Intent: A date not written as zero-padded YYYY-MM-DD is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestDateWrongShape&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-dates-wrong-shape ===
+
+=== AC cli-dates-missing-value ===
+Intent: A date option with no value is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestDateMissingValue&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-dates-missing-value ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only.
+- A `--since` later than `--until` is not a validation error here; see FEATURE-FilterDates.md.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock label=&quot;Build instructions&quot; kind=&quot;instructions&quot;&gt;</p>
+<h3>Build instructions for this block</h3>
+<h4>Skip malformed, incomplete and duplicate lines with a stderr warning and no effect on the exit code. (log-skip)</h4>
+<p>Extend logread.Read to return the kept records plus a whole-file skipped count. Skip a line when it is not a JSON object, when any of execution_id, started_at, status, job.command_name, job.target is absent or not a non-empty string, or when its execution_id was already registered by an earlier kept line. A skipped line writes one warning to the supplied warning writer naming its 1-based physical line number (blank lines count toward numbering). A malformed line never registers its execution_id. Duplicate detection runs over the whole file before any filter. Required Go tests: TestSkipNotObject, TestSkipMissingField, TestSkipDuplicateKeepsFirst, TestMalformedDoesNotRegisterID, TestSkipWarningLineNumber.</p>
+<h4>Validate --since and --until as real YYYY-MM-DD calendar dates. (cli-dates)</h4>
+<p>A date option value must parse with time.Parse(&quot;2006-01-02&quot;) and round-trip to the same text; 2026-13-01, 2026-02-30, &quot;2026-1-5&quot; and empty values are usage errors. Valid dates pass through unchanged. Required Go tests: TestDateValid, TestDateInvalidMonth, TestDateInvalidDay, TestDateWrongShape, TestDateMissingValue.</p>
+<p>&lt;/pblock&gt;</p>
+<h1>Agent Task</h1>
+<p>You are a Drydock build agent implementing exactly one build step of a larger plan. The build job block below names the target, the build working directory, and the step. Everything you need is stacked into this prompt under role headings:</p>
+<ul><li><code>compass</code> — the Target&#x27;s COMPASS.md orientation.</li><li><code>implements</code> — the Typed Specification files this step builds. These are</li></ul>
+<p>authoritative; implement them exactly.</p>
+<ul><li><code>context</code> — read-only support specifications. Do not reimplement them.</li><li><code>stack</code> — enterprise stack and technology rules. Honor them.</li><li><code>rules</code> — governance and branding rules. Honor them.</li></ul>
+<p>Operating contract:</p>
+<ol><li>Follow the write authorization and protected paths in the stacked <code>COMPASS.md</code> exactly.</li></ol>
+<p>That persisted guardrail is the sole authority for paths this build may modify.</p>
+<ol><li>Start by inspecting the build working directory. Read the current contents of each file before</li></ol>
+<p>applying a contextual patch. If patch verification fails, re-read that file and rebuild the patch against its current text; do not repeat stale context or overwrite unrelated changes. Preserve existing application files unless this step&#x27;s specifications require a change. Its <code>sources/</code> subdirectory holds staged build assets — imported test corpora, conformance harnesses, and fixtures — placed there for you. They are read-only inputs: run them, import them, and write code against them, but never create, rewrite, trim, regenerate, or substitute one, even to make a check pass. A step that modifies a staged asset fails and the asset is restored. If an asset you expect is absent, report that; do not author a replacement.</p>
+<ol><li>Implement only this step. Use <code>context</code>, <code>stack</code>, and <code>rules</code> as constraints,</li></ol>
+<p>not as additional work to perform.</p>
+<ol><li>Follow the stack and rules for languages, structure, naming, and branding.</li><li>The programmatic acceptance assertions in the <code>implements</code> specifications are</li></ol>
+<p>this step&#x27;s <strong>Definition of Done</strong> — human-owned, declared before the build, and fixed. Build the story and, in this same step, write the deterministic tests that prove each declared assertion, as a TDD master would; add finer tests for coverage. Every test you write follows the same rule the acceptance assertions do: <strong>act on the system, read the state back, compare to expected.</strong> The oracle is a return value, parsed JSON, a status code, a stored row, file contents read back, or an exit status — never a substring of captured stdout or stderr, a test-runner tally, or a log line. Write tests in the project&#x27;s own language using that language&#x27;s libraries; an in-language HTTP client yields a status code and a parsed body, where <code>curl</code> yields text to scrape. Round-trip anything that stores state: act, then read back through the public interface. Assert declared failure signals on negative paths, never message wording. You may add tests but must never remove, soften, or weaken a declared acceptance assertion. A <code>Suite: full</code> conformance check gates on the entire imported test suite: the step is done only when it passes in full, never on a representative subset — reproduce the standard exactly rather than wrapping a third-party library that approximates it. For a suite, the runner&#x27;s exit status is the verdict and the whole verdict: print its captured output for diagnosis, never assert on the text of its summary. When an assertion is a static or filesystem scan (import boundary, &quot;X never appears outside Y,&quot; grep/AST gate), honor the scope the specification states and never widen it: scan production source only, exclude <code>.venv/</code>, <code>site-packages</code>, and vendored or generated code, and do not flag test doubles or fixtures that use the guarded dependency. Run targeted tests for the behavior you change and preserve existing passing behavior. Drydock executes every declared acceptance assertion after your call and owns the verdict. Use available failure logs before rerunning suites to rediscover failures; use section or example filters to diagnose the underlying behavior, never example-specific exceptions. If you run a suite, wait for completion or its declared timeout; silence is not a hang.</p>
+<ol><li>Grow the project&#x27;s own test suite as you write the code, and treat it as the project&#x27;s</li></ol>
+<p>real coverage. The acceptance assertions in <code>implements</code> are gates: few, fixed, and written before any code existed, so every expectation in them is a prediction. The tests you write are written <em>beside</em> the finished code, so their expected values are observed rather than predicted — which is why exhaustive coverage belongs here and not there. Extend the suite in the project&#x27;s established location and runner, keep it runnable by the project&#x27;s declared test command, and leave it green when you return. Cover, at minimum: every public entry point and every verb it declares, including declared error paths; the boundaries — empty, exactly one, many, absent optional fields, declared maxima; declared idempotence, applied twice; one behavior per test, named for the behavior; and isolation — database criteria use the provisioned application store and the shipped rollback fixture, passing its connection into the feature. Other connections and durability tests use criterion-owned records, idempotent setup and checked cleanup through supported interfaces. Never replace the configured store, reapply schema, or delete unrelated business records. Where a staged authoritative suite already covers a surface, use it as the coverage; do not duplicate its cases. Any invocation must respect this step&#x27;s declared scope. Do not run the unscoped entry point for a <code>Suite: scoped</code> story, or run a suite this step does not declare. Report only completed checks and their observed results.</p>
+<ol><li>Treat <code>User Acceptance</code> entries as review evidence requirements. Implement</li></ol>
+<p>the supporting behavior, but do not claim to have performed human judgment.</p>
+<ol><li>The <code>implements</code> section is authoritative and intentionally stacked late in</li></ol>
+<p>the prompt as the recency anchor. Build that WHAT exactly; do not substitute generic framework defaults.</p>
+<ol><li>Before adding or installing Python dependencies, verify each package name</li></ol>
+<p>against the declared registry. Do not invent package names. If a needed package cannot be verified or appears newly published, fail explicitly instead of installing it.</p>
+<ol><li>Use the stack&#x27;s required package manager workflow for dependency changes.</li></ol>
+<p>When the stack requires <code>uv</code>, update manifests through <code>uv</code> conventions rather than bare <code>pip install</code>.</p>
+<ol><li>Do not claim success unless you actually created or modified project files in</li></ol>
+<p>the build working directory. If you cannot write files or cannot complete the step, report failure explicitly.</p>
+<ol><li>Do not run <code>git add</code>, <code>git commit</code>, create branches, create tags, rewrite</li></ol>
+<p>history, or otherwise mutate Git history. Drydock checkpoints application changes and Target evidence after each execution and completed step. File lineage comes from Git and the Manifest&#x27;s <code>implements:</code> entries; no additional attribution response is required.</p>
+<ol><li>End your response with this exact closing structure:</li></ol>
+<pre><code>RESULT: SUCCESS | FAILED
+
+FILES CHANGED:
+- relative/path
+
+SUMMARY:
+&lt;brief reviewable summary&gt;
+
+BLOCKERS:
+- &lt;only if any&gt;</code></pre>
+<p>Before <code>RESULT</code>, you may emit one optional JSON payload when implementation required a bounded choice not already settled by the owning specification. This records what you did; it does not ask permission, create a questionnaire, or excuse incomplete work:</p>
+<pre><code>&lt;blueprint-decisions&gt;
+[{&quot;spec&quot;:&quot;FEATURE-Example.md&quot;,&quot;severity&quot;:&quot;Material&quot;,&quot;subject&quot;:&quot;Chosen behavior&quot;,&quot;decision&quot;:&quot;Options A and B were available. I implemented B because ... Is that acceptable, or should this change on replan?&quot;}]
+&lt;/blueprint-decisions&gt;</code></pre>
+<p>Name only a specification implemented by this build block. Use <code>Low</code> or <code>Material</code>; Build never emits a Blocking decision. Omit the payload when no implementation decision was necessary.</p>
+<ol><li><code>FILES CHANGED</code> must list only files actually written in the build working</li></ol>
+<p>directory. When the existing implementation already satisfies this step, report <code>RESULT: SUCCESS</code>, list no changed files, and state the checks performed and their results. A verification-only step requires no application changes. Drydock runs the declared deterministic checks and decides the outcome independently of this report.</p>
+<ol><li>On <code>RESULT: FAILED</code>, append two additional lines so the failure is actionable</li></ol>
+<p>without opening logs. <code>FAILURE_SUMMARY</code> is one line naming the cause; <code>FAILURE_DETAIL</code> states what happened, why, and what to change before a rerun. Name concrete conditions when they apply: token or context limit exceeded, could not execute commands in this environment, a required input was missing, or a specific tool or command failed.</p>
+<pre><code>FAILURE_SUMMARY: &lt;one line naming the cause&gt;
+FAILURE_DETAIL: &lt;what happened, why, and what to change before rerunning&gt;</code></pre>
+<ol><li>When a declared acceptance criterion cannot pass no matter how the code is written,</li></ol>
+<p>say so with this exact token. You may not edit the criterion — it is staged and restored before grading:</p>
+<pre><code>AC_BROKEN: &lt;check-id&gt;[, &lt;check-id&gt;]</code></pre>
+<p>This is a report, not a verdict, and it stops nothing. A criterion reaches you only when its expected value is one its author could not have invented — a status code, a staged suite&#x27;s exit status, a value the criterion itself supplied as input — so your claim that the criterion rather than the code is at fault is the less likely explanation, and the budget is spent as it would be for any other failure. A criterion whose expectation <em>was</em> hand-typed already settles <code>DISPUTED</code> on its own, without you naming it. Emit the token only after running the criterion and confirming the underlying command succeeded while the assertion still failed. Name the affected check ids, emit it alongside your normal <code>RESULT</code> line, state the reasoning in <code>FAILURE_DETAIL</code>, and emit it even when <code>RESULT: SUCCESS</code>. Do not use it for a criterion you merely failed to satisfy.</p></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.152340.626Z_drydockstats_plan_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.152340.626Z_drydockstats_plan_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.152340.626Z_drydockstats_plan_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT TOPOLOGY.md ===
+## Declarations
+
+## story foundation
+summary:      Stand up the Go module, directory layout and test runner every other story builds into.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   ARCHITECTURE.md
+stack:        common.md, go.md
+provides:     go.mod, internal/, cmd/ddkstat/
+instructions: |
+  Create the root go.mod (module path ddkstat, Go 1.22 or newer, no require lines), the cmd/ddkstat
+  and internal/ directories, and bin/. Use only the standard library; no database; no third-party module.
+
+  ARCHITECTURE.md fixes the package ownership every later story follows:
+  internal/logread (parse, validate, dedupe, normalize records), internal/filter (pure record filters),
+  internal/format (minutes and cost text), internal/report (one aggregate-and-write function per report),
+  internal/cli (Run(args []string, stdout, stderr io.Writer) int, option parsing, report registry).
+  Only cmd/ddkstat/main.go calls os.Exit. Pipeline order: parse arguments, read log, drop skipped and
+  duplicate lines, filter, aggregate, format.
+acceptance:   yes
+
+## story log-lines
+summary:      Read the JSON Lines log into records, ignoring blank lines and classifying failed calls.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-LogLines.md
+covers:       LOG-001
+stack:        go.md
+provides:     logread.Read, logread.Record
+consumes:     go.mod
+depends:      foundation
+acceptance:   yes
+instructions: |
+  In internal/logread, read the log with bufio.Reader (no fixed line-length limit), one JSON object per
+  physical line. A line that is empty after trimming whitespace is blank: ignored and not counted, but it
+  still advances the physical line number. Decode each object into a Record carrying execution_id,
+  started_at, status, command, target, provider (job.llm), requested model, executed model, token counts,
+  cost, elapsed_ms, returncode (nullable), timed_out. A Record is Failed when status is not &quot;succeeded&quot;.
+  Date is the first 10 characters of started_at. Required Go tests: TestReadBlankLines, TestReadFailedStatus,
+  TestReadStartDate.
+
+## story log-skip
+summary:      Skip malformed, incomplete and duplicate lines with a stderr warning and no effect on the exit code.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-LogSkip.md
+covers:       LOG-002
+accepts:      st-004
+stack:        go.md
+provides:     logread.Read skip rules, logread.Result.Skipped
+consumes:     logread.Read
+depends:      log-lines
+acceptance:   yes
+instructions: |
+  Extend logread.Read to return the kept records plus a whole-file skipped count. Skip a line when it is not
+  a JSON object, when any of execution_id, started_at, status, job.command_name, job.target is absent or not
+  a non-empty string, or when its execution_id was already registered by an earlier kept line. A skipped line
+  writes one warning to the supplied warning writer naming its 1-based physical line number (blank lines
+  count toward numbering). A malformed line never registers its execution_id. Duplicate detection runs over
+  the whole file before any filter. Required Go tests: TestSkipNotObject, TestSkipMissingField,
+  TestSkipDuplicateKeepsFirst, TestMalformedDoesNotRegisterID, TestSkipWarningLineNumber.
+
+## story log-numbers
+summary:      Treat absent, null or non-numeric token, cost and duration values as zero.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-LogNumbers.md
+covers:       LOG-003
+stack:        go.md
+provides:     logread.Record numeric normalization
+consumes:     logread.Read
+depends:      log-skip
+acceptance:   yes
+instructions: |
+  Normalize input_tokens, cached_input_tokens, output_tokens, cost_usd and elapsed_ms: absent, null, or a
+  value of the wrong JSON type counts as zero. A record with no result.stats object remains a record, and a
+  null or absent result.returncode is represented as no returncode. Required Go tests: TestNumbersAbsentAreZero,
+  TestNumbersNullAreZero, TestNumbersNonNumericAreZero, TestNoStatsObjectStillRecord.
+
+## story log-model
+summary:      Attribute each record to the executed model, falling back to the requested model.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-LogModel.md
+covers:       LOG-004
+accepts:      st-007
+stack:        go.md
+provides:     logread.Record.Model
+consumes:     logread.Read
+depends:      log-skip
+acceptance:   yes
+instructions: |
+  Record.Model is result.stats.model when present and non-empty, otherwise job.model. Required Go tests:
+  TestModelPrefersExecuted, TestModelFallsBackWhenAbsent, TestModelFallsBackWhenEmpty,
+  TestModelFallsBackWithoutStats.
+
+## story cli-args
+summary:      Parse the report name, options and log path into a validated invocation.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CliArgs.md
+covers:       CLI-001
+stack:        go.md
+provides:     cli.ParseArgs
+consumes:     go.mod
+depends:      foundation
+acceptance:   yes
+instructions: |
+  In internal/cli, ParseArgs(args) returns Options{Report, Target, Since, Until, LogPath} or a usage error.
+  The first argument is the report and must be one of summary, commands, targets, models, daily, failures.
+  Then come --target, --since, --until each taking one value, then exactly one log path. Use a hand-rolled
+  or local flag.FlagSet parser with ContinueOnError. An option before the report name, an unknown report or
+  option, a missing option value, a missing log path, or an extra positional argument is a usage error.
+  A repeated option takes its last value. Required Go tests: TestParseReportAndLog, TestParseOptions,
+  TestParseRepeatedOptionLastWins, TestParseOptionBeforeReportIsUsageError, TestParseUnknownReport,
+  TestParseUnknownOption, TestParseMissingValue, TestParseLogPathCount.
+
+## story cli-dates
+summary:      Validate --since and --until as real YYYY-MM-DD calendar dates.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CliDates.md
+covers:       CLI-002
+stack:        go.md
+provides:     cli.ParseArgs date validation
+consumes:     cli.ParseArgs
+depends:      cli-args
+acceptance:   yes
+instructions: |
+  A date option value must parse with time.Parse(&quot;2006-01-02&quot;) and round-trip to the same text; 2026-13-01,
+  2026-02-30, &quot;2026-1-5&quot; and empty values are usage errors. Valid dates pass through unchanged. Required Go
+  tests: TestDateValid, TestDateInvalidMonth, TestDateInvalidDay, TestDateWrongShape, TestDateMissingValue.
+
+## story filter-target
+summary:      Filter records by exact job.target match.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-FilterTarget.md
+covers:       FLT-001
+accepts:      st-006
+stack:        go.md
+provides:     filter.ByTarget
+consumes:     logread.Record
+depends:      log-numbers, log-model
+acceptance:   yes
+instructions: |
+  Pure function in internal/filter: ByTarget(records, name) keeps records whose Target equals name exactly
+  (case-sensitive); an empty name means no target filter was given. Required Go tests: TestByTargetExact,
+  TestByTargetCaseSensitive, TestByTargetNoMatch, TestByTargetUnset.
+
+## story filter-dates
+summary:      Filter records by inclusive start-date range.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-FilterDates.md
+covers:       FLT-002
+accepts:      st-006
+stack:        go.md
+provides:     filter.ByDateRange
+consumes:     logread.Record
+depends:      log-numbers, log-model
+acceptance:   yes
+instructions: |
+  Pure function in internal/filter: ByDateRange(records, since, until) keeps records whose Date is &gt;= since
+  and &lt;= until, both inclusive, compared as strings; an empty bound is unset. since later than until yields an
+  empty result without error. Required Go tests: TestSinceInclusive, TestUntilInclusive, TestRangeBothBounds,
+  TestSinceAfterUntilEmpty, TestBoundsUnset.
+
+## story cli-exit
+summary:      Assemble the Run pipeline and map failures to exit codes 0, 1 and 2.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CliExit.md
+covers:       CLI-003
+accepts:      st-008
+stack:        go.md
+provides:     cli.Run, cli.Register
+consumes:     cli.ParseArgs, logread.Read, filter.ByTarget, filter.ByDateRange
+depends:      cli-dates, log-numbers, log-model, filter-target, filter-dates
+acceptance:   yes
+instructions: |
+  Implement Run(args, stdout, stderr) int: ParseArgs; on usage error write one usage-summary line to stderr,
+  nothing to stdout, return 2. Open and read the log (never write to it); if it cannot be opened or read write
+  one diagnostic line to stderr, nothing to stdout, return 1. Otherwise read records, apply ByTarget then
+  ByDateRange, and dispatch to the report writer registered under the report name in a registry map
+  (cli.Register(name, fn) with fn(w io.Writer, records, skipped) error); each report story registers its own
+  writer. An unregistered report writes nothing and returns 0 until its story lands. Skip warnings go to
+  stderr. Report-writer errors return 1 with stdout untouched (buffer output and flush only on success).
+  Required Go tests use bytes.Buffer: TestRunUsageErrorExit2, TestRunUsageErrorWritesNothingToStdout,
+  TestRunMissingLogExit1, TestRunMissingLogWritesNothingToStdout, TestRunSkippedLinesStillExit0,
+  TestRunFilterOrder.
+
+## story value-format
+summary:      Provide shared minutes and cost text formatters.
+type:         service
+kind:         capability
+phase:        2
+implements:   FEATURE-ValueFormat.md
+stack:        go.md
+provides:     format.Minutes, format.Cost
+consumes:     go.mod
+depends:      foundation
+acceptance:   yes
+instructions: |
+  In internal/format: Minutes(ms int64) string computes t = (ms + 3000) / 6000 in integer division and
+  returns t/10, &quot;.&quot;, t%10 (95000 ms is 1.6; 0 is 0.0). Cost(usd float64) string returns fmt.Sprintf(&quot;%.4f&quot;).
+  Required Go tests: TestMinutesRounding (cases derived from the formula), TestMinutesZero, TestCostFourPlaces,
+  TestCostZero.
+
+## story report-summary
+summary:      Write the one-row summary report.
+type:         service
+kind:         capability
+phase:        2
+implements:   FEATURE-ReportSummary.md
+covers:       SUM-001
+stack:        go.md
+provides:     ddkstat summary
+consumes:     cli.Register, format.Minutes, format.Cost, logread.Record
+depends:      cli-exit, value-format
+acceptance:   yes
+instructions: |
+  Header records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes.
+  One row over the filtered records; skipped is the whole-file count regardless of filters; first and last are the
+  earliest and latest start dates (empty when no record matches); cost via format.Cost, minutes via
+  format.Minutes. Aggregation and formatting are separate functions with Go tests. Register as &quot;summary&quot;.
+  Required Go tests: TestSummaryAggregate, TestSummaryEmptyFirstLast, TestSummarySkippedIgnoresFilters,
+  TestSummaryWrite. Reachability check goes through drydock_go.cli_runner with a log written by the test.
+
+## story report-commands
+summary:      Write the commands report with a TOTAL row.
+type:         service
+kind:         capability
+phase:        2
+implements:   FEATURE-ReportCommands.md
+covers:       CMD-001
+stack:        go.md
+provides:     ddkstat commands
+consumes:     cli.Register, format.Minutes, logread.Record
+depends:      cli-exit, value-format
+acceptance:   yes
+instructions: |
+  Header command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes. One row per command ordered by
+  calls descending then command ascending (byte order), then TOTAL over all filtered records. An empty match
+  writes the header and a TOTAL row of zeros with 0.0 minutes. Text values are written unquoted. Register as
+  &quot;commands&quot;. Required Go tests: TestCommandsOrdering, TestCommandsTotal, TestCommandsEmpty,
+  TestCommandsWrite.
+
+## story report-targets
+summary:      Write the targets report with cost and a TOTAL row.
+type:         service
+kind:         capability
+phase:        2
+implements:   FEATURE-ReportTargets.md
+covers:       TGT-001
+stack:        go.md
+provides:     ddkstat targets
+consumes:     cli.Register, format.Minutes, format.Cost, logread.Record
+depends:      cli-exit, value-format
+acceptance:   yes
+instructions: |
+  Header target,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd,minutes. One row per target
+  ordered by target ascending (byte order), then TOTAL. Empty match writes the header and a zero TOTAL
+  (0.0000 cost, 0.0 minutes). Register as &quot;targets&quot;. Required Go tests: TestTargetsOrdering,
+  TestTargetsTotalCost, TestTargetsEmpty, TestTargetsWrite.
+
+## story report-models
+summary:      Write the models report grouped by provider and model with a TOTAL row.
+type:         service
+kind:         capability
+phase:        2
+implements:   FEATURE-ReportModels.md
+covers:       MOD-001
+stack:        go.md
+provides:     ddkstat models
+consumes:     cli.Register, format.Cost, logread.Record
+depends:      cli-exit, value-format
+acceptance:   yes
+instructions: |
+  Header provider,model,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd. One row per provider
+  (job.llm) and Record.Model pair ordered by provider then model ascending (byte order), then a TOTAL row whose
+  model column is empty (TOTAL,,...). Empty match writes the header and a zero TOTAL row. Register as &quot;models&quot;.
+  Required Go tests: TestModelsGroupingUsesExecutedModel, TestModelsOrdering, TestModelsTotalEmptyModelColumn,
+  TestModelsEmpty, TestModelsWrite.
+
+## story report-daily
+summary:      Write the daily report with token totals and a TOTAL row.
+type:         service
+kind:         capability
+phase:        2
+implements:   FEATURE-ReportDaily.md
+covers:       DAY-001
+stack:        go.md
+provides:     ddkstat daily
+consumes:     cli.Register, format.Minutes, logread.Record
+depends:      cli-exit, value-format
+acceptance:   yes
+instructions: |
+  Header date,calls,failed,tokens,minutes. One row per start date ascending; tokens is input plus cached plus
+  output tokens; then TOTAL. Empty match writes the header and a zero TOTAL row. Register as &quot;daily&quot;. Required
+  Go tests: TestDailyOrdering, TestDailyTokensSum, TestDailyTotal, TestDailyEmpty, TestDailyWrite.
+
+## story report-failures
+summary:      Write the failures report listing each failed record.
+type:         service
+kind:         capability
+phase:        2
+implements:   FEATURE-ReportFailures.md
+covers:       FAIL-001
+stack:        go.md
+provides:     ddkstat failures
+consumes:     cli.Register, logread.Record
+depends:      cli-exit, value-format
+acceptance:   yes
+instructions: |
+  Header started_at,target,command,model,returncode,timed_out. One row per failed record ordered by started_at
+  then execution_id ascending (byte order). returncode is empty when null or absent; timed_out is true or false;
+  model is Record.Model. No TOTAL row; an empty match writes the header only. Register as &quot;failures&quot;. Required
+  Go tests: TestFailuresOrdering, TestFailuresNullReturncodeEmpty, TestFailuresTimedOutText,
+  TestFailuresOnlyFailed, TestFailuresEmpty.
+
+## story build-exe
+summary:      Wire the ddkstat main package and keep the module standard-library only.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-BuildExecutable.md
+covers:       BLD-001
+accepts:      st-003
+stack:        go.md
+provides:     cmd/ddkstat
+consumes:     cli.Run
+depends:      cli-exit
+acceptance:   yes
+instructions: |
+  cmd/ddkstat/main.go is package main: os.Exit(cli.Run(os.Args[1:], os.Stdout, os.Stderr)) and nothing else.
+  `go build ./cmd/ddkstat` from the module root must succeed and go.mod must declare no require lines.
+  Acceptance builds through drydock_go.cli_runner and checks the exit status of an invocation with no
+  arguments (usage error); it invokes no report command.
+
+## story test-script
+summary:      Provide bin/test.sh running go vet and go test.
+type:         service
+kind:         test harness
+phase:        1
+implements:   FEATURE-TestScript.md
+covers:       BLD-002
+accepts:      st-002
+stack:        common.md, go.md
+provides:     bin/test.sh
+consumes:     go.mod
+depends:      foundation
+acceptance:   yes
+instructions: |
+  POSIX sh script bin/test.sh: set -eu, cd to the application root (derived from the script path), run
+  `go vet ./...` then `go test ./...`, and exit zero only when both pass. No bashisms. Acceptance runs
+  `sh bin/test.sh` and requires exit status 0.
+
+## story verification
+summary:      Run the supplied grader against the finished tool as the terminal gate.
+type:         feature
+kind:         integration
+phase:        3
+implements:   VERIFICATION.md
+covers:       BLD-003
+accepts:      st-001, st-005
+stack:        go.md
+consumes:     ddkstat summary, ddkstat commands, ddkstat targets, ddkstat models, ddkstat daily, ddkstat failures
+depends:      report-summary, report-commands, report-targets, report-models, report-daily, report-failures, build-exe, test-script
+acceptance:   yes
+instructions: |
+  Assembly and intent only: every report, filter, skip rule and exit code is built by member stories. The
+  staged sources/run.sh and sources/llm_sample.jsonl are present in the build directory unmodified. The
+  terminal criterion declares Suite: full, runs `sh sources/run.sh` unfiltered, prints its captured output,
+  and asserts exit status 0. If it fails, repair the member behavior, never the staged assets or any
+  report answer.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT DECISIONS.json ===
+[
+  {
+    &quot;id&quot;: &quot;Q-001&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-CliExit.md&quot;,
+    &quot;story&quot;: &quot;cli-exit&quot;,
+    &quot;title&quot;: &quot;Report dispatch design&quot;,
+    &quot;description&quot;: &quot;Reports need to plug into Run without Run depending on them. Options: a registry each report story fills, or Run importing all six reports. Registry keeps filter and report stories ordered correctly (filters and CLI before reports).&quot;,
+    &quot;options&quot;: [
+      { &quot;value&quot;: &quot;registry&quot;, &quot;label&quot;: &quot;Registry populated by each report story&quot; },
+      { &quot;value&quot;: &quot;direct&quot;, &quot;label&quot;: &quot;Run imports all report writers directly&quot; }
+    ],
+    &quot;system_choice&quot;: &quot;registry&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-002&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-CliArgs.md&quot;,
+    &quot;story&quot;: &quot;cli-args&quot;,
+    &quot;title&quot;: &quot;Usage error output&quot;,
+    &quot;description&quot;: &quot;Sources fix exit code 2 and empty stdout but not the stderr text. Choosing a one-line usage summary on stderr.&quot;,
+    &quot;options&quot;: [
+      { &quot;value&quot;: &quot;usage-line&quot;, &quot;label&quot;: &quot;One-line usage summary on stderr&quot; },
+      { &quot;value&quot;: &quot;message-only&quot;, &quot;label&quot;: &quot;Error message only&quot; }
+    ],
+    &quot;system_choice&quot;: &quot;usage-line&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-003&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-LogLines.md&quot;,
+    &quot;story&quot;: &quot;log-lines&quot;,
+    &quot;title&quot;: &quot;Blank line definition and line length&quot;,
+    &quot;description&quot;: &quot;A blank line is one empty after trimming whitespace. The reader uses bufio.Reader rather than Scanner so long lines are not rejected by a token limit.&quot;,
+    &quot;options&quot;: [
+      { &quot;value&quot;: &quot;trimmed-reader&quot;, &quot;label&quot;: &quot;Whitespace-only is blank; bufio.Reader&quot; },
+      { &quot;value&quot;: &quot;empty-scanner&quot;, &quot;label&quot;: &quot;Only empty is blank; bufio.Scanner&quot; }
+    ],
+    &quot;system_choice&quot;: &quot;trimmed-reader&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-004&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-FilterDates.md&quot;,
+    &quot;story&quot;: &quot;filter-dates&quot;,
+    &quot;title&quot;: &quot;--since later than --until&quot;,
+    &quot;description&quot;: &quot;Sources do not say. Choosing the narrowest reading: empty result, exit 0, not a usage error.&quot;,
+    &quot;options&quot;: [
+      { &quot;value&quot;: &quot;empty-result&quot;, &quot;label&quot;: &quot;Empty report, exit 0&quot; },
+      { &quot;value&quot;: &quot;usage-error&quot;, &quot;label&quot;: &quot;Usage error, exit 2&quot; }
+    ],
+    &quot;system_choice&quot;: &quot;empty-result&quot;
+  }
+]
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>

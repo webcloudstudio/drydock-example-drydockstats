@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ReportSummary.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ReportSummary.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ReportSummary.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Report Summary</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>The summary report: one CSV row of totals over the filtered records plus the whole-file skipped count.</td></tr><tr><td>Depends On</td><td>FEATURE-CliExit.md, FEATURE-ValueFormat.md</td></tr><tr><td>Provides</td><td>ddkstat summary</td></tr><tr><td>Consumes</td><td>cli.Register, format.Minutes, format.Cost, logread.Record</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>ddkstat summary [options] &lt;log&gt;</code> answers how many calls ran, how many were skipped, and what they used and cost.</p>
+<h2>Behavior</h2>
+<ul><li>Header: <code>records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes</code>.</li><li>One data row over the filtered records, <code>\n</code> line endings.</li><li><code>records</code> is the filtered record count; <code>succeeded</code> and <code>failed</code> split it by the failed rule; token columns are sums; <code>cost_usd</code> uses <code>format.Cost</code>; <code>minutes</code> uses <code>format.Minutes</code> of the summed <code>elapsed_ms</code>.</li><li><code>skipped</code> is the whole-file skipped-line count and ignores every filter.</li><li><code>first</code> and <code>last</code> are the earliest and latest start dates of the filtered records, empty when none match.</li><li>Aggregation (<code>SummaryAggregate</code>) and writing (<code>WriteSummary(w io.Writer, records []logread.Record, skipped int) error</code>) are separate functions in <code>internal/report</code>; <code>internal/cli</code> registers the writer as <code>summary</code> with <code>cli.Register</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC summary-aggregate ===<br>Intent: SummaryAggregate sums counts, tokens, cost and duration over records built by the test.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestSummaryAggregate&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC summary-aggregate ===</p>
+<p>=== AC summary-empty-first-last ===<br>Intent: With no matching record, first and last are empty and counters are zero.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestSummaryEmptyFirstLast&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC summary-empty-first-last ===</p>
+<p>=== AC summary-skipped-ignores-filters ===<br>Intent: The skipped count stays the whole-file count regardless of target and date filters.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestSummarySkippedIgnoresFilters&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC summary-skipped-ignores-filters ===</p>
+<p>=== AC summary-write ===<br>Intent: WriteSummary writes the declared header and one row with the declared column order.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/report&quot;, &quot;TestSummaryWrite&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC summary-write ===</p>
+<p>=== AC summary-run-via-cli ===<br>Intent: cli.Run dispatches the summary report over a test-written log and exits zero with a parseable CSV.</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestRunSummaryReport&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC summary-run-via-cli ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Standard library only; no database; the log is never written.</li><li>No report value is hardcoded; every number comes from the log being read.</li><li>Skipped-line warnings go to standard error, never into the CSV.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompts/20261026.155116.930Z_drydockstats_build_claude.prompt.md</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompts/20261026.155116.930Z_drydockstats_build_claude.prompt.md</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompts/20261026.155116.930Z_drydockstats_build_claude.prompt.md">Raw file</a></div></header>
+<article class="doc"><h1>System Instructions</h1>
+<p>This prompt is divided into three sections:</p>
+<ol><li><strong>System Instructions</strong> (this section) — structural orientation only. Do not treat this</li></ol>
+<p>section as task input.</p>
+<ol><li><strong>Input Context</strong> — begins with the heading <code># Input Context</code>. All blocks are wrapped in</li></ol>
+<p><code>&lt;pblock&gt;</code> tags. Two block types:</p>
+<ul><li>File blocks: <code>&lt;pblock filename=&quot;&lt;name&gt;&quot; role=&quot;&lt;role&gt;&quot; guidance=&quot;...&quot;&gt;</code> — optional</li></ul>
+<p><code>guidance</code> attribute carries context-specific instructions; content is in a fenced block.</p>
+<ul><li>Metadata/section blocks: <code>&lt;pblock label=&quot;&lt;label&gt;&quot; kind=&quot;&lt;kind&gt;&quot;&gt;</code> — job parameters,</li></ul>
+<p>rules, instructions, or group headers.</p>
+<ol><li><strong>Agent Task</strong> — begins with the heading <code># Agent Task</code>. Defines your persona, constraints,</li></ol>
+<p>and required outputs. Read all input context before acting on this section.</p>
+<h1>Input Context</h1>
+<p>&lt;pblock label=&quot;Build block job&quot; kind=&quot;job&quot;&gt;</p>
+<h2>Build block job</h2>
+<ul><li>TARGET: DrydockStats</li><li>BUILD_DIRECTORY: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/build/DrydockStats</li><li>WORKING_DIRECTORY: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/build/DrydockStats</li><li>BUILD_BLOCK: Block 9 · Service (block-9)</li><li>STORIES: Write the one-row summary report. (report-summary), Write the targets report with cost and a TOTAL row. (report-targets), Write the commands report with a TOTAL row. (report-commands), Write the models report grouped by provider and model with a TOTAL row. (report-models), Write the failures report listing each failed record. (report-failures), Write the daily report with token totals and a TOTAL row. (report-daily)</li><li>DATE: 2026-10-26</li><li>BUILD_SCOPE: exactly one MANIFEST.md build block</li></ul>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock label=&quot;Stories in this block&quot; kind=&quot;section&quot;&gt;</p>
+<h2>Stories in this block</h2>
+<ul><li>Write the one-row summary report. (report-summary) [story]</li><li>Write the targets report with cost and a TOTAL row. (report-targets) [story]</li><li>Write the commands report with a TOTAL row. (report-commands) [story]</li><li>Write the models report grouped by provider and model with a TOTAL row. (report-models) [story]</li><li>Write the failures report listing each failed record. (report-failures) [story]</li><li>Write the daily report with token totals and a TOTAL row. (report-daily) [story]</li></ul>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock label=&quot;Files on disk&quot; kind=&quot;section&quot;&gt;</p>
+<h2>Files on disk in the build directory</h2>
+<ul><li>sources/llm_sample.jsonl</li><li>sources/run.sh</li></ul>
+<p>These are the only imported files present on disk. Every other file named in this prompt is supplied as prompt context and is not on disk; read it here and do not report it as a missing input.</p>
+<p>&lt;/pblock&gt;</p>
+<h2>COMPASS - Target Orientation</h2>
+<p>&lt;pblock filename=&quot;COMPASS.md&quot; role=&quot;compass&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/COMPASS.md&quot; guidance=&quot;Important: This is the core project intent, constraints, and guardrails. It should have presecedence in conflicts.&quot;&gt;</p>
+<pre><code># COMPASS: DrydockStats
+
+## Compass
+
+Build a command-line reporter for Drydock&#x27;s LLM execution log, the Go executable `./cmd/ddkstat`,
+as described in `sources/INSTRUCTIONS.md`. It reads a JSON Lines log, skips malformed and
+duplicate lines without failing, and writes six CSV reports (summary, commands, targets, models,
+daily, failures), each narrowed by optional Target and date filters.
+
+Correctness is measured by `sources/run.sh`: it builds the executable with `go build` and makes
+20 checks of exit code and standard output against `sources/llm_sample.jsonl`. The goal is every
+check passing. The finished tool also runs against a real `logs/llm.jsonl`.
+
+## Constraints
+
+- Implement in Go 1.22 or newer with the standard library only. No third-party modules.
+- The application root is a Go module; the executable&#x27;s main package is `./cmd/ddkstat`.
+- Parsing the log, aggregating, and formatting are separate, unit-tested functions.
+- Diagnostics go to standard error and are never compared.
+
+## Guardrails
+
+- Do not modify, rewrite, regenerate, or substitute any file under `sources/`.
+- Do not read `sources/run.sh` from application code, and do not hardcode a report row, a count,
+  or a total. Every value comes from the log being read.
+- Never write to the log being read.
+
+## Verification Protocol
+
+| Story kind | Command | Asserts |
+|---|---|---|
+| Every behavioral story | `sh bin/test.sh` | exit `0` |
+| Terminal story (once, last) | `sh sources/run.sh` | exit `0` |
+
+&lt;!-- drydock:build-write-guardrail:start --&gt;
+## Build Write Guardrail
+
+- Authorized build directory: `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/build/DrydockStats`
+- Authorized Target directory: `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats`
+- Build agents have permission to create, modify, and remove files required by the active build block inside these authorized directories.
+- No path outside these authorized directories may be modified.
+- Protected Drydock artifacts:
+  - `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/MANIFEST.md`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/COMPASS.md`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/QuarterDeck/`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/evidence/`
+&lt;!-- drydock:build-write-guardrail:end --&gt;</code></pre>
+<p>&lt;/pblock&gt;</p>
+<h2>STACK - Technology HOW</h2>
+<p>&lt;pblock filename=&quot;go_compact.md&quot; role=&quot;stack&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/Rigging/languages/go/go_compact.md&quot;&gt;</p>
+<pre><code>&lt;!-- Compacted from Rigging/languages/go/go.md sha256=aa96c7155b26f091e4f2ee9b7a47ff2202fc7c162254f2b8676779198c7147da on 2026-10-18 by Rigging maintenance --&gt;
+
+## Foundation Contract
+
+The published shape of this foundation. It is built before every other foundation: a web server,
+a database, or a CLI is built *into* this tree, this environment, and this test runner. Carried
+verbatim into `go_compact.md`.
+
+- source_root: internal/
+- test_command: go test ./...
+- environment: the module declared in `go.mod`; no vendored toolchain
+- dependencies: `go.mod`
+
+```
+project/
+  go.mod                  # module path; the Go toolchain version
+  cmd/                    # one directory per binary, each package main
+  internal/               # application packages; not importable outside this module
+  bin/                    # launchers; each runs the toolchain, never a vendored copy
+```
+
+Application foundations add packages under `internal/`. The generated persistence library is a
+separate module at `persistence/`, linked by the root `go.mod`.
+
+### Native application layouts and fixtures
+
+Initialize the root `go.mod` in the language foundation before the DATABASE block.
+Use `cmd/app/main.go` for process startup, `internal/cli` for CLI behavior, and
+`internal/appserver` for HTTP behavior. The root application module requires
+`drydock.local/persistence v0.0.0` with `replace drydock.local/persistence =&gt; ./persistence`;
+the generated persistence directory owns its nested module. Run both module test suites.
+
+For a CLI, expose `Run(args []string, stdout, stderr io.Writer) int`, use a local
+`flag.FlagSet` with `flag.ContinueOnError`, and test with `bytes.Buffer`. Only main calls
+`os.Exit`. For HTTP, expose `NewHandler(...) http.Handler` using `net/http.ServeMux`.
+Use `httptest.NewRecorder` and `httptest.NewRequest` for handler tests, or
+`httptest.NewServer` with `t.Cleanup(server.Close)` when testing a real HTTP client.
+Keep business logic in application packages and persistence access in the shipped library.
+
+### How do we execute and measure Acceptance Criteria in this language?
+
+An Acceptance Criterion (AC) is an executable check of Blueprint-required behavior. Native tests
+use `testing` in `*_test.go`; the project gate is `go test ./...`. Within the existing Blueprint
+Python AC container, execute a named test through the shipped helper:
+
+```python
+from drydock_go import run_test
+result = run_test(&quot;./internal/orders&quot;, &quot;TestCreateOrder&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+```
+
+Drydock stages this helper beside the criterion. It runs `go test -json -count=1 -run` with an
+exact test name, retains output and per-test outcomes, and rejects absent/skipped tests as proof.
+The enclosing AC provides identity, timeout, result storage and repair state. Compilation errors
+remain distinct from assertion failures in `result.status`. Coverage and persistence observations
+require explicit instrumentation per criterion; unavailable observations are unknown.
+
+A criterion that exercises the command line runs the built executable through the same helper,
+never `go run`, which reports every non-zero program exit as 1:
+
+```python
+from drydock_go import cli_runner
+code, out, err = cli_runner(&quot;--top&quot;, &quot;0&quot;, &quot;data.csv&quot;)
+assert code == 2, (code, out, err)
+```
+
+`cli_runner` builds the single `./cmd/&lt;name&gt;` main package once with `go build` and returns
+`(exit_code, stdout, stderr)`; pass `package=&quot;./cmd/&lt;name&gt;&quot;` when there are several, and `input=`
+for standard input. A failed build settles the criterion as `execution-error`.
+
+### How does this language provide the shared persistence contract?
+
+Use the shipped module in `Rigging/languages/go/persistence/`. Drydock copies it to the Target&#x27;s
+`persistence/`, generates `schema.go`, `testing.go` and a schema command from `DATABASE.md`, and
+links it into the existing root `go.mod` as `drydock.local/persistence`. Driver versions and sums
+are shipped; SQLite uses `go-sqlite3` (a C compiler and CGO are required), PostgreSQL uses `lib/pq`.
+Run `go mod download` during dependency provisioning; execution requires these modules available.
+
+Call `persistence.OpenDatabase(ctx, dsn)`, then typed methods such as
+`db.Tickets.List(ctx, persistence.TicketsListInput{Status: &quot;open&quot;})`. Methods return a value and
+an error. Optional inputs use pointers; read results are generated structs. Undeclared operations
+and unsupported field types fail explicitly. Use `OpenSession(ctx, dsn)` for native database criteria;
+empty DSN selects the configured, provisioned application store. Defer its cleanup and check the
+returned error: it rolls back on success and failure, never applies schema or deletes the store.
+Pass the same Store to the feature. Other connections and external effects require committed,
+idempotent criteria with owned records and supported cleanup. Both engines retain autocommit
+outside explicit rollback scopes.
+
+The Go library and generator are verified on SQLite and PostgreSQL. Keep application SQL inside
+the library; agents write callers. The language foundation must create `go.mod` before the
+DATABASE step. Python Blueprint AC containers invoke the native Go tests through `run_test`.
+
+---
+
+## Consumer Rules
+
+- Use `gofmt`, explicit errors, small consumer-owned interfaces and owned goroutine lifetimes.
+- Keep business logic in `internal/` and entry points in `cmd/`; commit `go.mod` and `go.sum`.
+- Gate with `go vet ./...`, `go build ./...` and `go test -race ./...`.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<h2>CONTEXT - Read-Only Support</h2>
+<p>&lt;pblock filename=&quot;ARCHITECTURE_compact.md&quot; role=&quot;context&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/ARCHITECTURE_compact.md&quot;&gt;</p>
+<pre><code>&lt;!-- Compacted from ARCHITECTURE.md sha256=50e4c308b6e72eb915ea39843b4bfe2277ccd8adc8f1a3b1c07e6688d66829cb on 2026-10-26 by drydock build agent --&gt;
+
+Module `ddkstat`, go 1.22+, no `require` lines, no go.sum entries, no vendor/.
+Packages: cmd/ddkstat (only os.Exit caller), internal/logread, internal/filter, internal/format, internal/report, internal/cli.
+logread.Read(r io.Reader, warn io.Writer) (Result, error); Result{Records []Record, Skipped int}; error only on reader failure.
+logread.Record: ExecutionID, StartedAt, Date (first 10 chars), Status, Failed (status != &quot;succeeded&quot;), Command, Target, Provider, Model, InputTokens, CachedTokens, OutputTokens (int64), CostUSD (float64), ElapsedMS (int64), ReturnCode (*int, nil if null/absent), TimedOut (bool).
+cli.Run(args []string, stdout, stderr io.Writer) int; exit 0 ok, 1 unreadable log, 2 usage. Report writers: cli.Register(name, fn func(w io.Writer, records []logread.Record, skipped int) error).
+Reports: summary, commands, targets, models, daily, failures. Options: --target, --since, --until, then one log path.
+Only cmd/ddkstat/main.go calls os.Exit. Output buffered; stdout written only on success. Diagnostics to stderr, never compared.
+Never write to the log; never read sources/run.sh; no hardcoded report values.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<h2>IMPLEMENTS - Authoritative Step Specifications</h2>
+<p>&lt;pblock label=&quot;Implementation recency anchor&quot; kind=&quot;section&quot;&gt; The files in this section are the load-bearing specifications for this build block. Build these files exactly. Treat earlier sections as constraints and context.</p>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-ReportSummary.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/FEATURE-ReportSummary.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Report Summary
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | The summary report: one CSV row of totals over the filtered records plus the whole-file skipped count. |
+| Depends On  | FEATURE-CliExit.md, FEATURE-ValueFormat.md |
+| Provides    | ddkstat summary |
+| Consumes    | cli.Register, format.Minutes, format.Cost, logread.Record |
+
+## Purpose
+
+`ddkstat summary [options] &lt;log&gt;` answers how many calls ran, how many were skipped, and what they used and cost.
+
+## Behavior
+
+- Header: `records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes`.
+- One data row over the filtered records, `\n` line endings.
+- `records` is the filtered record count; `succeeded` and `failed` split it by the failed rule; token columns are sums; `cost_usd` uses `format.Cost`; `minutes` uses `format.Minutes` of the summed `elapsed_ms`.
+- `skipped` is the whole-file skipped-line count and ignores every filter.
+- `first` and `last` are the earliest and latest start dates of the filtered records, empty when none match.
+- Aggregation (`SummaryAggregate`) and writing (`WriteSummary(w io.Writer, records []logread.Record, skipped int) error`) are separate functions in `internal/report`; `internal/cli` registers the writer as `summary` with `cli.Register`.
+
+## Programmatic Acceptance
+
+=== AC summary-aggregate ===
+Intent: SummaryAggregate sums counts, tokens, cost and duration over records built by the test.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestSummaryAggregate&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC summary-aggregate ===
+
+=== AC summary-empty-first-last ===
+Intent: With no matching record, first and last are empty and counters are zero.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestSummaryEmptyFirstLast&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC summary-empty-first-last ===
+
+=== AC summary-skipped-ignores-filters ===
+Intent: The skipped count stays the whole-file count regardless of target and date filters.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestSummarySkippedIgnoresFilters&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC summary-skipped-ignores-filters ===
+
+=== AC summary-write ===
+Intent: WriteSummary writes the declared header and one row with the declared column order.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestSummaryWrite&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC summary-write ===
+
+=== AC summary-run-via-cli ===
+Intent: cli.Run dispatches the summary report over a test-written log and exits zero with a parseable CSV.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunSummaryReport&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC summary-run-via-cli ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only; no database; the log is never written.
+- No report value is hardcoded; every number comes from the log being read.
+- Skipped-line warnings go to standard error, never into the CSV.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-ReportTargets.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/FEATURE-ReportTargets.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Report Targets
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | The targets report: one CSV row per Target with cost and a TOTAL row. |
+| Depends On  | FEATURE-CliExit.md, FEATURE-ValueFormat.md |
+| Provides    | ddkstat targets |
+| Consumes    | cli.Register, format.Minutes, format.Cost, logread.Record |
+
+## Purpose
+
+`ddkstat targets [options] &lt;log&gt;` shows what each Target consumed and cost.
+
+## Behavior
+
+- Header: `target,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd,minutes`.
+- One row per `job.target`, ordered by target ascending by byte value.
+- Final row `TOTAL,...` over all filtered records, with total cost.
+- Cost uses `format.Cost`; minutes use `format.Minutes`.
+- When no record matches, the output is the header and a TOTAL row of zeros with `0.0000` cost and `0.0` minutes.
+- `internal/report` holds the aggregate and write functions; `internal/cli` registers the writer as `targets`.
+
+## Programmatic Acceptance
+
+=== AC targets-ordering ===
+Intent: Rows are ordered by target ascending in byte order.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsOrdering&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC targets-ordering ===
+
+=== AC targets-total-cost ===
+Intent: The TOTAL row carries the summed cost formatted to four places.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsTotalCost&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC targets-total-cost ===
+
+=== AC targets-empty ===
+Intent: With no matching record the report is the header plus a zero TOTAL row.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsEmpty&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC targets-empty ===
+
+=== AC targets-write ===
+Intent: The writer emits the declared header and columns.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestTargetsWrite&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC targets-write ===
+
+=== AC targets-run-via-cli ===
+Intent: cli.Run dispatches the targets report over a test-written log, exits zero and writes parseable CSV.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunTargetsReport&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC targets-run-via-cli ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only; no database; the log is never written.
+- No row, count, cost or total is hardcoded; all values come from the log being read.
+- Target names are written unquoted and unescaped.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-ReportCommands.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/FEATURE-ReportCommands.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Report Commands
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | The commands report: one CSV row per Drydock command with a TOTAL row. |
+| Depends On  | FEATURE-CliExit.md, FEATURE-ValueFormat.md |
+| Provides    | ddkstat commands |
+| Consumes    | cli.Register, format.Minutes, logread.Record |
+
+## Purpose
+
+`ddkstat commands [options] &lt;log&gt;` shows how often each Drydock command called an LLM and what it consumed.
+
+## Behavior
+
+- Header: `command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes`.
+- One row per `job.command_name`, ordered by calls descending, then command ascending by byte value.
+- Final row `TOTAL,...` over all filtered records.
+- Minutes use `format.Minutes` of the group&#x27;s summed `elapsed_ms`.
+- When no record matches, the output is the header and `TOTAL,0,0,0,0,0,0.0`.
+- Text values are written unquoted and unescaped.
+- `internal/report` holds the aggregate and write functions; `internal/cli` registers the writer as `commands`.
+
+## Programmatic Acceptance
+
+=== AC commands-ordering ===
+Intent: Rows are ordered by calls descending then command ascending, including ties.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsOrdering&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC commands-ordering ===
+
+=== AC commands-total ===
+Intent: The TOTAL row sums calls, failures, tokens and minutes over all filtered records.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsTotal&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC commands-total ===
+
+=== AC commands-empty ===
+Intent: With no matching record the report is the header plus a zero TOTAL row.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsEmpty&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC commands-empty ===
+
+=== AC commands-write ===
+Intent: The writer emits the declared header and columns.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestCommandsWrite&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC commands-write ===
+
+=== AC commands-run-via-cli ===
+Intent: cli.Run dispatches the commands report over a test-written log, exits zero and writes parseable CSV.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunCommandsReport&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC commands-run-via-cli ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only; no database; the log is never written.
+- No row, count or total is hardcoded; all values come from the log being read.
+- Text values are never quoted or escaped.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-ReportModels.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/FEATURE-ReportModels.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Report Models
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | The models report: one CSV row per provider and executed-model pair with a TOTAL row. |
+| Depends On  | FEATURE-CliExit.md, FEATURE-ValueFormat.md, FEATURE-LogModel.md |
+| Provides    | ddkstat models |
+| Consumes    | cli.Register, format.Cost, logread.Record |
+
+## Purpose
+
+`ddkstat models [options] &lt;log&gt;` shows which providers and models ran the calls and what they consumed and cost.
+
+## Behavior
+
+- Header: `provider,model,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd`.
+- One row per pair of provider (`job.llm`) and `Record.Model` (the executed model when present and non-empty, otherwise the requested model), ordered by provider then model ascending by byte value.
+- Final row is `TOTAL,,...` with an empty model column, over all filtered records.
+- Cost uses `format.Cost`. There is no minutes column.
+- When no record matches, the output is the header and a TOTAL row of zeros with `0.0000` cost.
+- `internal/report` holds the aggregate and write functions; `internal/cli` registers the writer as `models`.
+
+## Programmatic Acceptance
+
+=== AC models-grouping-executed-model ===
+Intent: Records group under the executed model, falling back to the requested model.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestModelsGroupingUsesExecutedModel&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-grouping-executed-model ===
+
+=== AC models-ordering ===
+Intent: Rows are ordered by provider then model ascending in byte order.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestModelsOrdering&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-ordering ===
+
+=== AC models-total-empty-model-column ===
+Intent: The TOTAL row leaves the model column empty and sums every numeric column.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestModelsTotalEmptyModelColumn&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-total-empty-model-column ===
+
+=== AC models-empty ===
+Intent: With no matching record the report is the header plus a zero TOTAL row.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestModelsEmpty&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-empty ===
+
+=== AC models-write ===
+Intent: The writer emits the declared header and columns.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/report&quot;, &quot;TestModelsWrite&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-write ===
+
+=== AC models-run-via-cli ===
+Intent: cli.Run dispatches the models report over a test-written log, exits zero and writes parseable CSV.
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunModelsReport&quot;)
+print(result.stdout)
+print(result.stderr)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC models-run-via-cli ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only; no database; the log is never written.
+- No row, count, cost or total is hardcoded; all values come from the log being read.
+- Provider and model names are written unquoted and unescaped.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-ReportFailures.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/FEATURE-ReportFailures.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Report Failures
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Writes the failures CSV report listing each failed record in start order. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliExit.md, FEATURE-ValueFormat.md |
+| Provides    | ddkstat failures |
+| Consumes    | cli.Register, logread.Record |
+
+## Purpose
+
+The `failures` report lists every failed call so the operator can see which command, Target and model failed, and how.
+
+## Behavior
+
+- Header: `started_at,target,command,model,returncode,timed_out`.
+- One row per failed record (status is not `succeeded`) among the filtered records.
+- Rows are ordered by `started_at`, then `execution_id`, ascending by byte value.
+- `started_at` is written exactly as logged.
+- `model` is `Record.Model`: the executed model when present and non-empty, otherwise the requested model.
+- `returncode` is empty when null or absent, otherwise the integer.
+- `timed_out` is `true` or `false`.
+- There is no `TOTAL` row. When no failed record matches, only the header is written.
+- Selection and ordering (`SelectFailures`) and writing (`WriteFailures`) are separate functions in `internal/report`.
+- The writer is registered with `cli.Register(&quot;failures&quot;, ...)`.
+
+## Programmatic Acceptance
+
+=== AC report-failures-unit ===
+Intent: The native unit tests for failure selection, ordering, null returncode, timed_out text and empty output all pass.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+for name in (
+    &quot;TestFailuresOrdering&quot;,
+    &quot;TestFailuresNullReturncodeEmpty&quot;,
+    &quot;TestFailuresTimedOutText&quot;,
+    &quot;TestFailuresOnlyFailed&quot;,
+    &quot;TestFailuresEmpty&quot;,
+):
+    result = run_test(&quot;./internal/report&quot;, name)
+    print(name, result.status)
+    assert result.passed, (name, result.status, result.stdout, result.stderr)
+=== END AC report-failures-unit ===
+
+=== AC report-failures-rows ===
+Intent: The failures command lists only failed records ordered by started_at then execution_id, with model fallback, empty null returncode and true/false timed_out.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def rec(eid, started, target, cmd, status, rc, timed_out, stats_model):
+    stats = {&quot;input_tokens&quot;: 1, &quot;elapsed_ms&quot;: 1000}
+    if stats_model is not None:
+        stats[&quot;model&quot;] = stats_model
+    return {
+        &quot;schema_version&quot;: 1,
+        &quot;execution_id&quot;: eid,
+        &quot;started_at&quot;: started,
+        &quot;status&quot;: status,
+        &quot;job&quot;: {&quot;command_name&quot;: cmd, &quot;target&quot;: target, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;requested-model&quot;},
+        &quot;result&quot;: {&quot;returncode&quot;: rc, &quot;timed_out&quot;: timed_out, &quot;stats&quot;: stats},
+    }
+
+
+recs = [
+    rec(&quot;zz-9&quot;, &quot;2026-10-15T06:00:00.000Z&quot;, &quot;Beta&quot;, &quot;diagnose&quot;, &quot;failed&quot;, None, True, &quot;executed-model&quot;),
+    rec(&quot;aa-1&quot;, &quot;2026-10-14T02:00:00.000Z&quot;, &quot;Alpha&quot;, &quot;build&quot;, &quot;succeeded&quot;, 0, False, &quot;executed-model&quot;),
+    rec(&quot;bb-2&quot;, &quot;2026-10-14T02:00:00.000Z&quot;, &quot;Alpha&quot;, &quot;build&quot;, &quot;failed&quot;, 1, False, None),
+    rec(&quot;aa-3&quot;, &quot;2026-10-14T02:00:00.000Z&quot;, &quot;Alpha&quot;, &quot;plan&quot;, &quot;failed&quot;, 2, False, &quot;executed-model&quot;),
+    rec(&quot;cc-4&quot;, &quot;2026-10-13T23:00:00.000Z&quot;, &quot;Beta&quot;, &quot;build&quot;, &quot;timeout&quot;, 124, True, &quot;executed-model&quot;),
+]
+
+work = tempfile.mkdtemp()
+path = os.path.join(work, &quot;log.jsonl&quot;)
+with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh:
+    for r in recs:
+        fh.write(json.dumps(r) + &quot;\n&quot;)
+
+code, out, err = cli_runner(&quot;failures&quot;, path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == [&quot;started_at&quot;, &quot;target&quot;, &quot;command&quot;, &quot;model&quot;, &quot;returncode&quot;, &quot;timed_out&quot;]
+
+failed = sorted(
+    [r for r in recs if r[&quot;status&quot;] != &quot;succeeded&quot;],
+    key=lambda r: (r[&quot;started_at&quot;], r[&quot;execution_id&quot;]),
+)
+body = rows[1:]
+assert len(body) == len(failed)
+for row, r in zip(body, failed):
+    model = r[&quot;result&quot;][&quot;stats&quot;].get(&quot;model&quot;) or r[&quot;job&quot;][&quot;model&quot;]
+    rc = r[&quot;result&quot;][&quot;returncode&quot;]
+    assert row[0] == r[&quot;started_at&quot;]
+    assert row[1] == r[&quot;job&quot;][&quot;target&quot;]
+    assert row[2] == r[&quot;job&quot;][&quot;command_name&quot;]
+    assert row[3] == model
+    assert row[4] == (&quot;&quot; if rc is None else str(rc))
+    assert row[5] == str(r[&quot;result&quot;][&quot;timed_out&quot;]).lower()
+=== END AC report-failures-rows ===
+
+=== AC report-failures-filters ===
+Intent: The failures command honours --target and the inclusive --since/--until date range.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+
+def rec(eid, started, target):
+    return {
+        &quot;schema_version&quot;: 1,
+        &quot;execution_id&quot;: eid,
+        &quot;started_at&quot;: started,
+        &quot;status&quot;: &quot;failed&quot;,
+        &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: target, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;m&quot;},
+        &quot;result&quot;: {&quot;returncode&quot;: 1, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1}},
+    }
+
+
+recs = [
+    rec(&quot;id-1&quot;, &quot;2026-10-14T01:00:00.000Z&quot;, &quot;Alpha&quot;),
+    rec(&quot;id-2&quot;, &quot;2026-10-15T01:00:00.000Z&quot;, &quot;Alpha&quot;),
+    rec(&quot;id-3&quot;, &quot;2026-10-15T02:00:00.000Z&quot;, &quot;Beta&quot;),
+    rec(&quot;id-4&quot;, &quot;2026-10-16T01:00:00.000Z&quot;, &quot;Alpha&quot;),
+]
+work = tempfile.mkdtemp()
+path = os.path.join(work, &quot;log.jsonl&quot;)
+with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh:
+    for r in recs:
+        fh.write(json.dumps(r) + &quot;\n&quot;)
+
+target = &quot;Alpha&quot;
+since = &quot;2026-10-15&quot;
+until = &quot;2026-10-15&quot;
+kept = [
+    r for r in recs
+    if r[&quot;job&quot;][&quot;target&quot;] == target and since &lt;= r[&quot;started_at&quot;][:10] &lt;= until
+]
+
+code, out, err = cli_runner(&quot;failures&quot;, &quot;--target&quot;, target, &quot;--since&quot;, since, &quot;--until&quot;, until, path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert [row[0] for row in rows[1:]] == [r[&quot;started_at&quot;] for r in kept]
+=== END AC report-failures-filters ===
+
+=== AC report-failures-empty ===
+Intent: When no failed record matches, the failures command exits 0 and writes only the header row.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+
+from drydock_go import cli_runner
+
+record = {
+    &quot;schema_version&quot;: 1,
+    &quot;execution_id&quot;: &quot;id-1&quot;,
+    &quot;started_at&quot;: &quot;2026-10-14T01:00:00.000Z&quot;,
+    &quot;status&quot;: &quot;succeeded&quot;,
+    &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Alpha&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;m&quot;},
+    &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False},
+}
+work = tempfile.mkdtemp()
+path = os.path.join(work, &quot;log.jsonl&quot;)
+with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh:
+    fh.write(json.dumps(record) + &quot;\n&quot;)
+
+code, out, err = cli_runner(&quot;failures&quot;, path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 1
+assert rows[0] == [&quot;started_at&quot;, &quot;target&quot;, &quot;command&quot;, &quot;model&quot;, &quot;returncode&quot;, &quot;timed_out&quot;]
+=== END AC report-failures-empty ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The report has no `TOTAL` row.
+- Every row comes from the log being read; none is hardcoded.
+- The report never writes to the log.
+- Text values are written without quoting or escaping.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-ReportDaily.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats/blueprint/FEATURE-ReportDaily.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Report Daily
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Writes the daily CSV report with one row per start date and a TOTAL row. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliExit.md, FEATURE-ValueFormat.md |
+| Provides    | ddkstat daily |
+| Consumes    | cli.Register, format.Minutes, logread.Record |
+
+## Purpose
+
+The `daily` report shows, for each start date, how many calls ran, how many failed, how many tokens they used, and how many minutes they took.
+
+## Behavior
+
+- Header: `date,calls,failed,tokens,minutes`.
+- The report covers the records that remain after the filters are applied.
+- One row per start date (the first 10 characters of `started_at`), in ascending byte order.
+- `calls` is the record count. `failed` is the count of records whose status is not `succeeded`.
+- `tokens` is input plus cached plus output tokens, summed over the group.
+- `minutes` is the group&#x27;s summed `elapsed_ms` formatted by `format.Minutes`.
+- A final `TOTAL` row covers all filtered records.
+- When no record matches, the report writes the header and a `TOTAL` row of zeros with `0.0` minutes.
+- Aggregation (`AggregateDaily`) and writing (`WriteDaily`) are separate functions in `internal/report`.
+- The writer is registered with `cli.Register(&quot;daily&quot;, ...)`.
+- Output is CSV, `\n` line endings, values unquoted.
+
+## Programmatic Acceptance
+
+=== AC report-daily-unit ===
+Intent: The native unit tests for daily aggregation, ordering, totals, empty input and writing all pass.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+for name in (
+    &quot;TestDailyOrdering&quot;,
+    &quot;TestDailyTokensSum&quot;,
+    &quot;TestDailyTotal&quot;,
+    &quot;TestDailyEmpty&quot;,
+    &quot;TestDailyWrite&quot;,
+):
+    result = run_test(&quot;./internal/report&quot;, name)
+    print(name, result.status)
+    assert result.passed, (name, result.status, result.stdout, result.stderr)
+=== END AC report-daily-unit ===
+
+=== AC report-daily-rows ===
+Intent: The daily command emits one row per start date with calls, failed, tokens and minutes derived from the log, followed by a TOTAL row.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from decimal import Decimal
+
+from drydock_go import cli_runner
+
+
+def rec(n, started, cmd, target, status, tin, tc, tout, ms):
+    return {
+        &quot;schema_version&quot;: 1,
+        &quot;execution_id&quot;: &quot;id-%03d&quot; % n,
+        &quot;started_at&quot;: started,
+        &quot;status&quot;: status,
+        &quot;job&quot;: {&quot;command_name&quot;: cmd, &quot;target&quot;: target, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;},
+        &quot;result&quot;: {
+            &quot;returncode&quot;: 0 if status == &quot;succeeded&quot; else 1,
+            &quot;timed_out&quot;: False,
+            &quot;stats&quot;: {
+                &quot;input_tokens&quot;: tin,
+                &quot;cached_input_tokens&quot;: tc,
+                &quot;output_tokens&quot;: tout,
+                &quot;elapsed_ms&quot;: ms,
+                &quot;cost_usd&quot;: 0.5,
+                &quot;model&quot;: &quot;claude-haiku-5-5&quot;,
+            },
+        },
+    }
+
+
+recs = [
+    rec(1, &quot;2026-10-15T08:00:00.000Z&quot;, &quot;build&quot;, &quot;Alpha&quot;, &quot;succeeded&quot;, 10, 200, 30, 95000),
+    rec(2, &quot;2026-10-14T09:00:00.000Z&quot;, &quot;plan&quot;, &quot;Beta&quot;, &quot;failed&quot;, 1, 2, 3, 20000),
+    rec(3, &quot;2026-10-14T10:00:00.000Z&quot;, &quot;build&quot;, &quot;Alpha&quot;, &quot;succeeded&quot;, 100, 0, 7, 61000),
+    rec(4, &quot;2026-10-16T11:00:00.000Z&quot;, &quot;analyze&quot;, &quot;Beta&quot;, &quot;succeeded&quot;, 5, 5, 5, 0),
+    rec(5, &quot;2026-10-15T12:00:00.000Z&quot;, &quot;build&quot;, &quot;Beta&quot;, &quot;succeeded&quot;, 0, 40, 0, 125000),
+]
+
+work = tempfile.mkdtemp()
+path = os.path.join(work, &quot;log.jsonl&quot;)
+with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh:
+    for r in recs:
+        fh.write(json.dumps(r) + &quot;\n&quot;)
+
+
+def expected(group):
+    total_ms = sum(r[&quot;result&quot;][&quot;stats&quot;][&quot;elapsed_ms&quot;] for r in group)
+    tenths = (total_ms + 3000) // 6000
+    return (
+        len(group),
+        sum(1 for r in group if r[&quot;status&quot;] != &quot;succeeded&quot;),
+        sum(
+            r[&quot;result&quot;][&quot;stats&quot;][&quot;input_tokens&quot;]
+            + r[&quot;result&quot;][&quot;stats&quot;][&quot;cached_input_tokens&quot;]
+            + r[&quot;result&quot;][&quot;stats&quot;][&quot;output_tokens&quot;]
+            for r in group
+        ),
+        Decimal(tenths) / Decimal(10),
+    )
+
+
+code, out, err = cli_runner(&quot;daily&quot;, path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+header, body = rows[0], rows[1:]
+assert header == [&quot;date&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;tokens&quot;, &quot;minutes&quot;]
+
+dates = sorted({r[&quot;started_at&quot;][:10] for r in recs})
+assert [row[0] for row in body[:-1]] == dates
+for row in body[:-1]:
+    group = [r for r in recs if r[&quot;started_at&quot;][:10] == row[0]]
+    calls, failed, tokens, minutes = expected(group)
+    assert int(row[1]) == calls
+    assert int(row[2]) == failed
+    assert int(row[3]) == tokens
+    assert Decimal(row[4]) == minutes
+
+total = body[-1]
+calls, failed, tokens, minutes = expected(recs)
+assert total[0] == &quot;TOTAL&quot;
+assert int(total[1]) == calls
+assert int(total[2]) == failed
+assert int(total[3]) == tokens
+assert Decimal(total[4]) == minutes
+=== END AC report-daily-rows ===
+
+=== AC report-daily-filters ===
+Intent: The daily command honours --target, --since and --until, computing every row and the TOTAL over only the matching records.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from decimal import Decimal
+
+from drydock_go import cli_runner
+
+
+def rec(n, started, target, status, tin, ms):
+    return {
+        &quot;schema_version&quot;: 1,
+        &quot;execution_id&quot;: &quot;id-%03d&quot; % n,
+        &quot;started_at&quot;: started,
+        &quot;status&quot;: status,
+        &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: target, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;},
+        &quot;result&quot;: {
+            &quot;returncode&quot;: 0,
+            &quot;timed_out&quot;: False,
+            &quot;stats&quot;: {
+                &quot;input_tokens&quot;: tin,
+                &quot;cached_input_tokens&quot;: 0,
+                &quot;output_tokens&quot;: 0,
+                &quot;elapsed_ms&quot;: ms,
+                &quot;cost_usd&quot;: 0.1,
+                &quot;model&quot;: &quot;claude-haiku-5-5&quot;,
+            },
+        },
+    }
+
+
+recs = [
+    rec(1, &quot;2026-10-14T01:00:00.000Z&quot;, &quot;Alpha&quot;, &quot;succeeded&quot;, 11, 60000),
+    rec(2, &quot;2026-10-15T01:00:00.000Z&quot;, &quot;Alpha&quot;, &quot;failed&quot;, 22, 60000),
+    rec(3, &quot;2026-10-15T02:00:00.000Z&quot;, &quot;Beta&quot;, &quot;succeeded&quot;, 33, 60000),
+    rec(4, &quot;2026-10-16T01:00:00.000Z&quot;, &quot;Alpha&quot;, &quot;succeeded&quot;, 44, 60000),
+]
+
+work = tempfile.mkdtemp()
+path = os.path.join(work, &quot;log.jsonl&quot;)
+with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh:
+    for r in recs:
+        fh.write(json.dumps(r) + &quot;\n&quot;)
+
+target = &quot;Alpha&quot;
+since = &quot;2026-10-15&quot;
+until = &quot;2026-10-16&quot;
+kept = [
+    r for r in recs
+    if r[&quot;job&quot;][&quot;target&quot;] == target and since &lt;= r[&quot;started_at&quot;][:10] &lt;= until
+]
+
+code, out, err = cli_runner(&quot;daily&quot;, &quot;--target&quot;, target, &quot;--since&quot;, since, &quot;--until&quot;, until, path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+body = rows[1:]
+assert [row[0] for row in body[:-1]] == sorted({r[&quot;started_at&quot;][:10] for r in kept})
+assert body[-1][0] == &quot;TOTAL&quot;
+assert int(body[-1][1]) == len(kept)
+assert int(body[-1][2]) == sum(1 for r in kept if r[&quot;status&quot;] != &quot;succeeded&quot;)
+assert int(body[-1][3]) == sum(r[&quot;result&quot;][&quot;stats&quot;][&quot;input_tokens&quot;] for r in kept)
+tenths = (sum(r[&quot;result&quot;][&quot;stats&quot;][&quot;elapsed_ms&quot;] for r in kept) + 3000) // 6000
+assert Decimal(body[-1][4]) == Decimal(tenths) / Decimal(10)
+=== END AC report-daily-filters ===
+
+=== AC report-daily-empty ===
+Intent: When no record matches the filter, the daily command exits 0 and writes the header and a TOTAL row of zeros.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from decimal import Decimal
+
+from drydock_go import cli_runner
+
+record = {
+    &quot;schema_version&quot;: 1,
+    &quot;execution_id&quot;: &quot;id-001&quot;,
+    &quot;started_at&quot;: &quot;2026-10-14T01:00:00.000Z&quot;,
+    &quot;status&quot;: &quot;succeeded&quot;,
+    &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Alpha&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;haiku&quot;},
+    &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;input_tokens&quot;: 9, &quot;elapsed_ms&quot;: 60000}},
+}
+work = tempfile.mkdtemp()
+path = os.path.join(work, &quot;log.jsonl&quot;)
+with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh:
+    fh.write(json.dumps(record) + &quot;\n&quot;)
+
+code, out, err = cli_runner(&quot;daily&quot;, &quot;--target&quot;, &quot;NoSuchTarget&quot;, path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == [&quot;date&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;tokens&quot;, &quot;minutes&quot;]
+assert len(rows) == 2
+total = rows[1]
+assert total[0] == &quot;TOTAL&quot;
+assert int(total[1]) == 0
+assert int(total[2]) == 0
+assert int(total[3]) == 0
+assert Decimal(total[4]) == Decimal(0)
+=== END AC report-daily-empty ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The report reads only values computed from the log; no row, count or total is hardcoded.
+- The report never writes to the log.
+- Text values are written without quoting or escaping.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock label=&quot;Build instructions&quot; kind=&quot;instructions&quot;&gt;</p>
+<h3>Build instructions for this block</h3>
+<h4>Write the one-row summary report. (report-summary)</h4>
+<p>Header records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes. One row over the filtered records; skipped is the whole-file count regardless of filters; first and last are the earliest and latest start dates (empty when no record matches); cost via format.Cost, minutes via format.Minutes. Aggregation and formatting are separate functions with Go tests. Register as &quot;summary&quot;.<br>Required Go tests: TestSummaryAggregate, TestSummaryEmptyFirstLast, TestSummarySkippedIgnoresFilters, TestSummaryWrite. Reachability check goes through drydock_go.cli_runner with a log written by the test.</p>
+<h4>Write the targets report with cost and a TOTAL row. (report-targets)</h4>
+<p>Header target,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd,minutes. One row per target ordered by target ascending (byte order), then TOTAL. Empty match writes the header and a zero TOTAL (0.0000 cost, 0.0 minutes). Register as &quot;targets&quot;. Required Go tests: TestTargetsOrdering, TestTargetsTotalCost, TestTargetsEmpty, TestTargetsWrite.</p>
+<h4>Write the commands report with a TOTAL row. (report-commands)</h4>
+<p>Header command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes. One row per command ordered by calls descending then command ascending (byte order), then TOTAL over all filtered records. An empty match writes the header and a TOTAL row of zeros with 0.0 minutes. Text values are written unquoted. Register as &quot;commands&quot;. Required Go tests: TestCommandsOrdering, TestCommandsTotal, TestCommandsEmpty, TestCommandsWrite.</p>
+<h4>Write the models report grouped by provider and model with a TOTAL row. (report-models)</h4>
+<p>Header provider,model,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd. One row per provider (job.llm) and Record.Model pair ordered by provider then model ascending (byte order), then a TOTAL row whose model column is empty (TOTAL,,...). Empty match writes the header and a zero TOTAL row. Register as &quot;models&quot;.<br>Required Go tests: TestModelsGroupingUsesExecutedModel, TestModelsOrdering, TestModelsTotalEmptyModelColumn, TestModelsEmpty, TestModelsWrite.</p>
+<h4>Write the failures report listing each failed record. (report-failures)</h4>
+<p>Header started_at,target,command,model,returncode,timed_out. One row per failed record ordered by started_at then execution_id ascending (byte order). returncode is empty when null or absent; timed_out is true or false; model is Record.Model. No TOTAL row; an empty match writes the header only. Register as &quot;failures&quot;. Required<br>Go tests: TestFailuresOrdering, TestFailuresNullReturncodeEmpty, TestFailuresTimedOutText, TestFailuresOnlyFailed, TestFailuresEmpty.</p>
+<h4>Write the daily report with token totals and a TOTAL row. (report-daily)</h4>
+<p>Header date,calls,failed,tokens,minutes. One row per start date ascending; tokens is input plus cached plus output tokens; then TOTAL. Empty match writes the header and a zero TOTAL row. Register as &quot;daily&quot;. Required<br>Go tests: TestDailyOrdering, TestDailyTokensSum, TestDailyTotal, TestDailyEmpty, TestDailyWrite.</p>
+<p>&lt;/pblock&gt;</p>
+<h1>Agent Task</h1>
+<p>You are a Drydock build agent implementing exactly one build step of a larger plan. The build job block below names the target, the build working directory, and the step. Everything you need is stacked into this prompt under role headings:</p>
+<ul><li><code>compass</code> — the Target&#x27;s COMPASS.md orientation.</li><li><code>implements</code> — the Typed Specification files this step builds. These are</li></ul>
+<p>authoritative; implement them exactly.</p>
+<ul><li><code>context</code> — read-only support specifications. Do not reimplement them.</li><li><code>stack</code> — enterprise stack and technology rules. Honor them.</li><li><code>rules</code> — governance and branding rules. Honor them.</li></ul>
+<p>Operating contract:</p>
+<ol><li>Follow the write authorization and protected paths in the stacked <code>COMPASS.md</code> exactly.</li></ol>
+<p>That persisted guardrail is the sole authority for paths this build may modify.</p>
+<ol><li>Start by inspecting the build working directory. Read the current contents of each file before</li></ol>
+<p>applying a contextual patch. If patch verification fails, re-read that file and rebuild the patch against its current text; do not repeat stale context or overwrite unrelated changes. Preserve existing application files unless this step&#x27;s specifications require a change. Its <code>sources/</code> subdirectory holds staged build assets — imported test corpora, conformance harnesses, and fixtures — placed there for you. They are read-only inputs: run them, import them, and write code against them, but never create, rewrite, trim, regenerate, or substitute one, even to make a check pass. A step that modifies a staged asset fails and the asset is restored. If an asset you expect is absent, report that; do not author a replacement.</p>
+<ol><li>Implement only this step. Use <code>context</code>, <code>stack</code>, and <code>rules</code> as constraints,</li></ol>
+<p>not as additional work to perform.</p>
+<ol><li>Follow the stack and rules for languages, structure, naming, and branding.</li><li>The programmatic acceptance assertions in the <code>implements</code> specifications are</li></ol>
+<p>this step&#x27;s <strong>Definition of Done</strong> — human-owned, declared before the build, and fixed. Build the story and, in this same step, write the deterministic tests that prove each declared assertion, as a TDD master would; add finer tests for coverage. Every test you write follows the same rule the acceptance assertions do: <strong>act on the system, read the state back, compare to expected.</strong> The oracle is a return value, parsed JSON, a status code, a stored row, file contents read back, or an exit status — never a substring of captured stdout or stderr, a test-runner tally, or a log line. Write tests in the project&#x27;s own language using that language&#x27;s libraries; an in-language HTTP client yields a status code and a parsed body, where <code>curl</code> yields text to scrape. Round-trip anything that stores state: act, then read back through the public interface. Assert declared failure signals on negative paths, never message wording. You may add tests but must never remove, soften, or weaken a declared acceptance assertion. A <code>Suite: full</code> conformance check gates on the entire imported test suite: the step is done only when it passes in full, never on a representative subset — reproduce the standard exactly rather than wrapping a third-party library that approximates it. For a suite, the runner&#x27;s exit status is the verdict and the whole verdict: print its captured output for diagnosis, never assert on the text of its summary. When an assertion is a static or filesystem scan (import boundary, &quot;X never appears outside Y,&quot; grep/AST gate), honor the scope the specification states and never widen it: scan production source only, exclude <code>.venv/</code>, <code>site-packages</code>, and vendored or generated code, and do not flag test doubles or fixtures that use the guarded dependency. Run targeted tests for the behavior you change and preserve existing passing behavior. Drydock executes every declared acceptance assertion after your call and owns the verdict. Use available failure logs before rerunning suites to rediscover failures; use section or example filters to diagnose the underlying behavior, never example-specific exceptions. If you run a suite, wait for completion or its declared timeout; silence is not a hang.</p>
+<ol><li>Grow the project&#x27;s own test suite as you write the code, and treat it as the project&#x27;s</li></ol>
+<p>real coverage. The acceptance assertions in <code>implements</code> are gates: few, fixed, and written before any code existed, so every expectation in them is a prediction. The tests you write are written <em>beside</em> the finished code, so their expected values are observed rather than predicted — which is why exhaustive coverage belongs here and not there. Extend the suite in the project&#x27;s established location and runner, keep it runnable by the project&#x27;s declared test command, and leave it green when you return. Cover, at minimum: every public entry point and every verb it declares, including declared error paths; the boundaries — empty, exactly one, many, absent optional fields, declared maxima; declared idempotence, applied twice; one behavior per test, named for the behavior; and isolation — database criteria use the provisioned application store and the shipped rollback fixture, passing its connection into the feature. Other connections and durability tests use criterion-owned records, idempotent setup and checked cleanup through supported interfaces. Never replace the configured store, reapply schema, or delete unrelated business records. Where a staged authoritative suite already covers a surface, use it as the coverage; do not duplicate its cases. Any invocation must respect this step&#x27;s declared scope. Do not run the unscoped entry point for a <code>Suite: scoped</code> story, or run a suite this step does not declare. Report only completed checks and their observed results.</p>
+<ol><li>Treat <code>User Acceptance</code> entries as review evidence requirements. Implement</li></ol>
+<p>the supporting behavior, but do not claim to have performed human judgment.</p>
+<ol><li>The <code>implements</code> section is authoritative and intentionally stacked late in</li></ol>
+<p>the prompt as the recency anchor. Build that WHAT exactly; do not substitute generic framework defaults.</p>
+<ol><li>Before adding or installing Python dependencies, verify each package name</li></ol>
+<p>against the declared registry. Do not invent package names. If a needed package cannot be verified or appears newly published, fail explicitly instead of installing it.</p>
+<ol><li>Use the stack&#x27;s required package manager workflow for dependency changes.</li></ol>
+<p>When the stack requires <code>uv</code>, update manifests through <code>uv</code> conventions rather than bare <code>pip install</code>.</p>
+<ol><li>Do not claim success unless you actually created or modified project files in</li></ol>
+<p>the build working directory. If you cannot write files or cannot complete the step, report failure explicitly.</p>
+<ol><li>Do not run <code>git add</code>, <code>git commit</code>, create branches, create tags, rewrite</li></ol>
+<p>history, or otherwise mutate Git history. Drydock checkpoints application changes and Target evidence after each execution and completed step. File lineage comes from Git and the Manifest&#x27;s <code>implements:</code> entries; no additional attribution response is required.</p>
+<ol><li>End your response with this exact closing structure:</li></ol>
+<pre><code>RESULT: SUCCESS | FAILED
+
+FILES CHANGED:
+- relative/path
+
+SUMMARY:
+&lt;brief reviewable summary&gt;
+
+BLOCKERS:
+- &lt;only if any&gt;</code></pre>
+<p>Before <code>RESULT</code>, you may emit one optional JSON payload when implementation required a bounded choice not already settled by the owning specification. This records what you did; it does not ask permission, create a questionnaire, or excuse incomplete work:</p>
+<pre><code>&lt;blueprint-decisions&gt;
+[{&quot;spec&quot;:&quot;FEATURE-Example.md&quot;,&quot;severity&quot;:&quot;Material&quot;,&quot;subject&quot;:&quot;Chosen behavior&quot;,&quot;decision&quot;:&quot;Options A and B were available. I implemented B because ... Is that acceptable, or should this change on replan?&quot;}]
+&lt;/blueprint-decisions&gt;</code></pre>
+<p>Name only a specification implemented by this build block. Use <code>Low</code> or <code>Material</code>; Build never emits a Blocking decision. Omit the payload when no implementation decision was necessary.</p>
+<ol><li><code>FILES CHANGED</code> must list only files actually written in the build working</li></ol>
+<p>directory. When the existing implementation already satisfies this step, report <code>RESULT: SUCCESS</code>, list no changed files, and state the checks performed and their results. A verification-only step requires no application changes. Drydock runs the declared deterministic checks and decides the outcome independently of this report.</p>
+<ol><li>On <code>RESULT: FAILED</code>, append two additional lines so the failure is actionable</li></ol>
+<p>without opening logs. <code>FAILURE_SUMMARY</code> is one line naming the cause; <code>FAILURE_DETAIL</code> states what happened, why, and what to change before a rerun. Name concrete conditions when they apply: token or context limit exceeded, could not execute commands in this environment, a required input was missing, or a specific tool or command failed.</p>
+<pre><code>FAILURE_SUMMARY: &lt;one line naming the cause&gt;
+FAILURE_DETAIL: &lt;what happened, why, and what to change before rerunning&gt;</code></pre>
+<ol><li>When a declared acceptance criterion cannot pass no matter how the code is written,</li></ol>
+<p>say so with this exact token. You may not edit the criterion — it is staged and restored before grading:</p>
+<pre><code>AC_BROKEN: &lt;check-id&gt;[, &lt;check-id&gt;]</code></pre>
+<p>This is a report, not a verdict, and it stops nothing. A criterion reaches you only when its expected value is one its author could not have invented — a status code, a staged suite&#x27;s exit status, a value the criterion itself supplied as input — so your claim that the criterion rather than the code is at fault is the less likely explanation, and the budget is spent as it would be for any other failure. A criterion whose expectation <em>was</em> hand-typed already settles <code>DISPUTED</code> on its own, without you naming it. Emit the token only after running the criterion and confirming the underlying command succeeded while the assertion still failed. Name the affected check ids, emit it alongside your normal <code>RESULT</code> line, state the reasoning in <code>FAILURE_DETAIL</code>, and emit it even when <code>RESULT: SUCCESS</code>. Do not use it for a criterion you merely failed to satisfy.</p></article>
+</main>
+</body>
+</html>

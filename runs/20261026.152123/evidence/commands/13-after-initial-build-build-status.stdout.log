@@ -1,0 +1,39 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Next: (no actionable steps — all done or blocked)
+
+Blueprint: DrydockStats
+Target: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.152123/workspace/targets/DrydockStats
+Rows: <state> <type>  <Name>  [<id>]   — pass [<id>] to --step
+Block: Build Block 1 · Foundational  [block-1]   — [built] story Stand up the Go module, directory layout and test runner every other story builds into.  [foundation] — complete
+
+Block: Build Block 2 · Service  [block-2]   — 3/3 stories complete
+  [built]   story  Read the JSON Lines log into records, ignoring blank lines and classifying failed calls.  [log-lines]
+  [built]   story  Parse the report name, options and log path into a validated invocation.  [cli-args]
+  [built]   story  Provide bin/test.sh running go vet and go test.  [test-script]
+
+Block: Build Block 3 · Service  [block-3]   — 2/2 stories complete
+  [built]   story  Skip malformed, incomplete and duplicate lines with a stderr warning and no effect on the exit code.  [log-skip]
+  [built]   story  Validate --since and --until as real YYYY-MM-DD calendar dates.  [cli-dates]
+
+Block: Build Block 4 · Service  [block-4]   — 2/2 stories complete
+  [built]   story  Treat absent, null or non-numeric token, cost and duration values as zero.  [log-numbers]
+  [built]   story  Attribute each record to the executed model, falling back to the requested model.  [log-model]
+
+Block: Build Block 5 · Service  [block-5]   — 2/2 stories complete
+  [built]   story  Filter records by exact job.target match.  [filter-target]
+  [built]   story  Filter records by inclusive start-date range.  [filter-dates]
+Block: Build Block 6 · Service  [block-6]   — [built] story Assemble the Run pipeline and map failures to exit codes 0, 1 and 2.  [cli-exit] — complete
+Block: Build Block 7 · Service  [block-7]   — [built] story Wire the ddkstat main package and keep the module standard-library only.  [build-exe] — complete
+Block: Build Block 8 · Service  [block-8]   — [built] story Provide shared minutes and cost text formatters.  [value-format] — complete
+
+Block: Build Block 9 · Service  [block-9]   — 6/6 stories complete
+  [built]   story  Write the one-row summary report.  [report-summary]
+  [built]   story  Write the targets report with cost and a TOTAL row.  [report-targets]
+  [built]   story  Write the commands report with a TOTAL row.  [report-commands]
+  [built]   story  Write the models report grouped by provider and model with a TOTAL row.  [report-models]
+  [built]   story  Write the failures report listing each failed record.  [report-failures]
+  [built]   story  Write the daily report with token totals and a TOTAL row.  [report-daily]
+Block: Build Block 10 · Feature  [block-10]   — [built] story Run the supplied grader against the finished tool as the terminal gate.  [verification] — complete
+
+Steps: 20 total — 0 done, 20 built (await verify), 0 in review, 0 pending, 0 blocked by questions, 0 failed (0% complete)
+Buildable now: (none)

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-FilterDates.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-FilterDates.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-FilterDates.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Filter Dates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Keep only records whose start date falls within an inclusive since/until range.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-LogNumbers.md, FEATURE-LogModel.md</td></tr><tr><td>Provides</td><td>filter.ByDateRange</td></tr><tr><td>Consumes</td><td>logread.Record</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>A pure function in <code>internal/filter</code> that narrows a record slice by start date. Dates are already validated <code>YYYY-MM-DD</code> text, so string comparison orders them correctly.</p>
+<h2>Interface</h2>
+<p><code>func ByDateRange(records []logread.Record, since, until string) []logread.Record</code></p>
+<h2>Rules</h2>
+<ol><li>A record is kept when <code>Record.Date &gt;= since</code> and <code>Record.Date &lt;= until</code>; both bounds are inclusive.</li><li>An empty <code>since</code> or <code>until</code> is an unset bound and does not restrict.</li><li>When <code>since</code> is later than <code>until</code> the result is empty; this is not an error and the exit code stays 0.</li><li>Input order is preserved and the input slice is not modified.</li></ol>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC filter-dates-since-inclusive ===<br>Intent: A record dated exactly on the since bound is kept and earlier ones are dropped.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/filter&quot;, &quot;TestSinceInclusive&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC filter-dates-since-inclusive ===</p>
+<p>=== AC filter-dates-until-inclusive ===<br>Intent: A record dated exactly on the until bound is kept and later ones are dropped.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/filter&quot;, &quot;TestUntilInclusive&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC filter-dates-until-inclusive ===</p>
+<p>=== AC filter-dates-both-bounds ===<br>Intent: With both bounds set only records inside the inclusive range remain.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/filter&quot;, &quot;TestRangeBothBounds&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC filter-dates-both-bounds ===</p>
+<p>=== AC filter-dates-since-after-until ===<br>Intent: A since later than until yields an empty result without error.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/filter&quot;, &quot;TestSinceAfterUntilEmpty&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC filter-dates-since-after-until ===</p>
+<p>=== AC filter-dates-bounds-unset ===<br>Intent: Empty bounds leave every record in place.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/filter&quot;, &quot;TestBoundsUnset&quot;) assert result.passed, (result.status, result.stdout, result.stderr) === END AC filter-dates-bounds-unset ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The filter is a pure function: no I/O, no global state.</li><li>It does not depend on any report implementation; reports verify it later through CLI output.</li></ul></article>
+</main>
+</body>
+</html>

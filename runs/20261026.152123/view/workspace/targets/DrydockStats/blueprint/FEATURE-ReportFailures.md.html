@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ReportFailures.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ReportFailures.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ReportFailures.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Report Failures</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Writes the failures CSV report listing each failed record in start order.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-CliExit.md, FEATURE-ValueFormat.md</td></tr><tr><td>Provides</td><td>ddkstat failures</td></tr><tr><td>Consumes</td><td>cli.Register, logread.Record</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>The <code>failures</code> report lists every failed call so the operator can see which command, Target and model failed, and how.</p>
+<h2>Behavior</h2>
+<ul><li>Header: <code>started_at,target,command,model,returncode,timed_out</code>.</li><li>One row per failed record (status is not <code>succeeded</code>) among the filtered records.</li><li>Rows are ordered by <code>started_at</code>, then <code>execution_id</code>, ascending by byte value.</li><li><code>started_at</code> is written exactly as logged.</li><li><code>model</code> is <code>Record.Model</code>: the executed model when present and non-empty, otherwise the requested model.</li><li><code>returncode</code> is empty when null or absent, otherwise the integer.</li><li><code>timed_out</code> is <code>true</code> or <code>false</code>.</li><li>There is no <code>TOTAL</code> row. When no failed record matches, only the header is written.</li><li>Selection and ordering (<code>SelectFailures</code>) and writing (<code>WriteFailures</code>) are separate functions in <code>internal/report</code>.</li><li>The writer is registered with <code>cli.Register(&quot;failures&quot;, ...)</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC report-failures-unit ===<br>Intent: The native unit tests for failure selection, ordering, null returncode, timed_out text and empty output all pass.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>for name in ( &quot;TestFailuresOrdering&quot;, &quot;TestFailuresNullReturncodeEmpty&quot;, &quot;TestFailuresTimedOutText&quot;, &quot;TestFailuresOnlyFailed&quot;, &quot;TestFailuresEmpty&quot;, ): result = run_test(&quot;./internal/report&quot;, name) print(name, result.status) assert result.passed, (name, result.status, result.stdout, result.stderr) === END AC report-failures-unit ===</p>
+<p>=== AC report-failures-rows ===<br>Intent: The failures command lists only failed records ordered by started_at then execution_id, with model fallback, empty null returncode and true/false timed_out.<br>Requires: executable=go; scope=test</p>
+<p>import csv import io import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>def rec(eid, started, target, cmd, status, rc, timed_out, stats_model): stats = {&quot;input_tokens&quot;: 1, &quot;elapsed_ms&quot;: 1000} if stats_model is not None: stats[&quot;model&quot;] = stats_model return { &quot;schema_version&quot;: 1, &quot;execution_id&quot;: eid, &quot;started_at&quot;: started, &quot;status&quot;: status, &quot;job&quot;: {&quot;command_name&quot;: cmd, &quot;target&quot;: target, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;requested-model&quot;}, &quot;result&quot;: {&quot;returncode&quot;: rc, &quot;timed_out&quot;: timed_out, &quot;stats&quot;: stats}, }</p>
+<p>recs = [ rec(&quot;zz-9&quot;, &quot;2026-10-15T06:00:00.000Z&quot;, &quot;Beta&quot;, &quot;diagnose&quot;, &quot;failed&quot;, None, True, &quot;executed-model&quot;), rec(&quot;aa-1&quot;, &quot;2026-10-14T02:00:00.000Z&quot;, &quot;Alpha&quot;, &quot;build&quot;, &quot;succeeded&quot;, 0, False, &quot;executed-model&quot;), rec(&quot;bb-2&quot;, &quot;2026-10-14T02:00:00.000Z&quot;, &quot;Alpha&quot;, &quot;build&quot;, &quot;failed&quot;, 1, False, None), rec(&quot;aa-3&quot;, &quot;2026-10-14T02:00:00.000Z&quot;, &quot;Alpha&quot;, &quot;plan&quot;, &quot;failed&quot;, 2, False, &quot;executed-model&quot;), rec(&quot;cc-4&quot;, &quot;2026-10-13T23:00:00.000Z&quot;, &quot;Beta&quot;, &quot;build&quot;, &quot;timeout&quot;, 124, True, &quot;executed-model&quot;), ]</p>
+<p>work = tempfile.mkdtemp() path = os.path.join(work, &quot;log.jsonl&quot;) with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: for r in recs: fh.write(json.dumps(r) + &quot;\n&quot;)</p>
+<p>code, out, err = cli_runner(&quot;failures&quot;, path) print(out) print(err) assert code == 0 rows = list(csv.reader(io.StringIO(out))) assert rows[0] == [&quot;started_at&quot;, &quot;target&quot;, &quot;command&quot;, &quot;model&quot;, &quot;returncode&quot;, &quot;timed_out&quot;]</p>
+<p>failed = sorted( [r for r in recs if r[&quot;status&quot;] != &quot;succeeded&quot;], key=lambda r: (r[&quot;started_at&quot;], r[&quot;execution_id&quot;]), ) body = rows[1:] assert len(body) == len(failed) for row, r in zip(body, failed): model = r[&quot;result&quot;][&quot;stats&quot;].get(&quot;model&quot;) or r[&quot;job&quot;][&quot;model&quot;] rc = r[&quot;result&quot;][&quot;returncode&quot;] assert row[0] == r[&quot;started_at&quot;] assert row[1] == r[&quot;job&quot;][&quot;target&quot;] assert row[2] == r[&quot;job&quot;][&quot;command_name&quot;] assert row[3] == model assert row[4] == (&quot;&quot; if rc is None else str(rc)) assert row[5] == str(r[&quot;result&quot;][&quot;timed_out&quot;]).lower() === END AC report-failures-rows ===</p>
+<p>=== AC report-failures-filters ===<br>Intent: The failures command honours --target and the inclusive --since/--until date range.<br>Requires: executable=go; scope=test</p>
+<p>import csv import io import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>def rec(eid, started, target): return { &quot;schema_version&quot;: 1, &quot;execution_id&quot;: eid, &quot;started_at&quot;: started, &quot;status&quot;: &quot;failed&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: target, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;m&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 1, &quot;timed_out&quot;: False, &quot;stats&quot;: {&quot;elapsed_ms&quot;: 1}}, }</p>
+<p>recs = [ rec(&quot;id-1&quot;, &quot;2026-10-14T01:00:00.000Z&quot;, &quot;Alpha&quot;), rec(&quot;id-2&quot;, &quot;2026-10-15T01:00:00.000Z&quot;, &quot;Alpha&quot;), rec(&quot;id-3&quot;, &quot;2026-10-15T02:00:00.000Z&quot;, &quot;Beta&quot;), rec(&quot;id-4&quot;, &quot;2026-10-16T01:00:00.000Z&quot;, &quot;Alpha&quot;), ] work = tempfile.mkdtemp() path = os.path.join(work, &quot;log.jsonl&quot;) with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: for r in recs: fh.write(json.dumps(r) + &quot;\n&quot;)</p>
+<p>target = &quot;Alpha&quot; since = &quot;2026-10-15&quot; until = &quot;2026-10-15&quot; kept = [ r for r in recs if r[&quot;job&quot;][&quot;target&quot;] == target and since &lt;= r[&quot;started_at&quot;][:10] &lt;= until ]</p>
+<p>code, out, err = cli_runner(&quot;failures&quot;, &quot;--target&quot;, target, &quot;--since&quot;, since, &quot;--until&quot;, until, path) print(out) print(err) assert code == 0 rows = list(csv.reader(io.StringIO(out))) assert [row[0] for row in rows[1:]] == [r[&quot;started_at&quot;] for r in kept] === END AC report-failures-filters ===</p>
+<p>=== AC report-failures-empty ===<br>Intent: When no failed record matches, the failures command exits 0 and writes only the header row.<br>Requires: executable=go; scope=test</p>
+<p>import csv import io import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>record = { &quot;schema_version&quot;: 1, &quot;execution_id&quot;: &quot;id-1&quot;, &quot;started_at&quot;: &quot;2026-10-14T01:00:00.000Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;build&quot;, &quot;target&quot;: &quot;Alpha&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;m&quot;}, &quot;result&quot;: {&quot;returncode&quot;: 0, &quot;timed_out&quot;: False}, } work = tempfile.mkdtemp() path = os.path.join(work, &quot;log.jsonl&quot;) with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as fh: fh.write(json.dumps(record) + &quot;\n&quot;)</p>
+<p>code, out, err = cli_runner(&quot;failures&quot;, path) print(out) print(err) assert code == 0 rows = list(csv.reader(io.StringIO(out))) assert len(rows) == 1 assert rows[0] == [&quot;started_at&quot;, &quot;target&quot;, &quot;command&quot;, &quot;model&quot;, &quot;returncode&quot;, &quot;timed_out&quot;] === END AC report-failures-empty ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The report has no <code>TOTAL</code> row.</li><li>Every row comes from the log being read; none is hardcoded.</li><li>The report never writes to the log.</li><li>Text values are written without quoting or escaping.</li></ul></article>
+</main>
+</body>
+</html>

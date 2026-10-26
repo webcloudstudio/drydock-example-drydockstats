@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-TestScript.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-TestScript.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-TestScript.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Test Script</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Provides a POSIX bin/test.sh that runs go vet and go test and exits zero only when both pass.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>bin/test.sh</td></tr><tr><td>Consumes</td><td>go.mod</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>One command, <code>sh bin/test.sh</code>, gates every behavioral story and the Go test suite.</p>
+<h2>Behavior</h2>
+<ul><li><code>bin/test.sh</code> is POSIX <code>sh</code>: it uses <code>set -eu</code> and no bashisms.</li><li>It changes to the application root, derived from the script&#x27;s own path, so it works from any current directory.</li><li>It runs <code>go vet ./...</code> and then <code>go test ./...</code>.</li><li>It exits zero only when both commands pass, and non-zero otherwise.</li><li>It runs the toolchain installed on the machine and never a vendored copy.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC test-script-syntax ===<br>Intent: bin/test.sh exists and parses as POSIX sh.</p>
+<p>import subprocess from pathlib import Path</p>
+<p>script = Path(&quot;bin/test.sh&quot;) assert script.is_file() result = subprocess.run([&quot;sh&quot;, &quot;-n&quot;, str(script)], capture_output=True, text=True) print(result.stdout) print(result.stderr) assert result.returncode == 0 === END AC test-script-syntax ===</p>
+<p>=== AC test-script-passes ===<br>Intent: sh bin/test.sh exits zero when go vet and every automated test pass.<br>Requires: executable=go; scope=test</p>
+<p>import subprocess</p>
+<p>result = subprocess.run([&quot;sh&quot;, &quot;bin/test.sh&quot;], capture_output=True, text=True, timeout=1200) print(result.stdout) print(result.stderr) assert result.returncode == 0 === END AC test-script-passes ===</p>
+<p>=== AC test-script-any-cwd ===<br>Intent: bin/test.sh finds the application root regardless of the caller&#x27;s working directory.<br>Requires: executable=go; scope=test</p>
+<p>import os import subprocess import tempfile</p>
+<p>script = os.path.abspath(&quot;bin/test.sh&quot;) elsewhere = tempfile.mkdtemp() result = subprocess.run([&quot;sh&quot;, script], capture_output=True, text=True, cwd=elsewhere, timeout=1200) print(result.stdout) print(result.stderr) assert result.returncode == 0 === END AC test-script-any-cwd ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The script contains no bashisms.</li><li>The script never edits source files or the log.</li></ul></article>
+</main>
+</body>
+</html>

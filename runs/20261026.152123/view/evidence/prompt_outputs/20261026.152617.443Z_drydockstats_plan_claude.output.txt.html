@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.152617.443Z_drydockstats_plan_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.152617.443Z_drydockstats_plan_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.152617.443Z_drydockstats_plan_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT FEATURE-CliArgs.md ===
+# FEATURE: Cli Args
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Parse the report name, options, and log path of a ddkstat invocation into a validated Options value. |
+| Depends On  | ARCHITECTURE.md |
+| Provides    | cli.ParseArgs, cli.Options, cli.UsageError |
+| Consumes    | go.mod |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`internal/cli` turns the raw argument list into an `Options` value or a usage error. It performs no I/O and
+never exits the process. Date value validation is owned by FEATURE-CliDates.md and layered onto this parser.
+
+## Interface
+
+```text
+ddkstat &lt;report&gt; [--target &lt;name&gt;] [--since &lt;YYYY-MM-DD&gt;] [--until &lt;YYYY-MM-DD&gt;] &lt;log&gt;
+```
+
+- `type Options struct { Report, Target, Since, Until, LogPath string }`
+- `func ParseArgs(args []string) (Options, error)`; every failure is a `*UsageError` (`errors.As`-detectable).
+- `args` excludes the program name.
+
+## Rules
+
+1. The first argument is the report and must be one of `summary`, `commands`, `targets`, `models`, `daily`, `failures`.
+2. After the report come zero or more options, each of `--target`, `--since`, `--until` followed by exactly one value.
+3. Exactly one log path follows; it is the last argument.
+4. A repeated option takes its last value.
+5. An option placed before the report name is a usage error (it is not a known report).
+6. An unknown report, an unknown option, a missing option value, a missing log path, or an extra positional
+   argument is a usage error.
+7. Parsing uses a hand-rolled loop or a local `flag.FlagSet` with `flag.ContinueOnError`; it never touches the
+   global flag set and never calls `os.Exit`.
+
+## Programmatic Acceptance
+
+=== AC cli-args-report-and-log ===
+Intent: A report name followed by a log path parses into Options with that report and path.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestParseReportAndLog&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-args-report-and-log ===
+
+=== AC cli-args-options ===
+Intent: The --target, --since and --until options populate Options.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestParseOptions&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-args-options ===
+
+=== AC cli-args-repeated-option ===
+Intent: A repeated option takes its last value.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestParseRepeatedOptionLastWins&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-args-repeated-option ===
+
+=== AC cli-args-option-before-report ===
+Intent: An option placed before the report name is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestParseOptionBeforeReportIsUsageError&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-args-option-before-report ===
+
+=== AC cli-args-unknown-report ===
+Intent: An unknown report name is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestParseUnknownReport&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-args-unknown-report ===
+
+=== AC cli-args-unknown-option ===
+Intent: An unknown option is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestParseUnknownOption&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-args-unknown-option ===
+
+=== AC cli-args-missing-value ===
+Intent: An option with no value is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestParseMissingValue&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-args-missing-value ===
+
+=== AC cli-args-log-path-count ===
+Intent: A missing log path and an extra log path are both usage errors.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestParseLogPathCount&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-args-log-path-count ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only; no third-party module.
+- ParseArgs performs no I/O and never calls `os.Exit`.
+- Option order is fixed: report first, then options, then the single log path.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CliDates.md ===
+# FEATURE: Cli Dates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Validate --since and --until values as real YYYY-MM-DD calendar dates during argument parsing. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliArgs.md |
+| Provides    | cli.ParseArgs date validation |
+| Consumes    | cli.ParseArgs |
+
+## Questions
+
+- None.
+
+## Purpose
+
+A date option must be a real calendar date written `YYYY-MM-DD`. Anything else is a usage error that maps to
+exit code 2 in FEATURE-CliExit.md.
+
+## Rules
+
+1. A value is valid only when `time.Parse(&quot;2006-01-02&quot;, v)` succeeds and the parsed time formatted with the same
+   layout equals `v` exactly (rejecting shapes such as `2026-1-5`).
+2. `2026-13-01` (bad month), `2026-02-30` (bad day), `2026-1-5` (wrong shape), and an empty value are usage errors.
+3. A valid date passes through to `Options.Since` or `Options.Until` unchanged.
+4. A missing value after `--since` or `--until` is a usage error.
+5. Validation is applied while parsing, so `ParseArgs` returns the usage error before any log is opened.
+
+## Programmatic Acceptance
+
+=== AC cli-dates-valid ===
+Intent: A real calendar date is accepted and stored unchanged.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestDateValid&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-dates-valid ===
+
+=== AC cli-dates-invalid-month ===
+Intent: A date with an impossible month is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestDateInvalidMonth&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-dates-invalid-month ===
+
+=== AC cli-dates-invalid-day ===
+Intent: A date with an impossible day of month is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestDateInvalidDay&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-dates-invalid-day ===
+
+=== AC cli-dates-wrong-shape ===
+Intent: A date not written as zero-padded YYYY-MM-DD is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestDateWrongShape&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-dates-wrong-shape ===
+
+=== AC cli-dates-missing-value ===
+Intent: A date option with no value is a usage error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestDateMissingValue&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-dates-missing-value ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Standard library only.
+- A `--since` later than `--until` is not a validation error here; see FEATURE-FilterDates.md.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-FilterTarget.md ===
+# FEATURE: Filter Target
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Keep only records whose job.target equals a given name exactly. |
+| Depends On  | ARCHITECTURE.md, FEATURE-LogNumbers.md, FEATURE-LogModel.md |
+| Provides    | filter.ByTarget |
+| Consumes    | logread.Record |
+
+## Questions
+
+- None.
+
+## Purpose
+
+A pure function in `internal/filter` that narrows a record slice by Target. It performs no I/O and knows nothing
+about reports; every report receives its output through the CLI pipeline.
+
+## Interface
+
+`func ByTarget(records []logread.Record, name string) []logread.Record`
+
+## Rules
+
+1. A record is kept when `Record.Target == name` exactly; comparison is case-sensitive.
+2. An empty `name` means no `--target` was given and all records are returned.
+3. No match returns an empty slice, never an error.
+4. Input order is preserved and the input slice is not modified.
+
+## Programmatic Acceptance
+
+=== AC filter-target-exact ===
+Intent: Only records whose Target equals the name are kept.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/filter&quot;, &quot;TestByTargetExact&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC filter-target-exact ===
+
+=== AC filter-target-case-sensitive ===
+Intent: Target matching is case-sensitive.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/filter&quot;, &quot;TestByTargetCaseSensitive&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC filter-target-case-sensitive ===
+
+=== AC filter-target-no-match ===
+Intent: A name matching no record yields an empty result.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/filter&quot;, &quot;TestByTargetNoMatch&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC filter-target-no-match ===
+
+=== AC filter-target-unset ===
+Intent: An empty name leaves every record in place.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/filter&quot;, &quot;TestByTargetUnset&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC filter-target-unset ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The filter is a pure function: no I/O, no global state.
+- It does not depend on any report implementation; reports verify it later through CLI output.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-FilterDates.md ===
+# FEATURE: Filter Dates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Keep only records whose start date falls within an inclusive since/until range. |
+| Depends On  | ARCHITECTURE.md, FEATURE-LogNumbers.md, FEATURE-LogModel.md |
+| Provides    | filter.ByDateRange |
+| Consumes    | logread.Record |
+
+## Questions
+
+- None.
+
+## Purpose
+
+A pure function in `internal/filter` that narrows a record slice by start date. Dates are already validated
+`YYYY-MM-DD` text, so string comparison orders them correctly.
+
+## Interface
+
+`func ByDateRange(records []logread.Record, since, until string) []logread.Record`
+
+## Rules
+
+1. A record is kept when `Record.Date &gt;= since` and `Record.Date &lt;= until`; both bounds are inclusive.
+2. An empty `since` or `until` is an unset bound and does not restrict.
+3. When `since` is later than `until` the result is empty; this is not an error and the exit code stays 0.
+4. Input order is preserved and the input slice is not modified.
+
+## Programmatic Acceptance
+
+=== AC filter-dates-since-inclusive ===
+Intent: A record dated exactly on the since bound is kept and earlier ones are dropped.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/filter&quot;, &quot;TestSinceInclusive&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC filter-dates-since-inclusive ===
+
+=== AC filter-dates-until-inclusive ===
+Intent: A record dated exactly on the until bound is kept and later ones are dropped.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/filter&quot;, &quot;TestUntilInclusive&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC filter-dates-until-inclusive ===
+
+=== AC filter-dates-both-bounds ===
+Intent: With both bounds set only records inside the inclusive range remain.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/filter&quot;, &quot;TestRangeBothBounds&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC filter-dates-both-bounds ===
+
+=== AC filter-dates-since-after-until ===
+Intent: A since later than until yields an empty result without error.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/filter&quot;, &quot;TestSinceAfterUntilEmpty&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC filter-dates-since-after-until ===
+
+=== AC filter-dates-bounds-unset ===
+Intent: Empty bounds leave every record in place.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/filter&quot;, &quot;TestBoundsUnset&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC filter-dates-bounds-unset ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The filter is a pure function: no I/O, no global state.
+- It does not depend on any report implementation; reports verify it later through CLI output.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CliExit.md ===
+# FEATURE: Cli Exit
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Assemble the ddkstat pipeline in cli.Run and map usage and read failures to exit codes 2 and 1. |
+| Depends On  | ARCHITECTURE.md, FEATURE-CliDates.md, FEATURE-LogNumbers.md, FEATURE-LogModel.md, FEATURE-FilterTarget.md, FEATURE-FilterDates.md |
+| Provides    | cli.Run, cli.Register |
+| Consumes    | cli.ParseArgs, logread.Read, filter.ByTarget, filter.ByDateRange |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`cli.Run` is the single entry point behind `cmd/ddkstat/main.go`. It runs the pipeline: parse arguments, read the
+log, apply filters, dispatch to the registered report writer. Report stories plug in through a registry so `Run`
+never imports them.
+
+## Interface
+
+- `func Run(args []string, stdout, stderr io.Writer) int`
+- `func Register(name string, fn func(w io.Writer, records []logread.Record, skipped int) error)`
+
+## Rules
+
+1. Usage error: write one usage-summary line to stderr, nothing to stdout, return 2.
+2. Log cannot be opened or read: write one diagnostic line to stderr, nothing to stdout, return 1. The log is only
+   ever opened for reading.
+3. Otherwise read records (skip warnings go to stderr), apply `ByTarget` then `ByDateRange`, and call the writer
+   registered under the report name. `skipped` is the whole-file count, unaffected by filters.
+4. Report output is buffered and flushed to stdout only when the writer succeeds. A writer error writes one line to
+   stderr, nothing to stdout, and returns 1.
+5. A report name with no registered writer writes nothing and returns 0 until its report story lands.
+6. Skipped lines never change the exit code.
+7. `Run` never calls `os.Exit`; only `cmd/ddkstat/main.go` does.
+
+## Programmatic Acceptance
+
+=== AC cli-exit-usage-code ===
+Intent: A usage error returns exit code 2.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunUsageErrorExit2&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-exit-usage-code ===
+
+=== AC cli-exit-usage-stdout-empty ===
+Intent: A usage error writes nothing to standard output.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunUsageErrorWritesNothingToStdout&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-exit-usage-stdout-empty ===
+
+=== AC cli-exit-missing-log-code ===
+Intent: An unreadable log returns exit code 1.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunMissingLogExit1&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-exit-missing-log-code ===
+
+=== AC cli-exit-missing-log-stdout-empty ===
+Intent: An unreadable log writes nothing to standard output.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunMissingLogWritesNothingToStdout&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-exit-missing-log-stdout-empty ===
+
+=== AC cli-exit-skipped-lines-ok ===
+Intent: A log containing skipped lines still exits 0.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunSkippedLinesStillExit0&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-exit-skipped-lines-ok ===
+
+=== AC cli-exit-filter-order ===
+Intent: The registered writer receives records narrowed by the target and date filters and the whole-file skipped count.
+Requires: executable=go; scope=test
+
+from drydock_go import run_test
+
+result = run_test(&quot;./internal/cli&quot;, &quot;TestRunFilterOrder&quot;)
+assert result.passed, (result.status, result.stdout, result.stderr)
+=== END AC cli-exit-filter-order ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Never write to the log being read.
+- A failing command writes nothing to stdout and exactly one diagnostic line to stderr.
+- Diagnostics go to stderr and are never compared by the grader.
+- `Run` does not import any report package; reports register themselves.
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>
