@@ -1,0 +1,29 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+plan verify: DrydockStats
+  24 criteria cannot run as written
+  ✗  FEATURE-CommandsReport.md [commands-rows-and-order]: calls `cli_runner` at line(s) 17 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-CommandsReport.md [commands-byte-order-ties]: calls `cli_runner` at line(s) 17 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-CommandsReport.md [commands-total-and-failed]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-CommandsReport.md [commands-empty-total]: calls `cli_runner` at line(s) 10 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-CommandsReport.md [commands-filters-apply]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-DateFilter.md [date-since-until-inclusive]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-DateFilter.md [date-one-sided-bounds]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-DateFilter.md [date-time-of-day-ignored]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-DateFilter.md [date-every-report]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-DateFilter.md [date-with-target-and-empty-range]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-SummaryReport.md [summary-columns-and-sums]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-SummaryReport.md [summary-minutes-rounding]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-SummaryReport.md [summary-absent-values-count-zero]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-SummaryReport.md [summary-skipped-is-whole-file]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-SummaryReport.md [summary-empty-and-format]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-TargetFilter.md [target-summary-counts]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-TargetFilter.md [target-exact-match]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-TargetFilter.md [target-no-match]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-TargetFilter.md [target-every-report]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-TargetsReport.md [targets-rows-and-order]: calls `cli_runner` at line(s) 17 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-TargetsReport.md [targets-sums-cost-minutes]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-TargetsReport.md [targets-total-row]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-TargetsReport.md [targets-empty-total]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  ✗  FEATURE-TargetsReport.md [targets-date-filter-applies]: calls `cli_runner` at line(s) 16 without asserting its exit status; bind it as `code, out, err = cli_runner(...)` and assert `code` before the next call
+  Run: drydock plan repair DrydockStats
+Target - committed project workspace git store

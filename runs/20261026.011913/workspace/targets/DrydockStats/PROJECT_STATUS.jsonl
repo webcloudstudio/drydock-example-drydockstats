@@ -1,0 +1,8 @@
+{"label": "INITIALIZED", "result": "pass", "at": "2026-10-26T01:19:16.314+00:00", "detail": "", "command": "drydock init DrydockStats", "attempts": 1}
+{"label": "IMPORTED", "result": "pass", "at": "2026-10-26T01:19:23.641+00:00", "detail": "", "command": "drydock import DrydockStats", "attempts": 1}
+{"label": "ANALYZED", "result": "pass", "at": "2026-10-26T01:21:31.235+00:00", "detail": "", "command": "drydock analyze DrydockStats", "attempts": 1}
+{"label": "PLAN CREATED", "result": "fail", "at": "2026-10-26T01:32:21.489+00:00", "detail": "24 criteria cannot run", "command": "drydock plan verify DrydockStats", "attempts": 2}
+{"label": "PLAN REPAIRED", "result": "pass", "at": "2026-10-26T01:35:56.300+00:00", "detail": "", "command": "drydock plan repair DrydockStats", "attempts": 1}
+{"label": "BUILDING", "result": "pass", "at": "2026-10-26T01:37:10.720+00:00", "detail": "", "command": "drydock build DrydockStats", "attempts": 1}
+{"label": "BUILT", "result": "fail", "at": "2026-10-26T01:50:48.846+00:00", "detail": "2 step(s) failed", "command": "drydock build DrydockStats", "attempts": 1}
+{"state": "BUILT", "result": "fail", "at": "2026-10-26T01:50:48.846+00:00", "attempts": 1}

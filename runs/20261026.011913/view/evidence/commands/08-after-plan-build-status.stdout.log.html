@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/08-after-plan-build-status.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/08-after-plan-build-status.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/08-after-plan-build-status.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Next: drydock build DrydockStats
+
+Blueprint: DrydockStats
+Target: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.011913/workspace/targets/DrydockStats
+Rows: &lt;state&gt; &lt;type&gt;  &lt;Name&gt;  [&lt;id&gt;]   — pass [&lt;id&gt;] to --step
+
+Block: Build Block 1 · Foundational  [block-1]   — 0/1 stories complete
+  [pending] story  Stand up the Go module, the ddkstat main package, and the internal package layout.  [foundation]  &lt;- next
+
+Block: Build Block 2 · Service  [block-2]   — 0/1 stories complete
+  [pending] story  Parse the command line into a report name, options, and one log path.  [cli-parse]
+
+Block: Build Block 3 · Service  [block-3]   — 0/8 stories complete
+  [pending] story  Read the JSON Lines log line by line, ignoring blank lines.  [log-read]
+  [pending] story  Validate --since and --until as real YYYY-MM-DD dates.  [cli-dates]
+  [pending] story  Exit 1 with nothing on stdout when the log cannot be opened or read.  [cli-unreadable-log]
+  [pending] story  Exit 2 with nothing on stdout for every usage error.  [cli-usage-errors]
+  [pending] story  Skip malformed lines with a stderr warning and a skipped count.  [log-skip-malformed]
+  [pending] story  Skip lines repeating an earlier kept execution_id.  [log-skip-duplicates]
+  [pending] story  Treat absent, null, or wrongly typed numeric fields as zero.  [log-absent-numbers]
+  [pending] story  Attribute each record to the executed model, falling back to the requested one.  [log-model]
+
+Block: Build Block 4 · Service  [block-4]   — 0/2 stories complete
+  [pending] story  Keep only records whose job.target equals --target exactly.  [filter-target]
+  [pending] story  Keep records whose start date is within --since and --until inclusive.  [filter-dates]
+
+Block: Build Block 5 · Service  [block-5]   — 0/6 stories complete
+  [pending] story  Summary report plus the shared CSV, minutes, and cost formatters.  [report-summary]
+  [pending] story  Failures report listing each failed record.  [report-failures]
+  [pending] story  Daily report with TOTAL row.  [report-daily]
+  [pending] story  Models report by provider and model with TOTAL row.  [report-models]
+  [pending] story  Commands report with TOTAL row.  [report-commands]
+  [pending] story  Targets report with TOTAL row.  [report-targets]
+
+Block: Build Block 6 · Service  [block-6]   — 0/1 stories complete
+  [pending] story  Provide the POSIX bin/test.sh running go vet and go test.  [test-entry-point]
+
+Block: Build Block 7 · Feature  [block-7]   — 0/1 stories complete
+  [pending] story  Terminal assembly: the supplied grader passes all 20 checks.  [grader-verification]
+
+Steps: 20 total — 0 done, 0 built (await verify), 0 in review, 20 pending, 0 blocked by questions, 0 failed (0% complete)
+Buildable now: block-1
+</pre></article>
+</main>
+</body>
+</html>

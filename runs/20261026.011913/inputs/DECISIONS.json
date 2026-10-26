@@ -1,0 +1,94 @@
+[
+  {
+    "id": "Q-001",
+    "type": "choice",
+    "severity": "low",
+    "origin": "plan",
+    "blueprint": "FEATURE-UsageErrors.md",
+    "story": "cli-usage-errors",
+    "status": "recommended",
+    "archived": false,
+    "title": "Help option behavior",
+    "description": "The brief names no help output. Options: treat --help as an unknown option (exit 2), or add help exiting 0. Chose the narrowest.",
+    "options": [
+      {
+        "value": "unknown-exit-2",
+        "label": "--help is an unknown option, exit 2, usage on stderr"
+      },
+      {
+        "value": "help-exit-0",
+        "label": "--help prints usage and exits 0"
+      }
+    ],
+    "system_choice": "unknown-exit-2"
+  },
+  {
+    "id": "Q-002",
+    "type": "choice",
+    "severity": "low",
+    "origin": "plan",
+    "blueprint": "FEATURE-CommandLine.md",
+    "story": "cli-parse",
+    "status": "recommended",
+    "archived": false,
+    "title": "Repeated options",
+    "description": "The brief does not say what a repeated --target, --since or --until means. Options: last occurrence wins, or usage error.",
+    "options": [
+      {
+        "value": "last-wins",
+        "label": "Last occurrence wins"
+      },
+      {
+        "value": "usage-error",
+        "label": "Repeated option exits 2"
+      }
+    ],
+    "system_choice": "last-wins"
+  },
+  {
+    "id": "Q-003",
+    "type": "choice",
+    "severity": "low",
+    "origin": "plan",
+    "blueprint": "FEATURE-UnreadableLog.md",
+    "story": "cli-unreadable-log",
+    "status": "recommended",
+    "archived": false,
+    "title": "Directory as log path",
+    "description": "A directory opens but cannot be read. Treat as an unreadable log.",
+    "options": [
+      {
+        "value": "exit-1",
+        "label": "Exit 1, nothing on stdout"
+      },
+      {
+        "value": "exit-2",
+        "label": "Exit 2 as a usage error"
+      }
+    ],
+    "system_choice": "exit-1"
+  },
+  {
+    "id": "Q-004",
+    "type": "choice",
+    "severity": "low",
+    "origin": "plan",
+    "blueprint": "FEATURE-AbsentNumbers.md",
+    "story": "log-absent-numbers",
+    "status": "recommended",
+    "archived": false,
+    "title": "Wrongly typed numeric fields",
+    "description": "A numeric field present with a non-number, non-null JSON type: keep the record counting zero, or skip the line.",
+    "options": [
+      {
+        "value": "zero-keep",
+        "label": "Count as zero and keep the record"
+      },
+      {
+        "value": "skip",
+        "label": "Skip the line as malformed"
+      }
+    ],
+    "system_choice": "zero-keep"
+  }
+]

@@ -1,0 +1,40 @@
+<requirement name="build-ddkstat" stories="foundation">
+Builds ./cmd/ddkstat with `go build`
+</requirement>
+<requirement name="compare-exit-and-stdout" stories="grader-verification">
+compares every report's exit code and standard output over the supplied sample log with the known answer below. Standard error is never compared.
+</requirement>
+<requirement name="summary-report" stories="report-summary,cli-parse,log-read,log-skip-malformed,log-skip-duplicates,log-absent-numbers">
+check A1 0 summary "$LOG" <<'EOF'
+</requirement>
+<requirement name="commands-report" stories="report-commands,cli-parse">
+check A2 0 commands "$LOG" <<'EOF'
+</requirement>
+<requirement name="targets-report" stories="report-targets,cli-parse">
+check A3 0 targets "$LOG" <<'EOF'
+</requirement>
+<requirement name="models-report" stories="report-models,log-model,cli-parse">
+check A4 0 models "$LOG" <<'EOF'
+</requirement>
+<requirement name="daily-report" stories="report-daily,cli-parse">
+check A5 0 daily "$LOG" <<'EOF'
+</requirement>
+<requirement name="failures-report" stories="report-failures,cli-parse">
+check A6 0 failures "$LOG" <<'EOF'
+</requirement>
+<requirement name="filter-by-target" stories="filter-target">
+check B4 0 failures --target CommonMark "$LOG" <<'EOF'
+</requirement>
+<requirement name="filter-by-date-range" stories="filter-dates,cli-dates">
+check B3 0 daily --since 2026-10-15 --until 2026-10-15 "$LOG" <<'EOF'
+</requirement>
+<requirement name="empty-filter-result" stories="filter-target,report-commands,report-summary">
+check C1 0 commands --target NoSuchTarget "$LOG" <<'EOF'
+</requirement>
+<requirement name="unreadable-log-exit" stories="cli-unreadable-log">
+check E1 1 summary "$MISSING" < /dev/null
+</requirement>
+<requirement name="usage-error-exit" stories="cli-usage-errors,cli-parse,cli-dates">
+check U4 2 summary --since 2026-13-01 "$LOG" < /dev/null
+</requirement>
+<unattached story="test-entry-point"/>

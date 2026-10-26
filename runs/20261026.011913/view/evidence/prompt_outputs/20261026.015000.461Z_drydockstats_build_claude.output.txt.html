@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.015000.461Z_drydockstats_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.015000.461Z_drydockstats_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.015000.461Z_drydockstats_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>This repair prompt matches the previous pass. I&#x27;ll check whether anything has changed in the build directory since then, such as Block 5 landing.RESULT: FAILED
+
+Nothing has changed since the last pass, so I made no edits. The nine failing checks still cannot pass in Block 4.
+
+**Current state**
+- The Drydock checkpoint `1410985 Build block-4 … [failed]` holds the filter work: `internal/report/filter.go` and `filter_test.go`.
+- `go test ./...` passes for all packages, including the 12 filter unit tests.
+- `internal/cli/cli.go:122` still prints `report &quot;&lt;name&gt;&quot; is not implemented yet` and exits 1. No report code exists yet.
+
+**Why the checks fail**
+- Every failing check calls `summary`, `commands`, `targets`, `models`, `daily`, or `failures` through the CLI.
+- Those six reports are owned by Block 5 in the Manifest (`FEATURE-SummaryReport`, `FailuresReport`, `DailyReport`, `ModelsReport`, `CommandsReport`, `TargetsReport`).
+- The failing checks are correct, so this is not `AC_BROKEN`. They need Block 5 code.
+
+**What would unblock it**
+1. Build Block 5 first. Then route the CLI to the reports and apply `report.FilterTarget` and `report.FilterDates` before aggregation. This is the scope-clean route.
+2. Or explicitly widen Block 4 to include the six reports. That mixes two Manifest blocks, so the Manifest should be updated to match.
+
+I did not take option 2 without your decision, because it goes beyond &quot;implement only this step&quot;.
+
+FILES CHANGED:
+- None in this pass.
+
+SUMMARY:
+Repair pass re-checked the build directory. The filter functions and their unit tests are complete and green. The nine declared Block 4 checks exit 1 because the report commands they call are Block 5 features and are not yet implemented.
+
+BLOCKERS:
+- The six report commands (summary, commands, targets, models, daily, failures) are Block 5 features and do not exist yet. Block 4&#x27;s declared checks cannot pass until they do.
+
+FAILURE_SUMMARY: Block 4 checks depend on Block 5 report commands, which are not built.
+FAILURE_DETAIL: All nine failing checks run report subcommands through the CLI. `internal/cli/cli.go` returns exit 1 with &quot;not implemented yet&quot; because no report aggregation exists. Those reports are specified in the Block 5 features, so they belong to a later block. Before rerunning Block 4, build Block 5, then route the CLI to the reports and apply the two filters before aggregation. Alternatively, explicitly add the reports to Block 4 and update the Manifest.</pre></article>
+</main>
+</body>
+</html>

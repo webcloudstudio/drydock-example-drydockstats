@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-LogReading.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-LogReading.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-LogReading.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Log Reading</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Read the Drydock JSON Lines log line by line, ignoring blank lines and numbering every line.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>logread.Read, logread.ReadFile</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>The log is JSON Lines in UTF-8, one JSON object per line. This feature delivers the line reader in <code>internal/logread</code>: it walks the input, discards blank lines, and hands each non-blank line, with its 1-based line number, to the record decoder that the skip-rule features extend.</p>
+<h2>Behavior</h2>
+<ul><li><code>logread.Read(r io.Reader, warn io.Writer) (logread.Result, error)</code> reads every line of <code>r</code>.</li><li><code>logread.ReadFile(path string, warn io.Writer) (logread.Result, error)</code> opens the file, reads it</li></ul>
+<p>with <code>Read</code>, and closes it. It returns a non-nil error when the file cannot be opened or read, including when the path names a directory.</p>
+<ul><li>A blank line, meaning empty or whitespace only, is ignored and is neither a record nor counted as</li></ul>
+<p>skipped.</p>
+<ul><li>Line numbers are 1-based and count blank lines, so a warning names the physical line.</li><li>Lines longer than the default <code>bufio.Scanner</code> token limit are read in full.</li><li>The log file is opened read-only and never written.</li><li>Each non-blank line is decoded as one JSON object into a <code>logread.Record</code>.</li></ul>
+<h2>Required Unit Tests</h2>
+<p>The build writes these tests in <code>internal/logread</code>:</p>
+<div class="scroll"><table><thead><tr><th>Test</th><th>Behavior</th></tr></thead><tbody><tr><td><code>TestReadIgnoresBlankLines</code></td><td>Blank lines yield no record and no skipped count.</td></tr><tr><td><code>TestReadNumbersEveryLine</code></td><td>The line number used for a warning counts preceding blank lines.</td></tr><tr><td><code>TestReadAcceptsLongLine</code></td><td>A valid record line longer than 1 MiB is read as one record.</td></tr><tr><td><code>TestReadFileMissing</code></td><td><code>ReadFile</code> on a nonexistent path returns an error.</td></tr><tr><td><code>TestReadFileDirectory</code></td><td><code>ReadFile</code> on a directory returns an error.</td></tr><tr><td><code>TestReadNeverWritesLog</code></td><td>After <code>ReadFile</code>, the log file bytes and modification time are unchanged.</td></tr></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC log-read-blank-lines ===<br>Intent: Blank lines are ignored and not counted as records or skipped lines.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>for name in (&quot;TestReadIgnoresBlankLines&quot;, &quot;TestReadNumbersEveryLine&quot;): result = run_test(&quot;./internal/logread&quot;, name) print(name, result.status) print(result.stdout) assert result.passed, (name, result.status, result.stdout, result.stderr) === END AC log-read-blank-lines ===</p>
+<p>=== AC log-read-long-line ===<br>Intent: A record line longer than the default scanner token limit is read in full.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>name = &quot;TestReadAcceptsLongLine&quot; result = run_test(&quot;./internal/logread&quot;, name) print(name, result.status) print(result.stdout) assert result.passed, (name, result.status, result.stdout, result.stderr) === END AC log-read-long-line ===</p>
+<p>=== AC log-read-file-errors ===<br>Intent: ReadFile reports an error for a missing path and for a directory.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>for name in (&quot;TestReadFileMissing&quot;, &quot;TestReadFileDirectory&quot;): result = run_test(&quot;./internal/logread&quot;, name) print(name, result.status) print(result.stdout) assert result.passed, (name, result.status, result.stdout, result.stderr) === END AC log-read-file-errors ===</p>
+<p>=== AC log-read-read-only ===<br>Intent: Reading a log leaves the log file unchanged.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>name = &quot;TestReadNeverWritesLog&quot; result = run_test(&quot;./internal/logread&quot;, name) print(name, result.status) print(result.stdout) assert result.passed, (name, result.status, result.stdout, result.stderr) === END AC log-read-read-only ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The log is opened read-only and is never written, truncated, or locked for writing.</li><li>A blank line is never counted as a record or as a skipped line.</li><li>Standard library only.</li></ul></article>
+</main>
+</body>
+</html>

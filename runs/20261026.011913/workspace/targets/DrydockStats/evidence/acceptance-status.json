@@ -1,0 +1,340 @@
+{
+  "criteria": {
+    "absent-numbers-absent-fields": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "18aa856b6b57d7b67a9e55c9c9c5f3de7612604a31dfb5a398cb6986a3c18de4",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "absent-numbers-no-stats": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "9ebd875953eea4e09dbbc32d127f5f22d0df5d3ed0a591f23f067a8909f83c97",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "absent-numbers-null-cost": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "85f9f14480f16e251dbd7f151b2fc06b0ac0a5a7bccefe7e63470053ec4b3d92",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "absent-numbers-returncode": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "2899093620092d4b9f4da796ee524cbdcb349de3f6bbe0b6eaf91451a8ce79a1",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "absent-numbers-timed-out": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "7f8eebc794457679db3768725ab62014ebb4febe6cc9f26876a65bfadaadbcff",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "absent-numbers-wrong-type": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "2c1c9652791b012cb3025d716d7d7b9c0e7839540dc06ddcd793047e9118ebe1",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "cli-parse-every-report": {
+      "status": "VALID",
+      "error_code": "existing-behavior",
+      "code_sha256": "5d3ddd934b1b1be869f3d04190bd29f7a41bc310d8c89968f551d801bed281db",
+      "updated_at": "2026-10-26T01:39:54+00:00",
+      "detail": ""
+    },
+    "cli-parse-options": {
+      "status": "VALID",
+      "error_code": "existing-behavior",
+      "code_sha256": "95f19d6eb05906f410e5355edcfa83837ac736f5c57c3303181b3e451410f057",
+      "updated_at": "2026-10-26T01:39:54+00:00",
+      "detail": ""
+    },
+    "cli-parse-unit-tests": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "620faa3a8678415cb0be9459cd9ead517af18a654f46337d8b58e6041d58546c",
+      "updated_at": "2026-10-26T01:39:54+00:00",
+      "detail": ""
+    },
+    "date-every-report": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "4a18c46c949749a8e33e1bc78b9ec74061d3da7d9e7c0b074807aeb91f7f45fa",
+      "updated_at": "2026-10-26T01:47:45+00:00",
+      "detail": ""
+    },
+    "date-one-sided-bounds": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "9e5a3b56f8cfd8cb02605884e0288e24061273d8bfd53733708b85c756639b18",
+      "updated_at": "2026-10-26T01:47:45+00:00",
+      "detail": ""
+    },
+    "date-options-accepts-real": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "6b601d719ad4ecf4d18dbd517ae5ab8ef167c2d011f0db2237b5719377e5371c",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "date-options-rejects-impossible": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "f36ada37742d62b96b5c43d8146ece940e06d4ee4f2805b141cc97979aea5f54",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "date-options-rejects-malformed": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "db54f3ed9766fd24e6edadbdf808b9c5da39f3f107c2ea216ed0b38230496e6b",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "date-since-until-inclusive": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "c84b6cdbca2bc8c741ef890c99ce46f93948cff7a17538c4f81cbccf3b8d34cc",
+      "updated_at": "2026-10-26T01:47:45+00:00",
+      "detail": ""
+    },
+    "date-time-of-day-ignored": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "1a7509445c3b2a42e5f675c34bced9f83822547a897c8596341479f72903d6cb",
+      "updated_at": "2026-10-26T01:47:45+00:00",
+      "detail": ""
+    },
+    "date-with-target-and-empty-range": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "9bb355824b5fecea8ddcac5fd1971bcf9dcb27e6bdf94e1cd1662d7f228be002",
+      "updated_at": "2026-10-26T01:47:45+00:00",
+      "detail": ""
+    },
+    "duplicate-first-kept": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "54b0e448f6f9fc08fda870df5f8e19496e06774c0d358490ce3a47da44972863",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "duplicate-skipped-line-does-not-register": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "bd788e1474e81356fc4db87562c7f796df9f58f20ad5540e9bcacef376b74243",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "duplicate-warning-and-count": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "8588ba14116f249f953208f1f8f1b39954855633d513f34af21cd63fed42c260",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "foundation-builds": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "1d47c66bce2c9c53f431729296678d898133b8f02e681487785e2b33bf3bc1d2",
+      "updated_at": "2026-10-26T01:38:21+00:00",
+      "detail": ""
+    },
+    "foundation-grader-independence": {
+      "status": "PREBUILD_PASSES",
+      "error_code": "empty-tree",
+      "code_sha256": "a1e8693f907d1837d27e526712064670ac2855b17c8df9e8c88a61e0824a009b",
+      "updated_at": "2026-10-26T01:38:21+00:00",
+      "detail": ""
+    },
+    "foundation-layout": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "5695deb22eb30505507de11f87b4f420c76ec44f10ee7ccec94f90c21799c62a",
+      "updated_at": "2026-10-26T01:38:21+00:00",
+      "detail": ""
+    },
+    "foundation-module-stdlib-only": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "0208f0f94f32eeb5461d41be3ef961681e8493dc3bba97e7bbd1a01a7b6085dd",
+      "updated_at": "2026-10-26T01:38:21+00:00",
+      "detail": ""
+    },
+    "foundation-vet": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "291cbd06ecc5cf09068ed70be5673044d7b68f3e52001030518147a32cf91c19",
+      "updated_at": "2026-10-26T01:38:21+00:00",
+      "detail": ""
+    },
+    "log-read-blank-lines": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "90ce75059a185df07f1df1cba7fec41a261374332ce302cbf014593a5bc14187",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "log-read-file-errors": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "d25fcb91c3e8e57fa12d34c604f0cb9dd42948fb2812c0304948039a8aed1f4c",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "log-read-long-line": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "2cd4f747684b6a33ff4e6027f737cbbfb8d7a1e00bf90875742e0b906dfd9d57",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "log-read-read-only": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "445527e2392536a78fe5421017fa54e5db723a6ddf0eb23b63af154a32f121aa",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "malformed-invalid-utf8": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "cb93fe886d1565c78d3d58835b8c1f79fb32f7f3a561d9a318bc0e21a3ed73ba",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "malformed-not-object": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "8b8115aaf9ef17b43f7080c3a5e7aac7167bfa099a659d529a3a93315bf5fe99",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "malformed-required-fields": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "8a274d6ce9c45365b73f2f98a5220a2a20e22a0f75ac6e62453f4914d12bcc40",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "malformed-started-at": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "333465b5b2668f0968440a0bbc1c9a007cc176d15febe4c97b44ba00f2771fed",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "malformed-warning-and-count": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "02ddd63985f7157113429dd8fc30baef4a3e6d241e4e75e58fa01257d5a948c2",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "model-attribution-empty": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "3484b4174b1c150b1737d6b2df0c1eb277e586dbaac0c487881420302f18f2d7",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "model-attribution-executed": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "eeba095b439adf3c189787ce0788ceeea0426b220641815e5de6b25fe9458420",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "model-attribution-no-stats": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "7bfc289d0d135e93830229489d8dbe323aface11756585c749428bd58c7b3d12",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "model-attribution-provider": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "c927a6fa268fac14fcb3f06f0b89a0fa6a4cdcdd391886f6f59ece4977694312",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "target-every-report": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "d19428736a90fea643a05a2283bfa93b9797357389ba192612161603aced46e0",
+      "updated_at": "2026-10-26T01:47:45+00:00",
+      "detail": ""
+    },
+    "target-exact-match": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "eb784da6395fe89333bb0c992b7ecf54563ca38c247e162d46c97c0f4b3818c7",
+      "updated_at": "2026-10-26T01:47:45+00:00",
+      "detail": ""
+    },
+    "target-no-match": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "1094fbdf864322d7986ddbb28406345a191ee5dcd3568c9213a17f9a5688e147",
+      "updated_at": "2026-10-26T01:47:45+00:00",
+      "detail": ""
+    },
+    "target-summary-counts": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "8461c031cae377360ad5bd29a149948843c4704ea68a259a7fdf1773d66ce1e2",
+      "updated_at": "2026-10-26T01:47:45+00:00",
+      "detail": ""
+    },
+    "unreadable-log-directory": {
+      "status": "VALID",
+      "error_code": "existing-behavior",
+      "code_sha256": "5c8691d5c31a8321c0e2b076c1daa71119102161080cf62431f4dee8331aa856",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "unreadable-log-missing-file": {
+      "status": "VALID",
+      "error_code": "existing-behavior",
+      "code_sha256": "46fbb5cbb2986c4bc77046015b46793783f4b00334a8665cb78b278d7d8577e2",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "unreadable-log-no-partial-output": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "519c61c8f291ec885e14515d12b013150345c48d26a498371dd34d0e1a5e39fe",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "usage-errors-before-open": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "05f1105fe653a852bedfce9b70fdacf5469da6e1467059390d373e71e08f0084",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "usage-errors-exit-2": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "34bbdf1c81b59e2ecd71a9152a82c57a52f43cdbbe469f0f1b23eb7003e19e0d",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    },
+    "usage-errors-usage-line": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "c1c850ca7ec88c55a3f71e2e0aae0c901ab38a22c16c8f8063a868a4e34492f8",
+      "updated_at": "2026-10-26T01:42:10+00:00",
+      "detail": ""
+    }
+  }
+}

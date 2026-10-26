@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-ModelAttribution.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-ModelAttribution.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-ModelAttribution.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Model Attribution</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Each record is attributed to the executed model, falling back to the requested model, under its provider.</td></tr><tr><td>Depends On</td><td>FEATURE-AbsentNumbers.md</td></tr><tr><td>Provides</td><td>logread.Record.Model</td></tr><tr><td>Consumes</td><td>logread.Read</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>job.model</code> is the requested model alias (for example <code>sonnet</code>), while <code>result.stats.model</code> is the model that actually ran (for example <code>claude-sonnet-5-5</code>). Reports group by what ran, and fall back to the request only when the log does not say.</p>
+<h2>Behavior</h2>
+<ul><li>A record&#x27;s model is <code>result.stats.model</code> when it is present and a non-empty string.</li><li>Otherwise the model is <code>job.model</code>.</li><li>A <code>result.stats</code> object without <code>model</code>, a missing <code>result.stats</code>, a <code>null</code> model, or an empty</li></ul>
+<p>string model all fall back to <code>job.model</code>.</p>
+<ul><li>The provider of a record is <code>job.llm</code>.</li><li>The model and provider are exposed on the record for the models and failures reports.</li></ul>
+<h2>Required Go Tests</h2>
+<p>The build writes these tests in package <code>./internal/logread</code>, each using lines written by the test:</p>
+<ul><li><code>TestModelPrefersExecuted</code></li><li><code>TestModelFallsBackWhenStatsAbsent</code></li><li><code>TestModelFallsBackWhenEmpty</code></li><li><code>TestProviderIsJobLLM</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC model-attribution-executed ===<br>Intent: A record with a non-empty result.stats.model is attributed to that model rather than job.model.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestModelPrefersExecuted&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC model-attribution-executed ===</p>
+<p>=== AC model-attribution-no-stats ===<br>Intent: A record without result.stats is attributed to job.model.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestModelFallsBackWhenStatsAbsent&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC model-attribution-no-stats ===</p>
+<p>=== AC model-attribution-empty ===<br>Intent: A null, absent, or empty result.stats.model falls back to job.model.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestModelFallsBackWhenEmpty&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC model-attribution-empty ===</p>
+<p>=== AC model-attribution-provider ===<br>Intent: The provider of a record is read from job.llm.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestProviderIsJobLLM&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC model-attribution-provider ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The executed model is never replaced by the requested model when the executed model is present and non-empty.</li><li>Attribution reads only the log record; no model name is hardcoded.</li></ul></article>
+</main>
+</body>
+</html>

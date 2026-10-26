@@ -1,0 +1,31 @@
+This is a repair pass. The failing checks all run `summary`, `commands`, `targets`, `daily`, and `failures` through the CLI, which I already found are unimplemented. I'll read the full failure logs and the blueprint for report formats before deciding how much to build.The repair logs show the same cause as before: every check exits 1 because the report commands aren't implemented. The report specs exist in the blueprint. I'll check the Manifest to see which block owns them.RESULT: FAILED
+
+I made no changes in this repair pass. The failing checks depend on the six report features, which the Manifest assigns to Block 5, not Block 4.
+
+**Why the checks fail**
+- Every failing check runs `summary`, `commands`, `targets`, `models`, `daily`, or `failures` through the CLI, and each exits 1.
+- `internal/cli/cli.go` still ends with `report "<name>" is not implemented yet`. No report code exists under `internal/report`, which holds only my filters and the package doc.
+- The Manifest places `FEATURE-SummaryReport`, `FailuresReport`, `DailyReport`, `ModelsReport`, `CommandsReport`, and `TargetsReport` in block 5. Block 4 covers only `FEATURE-TargetFilter` and `FEATURE-DateFilter`.
+- I did not implement the Block 5 reports here. That would go beyond "implement only this step", and the Block 5 build owns those specs.
+- These are not `AC_BROKEN`. The expected values are correct, and they need code that a later block delivers.
+
+**Current state**
+- `internal/report/filter.go` and `internal/report/filter_test.go` are in place from the first pass. The 12 unit tests pass with `-race`, and `go vet` and `gofmt` are clean.
+- `sh bin/test.sh` passes for all packages.
+- The 9 failing block-4 acceptance checks stay red until the Block 5 reports exist and the CLI routes to them. Once that happens, the filters should be applied before aggregation inside the report path.
+
+**Options**
+1. Run Block 5 next, which should turn these checks green. This is the cleanest path.
+2. If you want this block to go green on its own, I can implement the six reports and CLI wiring here. That mixes Block 5 into Block 4, so the Manifest should be updated to match.
+
+BLOCKERS:
+- Block 4's declared acceptance checks need the six report commands, which are Block 5 features (`FEATURE-SummaryReport`, `FailuresReport`, `DailyReport`, `ModelsReport`, `CommandsReport`, `TargetsReport`). Not yet built.
+
+FILES CHANGED:
+- None in this pass. From the first pass: `internal/report/filter.go`, `internal/report/filter_test.go`.
+
+SUMMARY:
+Repair pass made no changes. All 9 failing block-4 checks exit 1 because the report commands they call are not implemented. Those reports belong to Block 5 in the Manifest. The filter functions and their unit tests are complete and green. `sh bin/test.sh` passes.
+
+FAILURE_SUMMARY: Block 4 acceptance checks depend on Block 5 report commands, which are not built.
+FAILURE_DETAIL: The nine failing checks run summary, commands, targets, models, daily, and failures through the CLI. The CLI exits 1 with "report is not implemented yet" because no report aggregation exists. Those reports are specified in the Block 5 features. Before rerunning Block 4, build Block 5 first, or explicitly add the six reports and CLI routing to this block. Then route the filters through the report path before aggregation.

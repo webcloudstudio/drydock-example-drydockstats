@@ -1,0 +1,301 @@
+{
+  "acceptance_status": "NOT_RUN",
+  "assertions": {
+    "defect_ownership_undetermined": 9,
+    "failed": 9,
+    "passed": 39,
+    "unverified": 0
+  },
+  "attestations": [],
+  "build_passes": 1,
+  "commands": [
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "init",
+        "DrydockStats"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 3622,
+      "label": "01-init",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/01-init.stderr.log",
+      "stdout_path": "evidence/commands/01-init.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "import",
+        "DrydockStats",
+        "sources",
+        "--format",
+        "markdown"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 6709,
+      "label": "02-import-sources",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/02-import-sources.stderr.log",
+      "stdout_path": "evidence/commands/02-import-sources.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "analyze",
+        "DrydockStats"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 127989,
+      "label": "03-analyze",
+      "llm_executions": [
+        "20261026.011927.113Z-e11d2a16"
+      ],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/03-analyze.stderr.log",
+      "stdout_path": "evidence/commands/03-analyze.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "plan",
+        "DrydockStats",
+        "--override",
+        "--plan-override-model",
+        "sonnet"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 589319,
+      "label": "04-plan",
+      "llm_executions": [
+        "20261026.012138.393Z-269de047",
+        "20261026.012225.052Z-56474f31",
+        "20261026.012353.597Z-5497975a",
+        "20261026.012507.656Z-6a73a960",
+        "20261026.012724.715Z-03394e65",
+        "20261026.012908.056Z-1a9de35f",
+        "20261026.012948.755Z-db4ac8a6",
+        "20261026.013003.662Z-656848ee",
+        "20261026.013009.600Z-7203dcd5"
+      ],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/04-plan.stderr.log",
+      "stdout_path": "evidence/commands/04-plan.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "plan",
+        "verify",
+        "DrydockStats",
+        "--plan-override-model",
+        "sonnet"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 60613,
+      "label": "05-plan-verify",
+      "llm_executions": [],
+      "returncode": 1,
+      "stderr_path": "evidence/commands/05-plan-verify.stderr.log",
+      "stdout_path": "evidence/commands/05-plan-verify.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "plan",
+        "repair",
+        "DrydockStats",
+        "--plan-override-model",
+        "sonnet"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 215260,
+      "label": "06-plan-repair",
+      "llm_executions": [
+        "20261026.013322.574Z-4d3cd100"
+      ],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/06-plan-repair.stderr.log",
+      "stdout_path": "evidence/commands/06-plan-repair.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "plan",
+        "verify",
+        "DrydockStats",
+        "--plan-override-model",
+        "sonnet"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 60527,
+      "label": "07-plan-verify-after-repair",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/07-plan-verify-after-repair.stderr.log",
+      "stdout_path": "evidence/commands/07-plan-verify-after-repair.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "build",
+        "status",
+        "DrydockStats"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 2196,
+      "label": "08-after-plan-build-status",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/08-after-plan-build-status.stderr.log",
+      "stdout_path": "evidence/commands/08-after-plan-build-status.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "status",
+        "DrydockStats"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 2898,
+      "label": "09-after-plan-target-status",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/09-after-plan-target-status.stderr.log",
+      "stdout_path": "evidence/commands/09-after-plan-target-status.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "status"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 1453,
+      "label": "10-after-plan-workspace-status",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/10-after-plan-workspace-status.stderr.log",
+      "stdout_path": "evidence/commands/10-after-plan-workspace-status.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "status",
+        "DrydockStats",
+        "--ready"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 3255,
+      "label": "11-initial-ready",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/11-initial-ready.stderr.log",
+      "stdout_path": "evidence/commands/11-initial-ready.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "build",
+        "DrydockStats",
+        "--override",
+        "--repair-attempts",
+        "6"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 821581,
+      "label": "12-initial-build-1",
+      "llm_executions": [
+        "20261026.013825.798Z-fb370839",
+        "20261026.013956.190Z-7a197839",
+        "20261026.014211.743Z-0d70a833",
+        "20261026.014747.893Z-5f32a598",
+        "20261026.014909.776Z-88dd7a72",
+        "20261026.015000.461Z-1930d24a"
+      ],
+      "returncode": 1,
+      "stderr_path": "evidence/commands/12-initial-build-1.stderr.log",
+      "stdout_path": "evidence/commands/12-initial-build-1.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "build",
+        "status",
+        "DrydockStats"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 1093,
+      "label": "13-after-initial-build-build-status",
+      "llm_executions": [],
+      "returncode": 1,
+      "stderr_path": "evidence/commands/13-after-initial-build-build-status.stderr.log",
+      "stdout_path": "evidence/commands/13-after-initial-build-build-status.stdout.log"
+    }
+  ],
+  "degraded": [
+    "initial-build-1 exited 1"
+  ],
+  "elapsed_ms": 1903453,
+  "environment": {
+    "drydock_version": "0.8.0",
+    "effort": "",
+    "finished_at": "2026-10-26T01:50:57.558393Z",
+    "git_commit": "1c5d9b8a39ac7ef55ed8cf87e5c8ad61c6cf2e4d",
+    "model": "claude-haiku-5-5, claude-sonnet-5-5",
+    "plan_model": "sonnet",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "provider": "claude",
+    "python_version": "3.12.13",
+    "requested_model": "claude-haiku-5-5",
+    "started_at": "2026-10-26T01:19:13.970784Z"
+  },
+  "error": "DrydockStats: stopped at initial-build-1: drydock build DrydockStats exited 1.\n\nstderr:\nerror: build failed for DrydockStats: 2 step(s)\n  filter-target \u2014 closed/failed: programmatic acceptance failed: target-summary-counts, target-exact-match, target-no-match, target-every-report, date-since-until-inclusive, date-one-sided-bounds, date-time-of-day-ignored, date-every-report, date-with-target-and-empty-range\n\nEvidence:\n  stderr: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.011913/evidence/commands/12-initial-build-1.stderr.log\n  stdout: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.011913/evidence/commands/12-initial-build-1.stdout.log",
+  "evidence_dir": "evidence",
+  "execution_status": "ERROR",
+  "expected_verdict": "PASSED",
+  "fixture": "DrydockStats",
+  "observed_verdict": "ERROR",
+  "output_dir": ".",
+  "release_verdict": "",
+  "resumed_from": "",
+  "run_id": "20261026.011913",
+  "score_exit_codes": {},
+  "status": "failed",
+  "target": "DrydockStats",
+  "usage": {
+    "cached_input_tokens": 1997632,
+    "calls": 17,
+    "fresh_input_tokens": 104,
+    "input_tokens": 1997736,
+    "invalid_records": 0,
+    "llm_elapsed_ms": 1140355,
+    "output_tokens": 213557
+  }
+}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.013825.798Z_drydockstats_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.013825.798Z_drydockstats_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.013825.798Z_drydockstats_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>Go 1.24.6 meets the 1.22 floor. The directory is empty apart from `sources/`. I&#x27;ll read the grader and the sample log to see what the CLI must produce, though application code must not read `run.sh`.The foundation step needs `go.mod`, `cmd/ddkstat/main.go`, and the `cli`, `logread`, and `report` packages. The acceptance checks cover the build, `go vet`, the `go` directive, layout, `os.Exit` placement, and that application code never names `run.sh`. Argument parsing and exit codes are in scope; the readers and report formats belong to later blocks. I&#x27;ll write the module and the skeleton now.Next, the tests. They check return codes and empty stdout for usage paths, as the spec requires, and avoid matching stderr wording.The &quot;options after positionals&quot; case exposes a real problem: Go&#x27;s `flag` package stops at the first positional, so `summary log --target X` would be a usage error. Drydock&#x27;s CLI should accept options in either position, so I&#x27;ll parse interspersed arguments, honoring `--`.The `exitOK` constant is unused, so I&#x27;ll drop it. I&#x27;ll also make the accept-path tests assert the actual return value and add a `--` case.Now I&#x27;ll run the formatter, the project&#x27;s own test launcher, and the build. `sources/run.sh` is the terminal story and runs last, so I won&#x27;t run it here.Everything passes. I&#x27;ll remove the temporary binary and confirm the file list from git&#x27;s point of view, without staging or committing.RESULT: SUCCESS
+
+FILES CHANGED:
+- go.mod
+- cmd/ddkstat/main.go
+- internal/cli/cli.go
+- internal/cli/cli_test.go
+- internal/logread/doc.go
+- internal/report/doc.go
+- bin/test.sh
+
+SUMMARY:
+The foundation is in place: a Go module with the `ddkstat` main package and the `cli`, `logread`, and `report` packages under `internal/`.
+
+- **Module:** `go.mod` declares `module ddkstat` and `go 1.22`, with no `require` or `replace` lines. The toolchain here is Go 1.24.6, which meets the floor.
+- **Entry point:** `cmd/ddkstat/main.go` is the only caller of `os.Exit`. It delegates to `cli.Run(args, stdout, stderr) int`.
+- **CLI skeleton:** `internal/cli` parses arguments with a local `flag.FlagSet` in `ContinueOnError` mode. Options are accepted before, between, or after the positionals, and a bare `--` ends option parsing. A usage error (wrong positional count, unknown option, `-h`, or a flag missing its value) writes the usage line to stderr and returns 2. A valid two-positional call returns 1 with &quot;report … is not implemented yet&quot; on stderr, because the reports come in later blocks.
+- **Packages:** `logread` and `report` contain package docs only; their parsing, aggregation, and formatting are left for later blocks.
+- **Tests:** `internal/cli/cli_test.go` checks exit codes and empty stdout on the usage paths, and checks that options parse in any position. Stderr is only checked for being non-empty, never for wording.
+- **Launcher:** `bin/test.sh` runs `go vet ./...` then `go test ./...`.
+
+Checks run:
+- `gofmt -l .` prints nothing.
+- `sh bin/test.sh` exits 0.
+- `go build ./cmd/ddkstat` succeeds.
+- The foundation acceptance assertions hold by inspection: `os.Exit(` appears only in `cmd/ddkstat/main.go`, every `internal` package has `.go` files, and no non-test Go file under `cmd` or `internal` mentions `run.sh`. I checked these with grep and did not run the Python acceptance harness.
+- I did not run `sources/run.sh`. It is the terminal story and runs last; it will fail until the reports are implemented.
+
+Choices I made that you may want to redirect:
+- **Module path** is `ddkstat`, since the manifest names none. Changing it means updating the import in `main.go` and in `cli.go`.
+- **Not-implemented exit code** is 1, which the architecture reserves for &quot;log cannot be opened or read.&quot; That is a placeholder and will change when the reports land.
+- **Declared options** `--target`, `--since`, and `--until` are registered so they parse, but their values are not used yet.
+
+No git add, commit, or branch operations were run; the four new top-level paths are untracked.</pre></article>
+</main>
+</body>
+</html>

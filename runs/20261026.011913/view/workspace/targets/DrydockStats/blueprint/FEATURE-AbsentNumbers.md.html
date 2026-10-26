@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-AbsentNumbers.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-AbsentNumbers.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-AbsentNumbers.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Absent Numbers</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Absent, null, or wrongly typed token counts, cost, and durations count as zero without dropping the record.</td></tr><tr><td>Depends On</td><td>FEATURE-DuplicateIds.md</td></tr><tr><td>Provides</td><td>logread.Record numeric fields</td></tr><tr><td>Consumes</td><td>logread.Read</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>The reporter sums token counts, cost, and elapsed time. Real Drydock logs omit <code>result.stats</code> for some calls, write <code>cost_usd: null</code> for providers that report no cost, and could carry a field of an unexpected JSON type. None of these may drop a record or fail the run.</p>
+<h2>Behavior</h2>
+<ul><li><code>result.stats.input_tokens</code>, <code>cached_input_tokens</code>, <code>output_tokens</code>, <code>cost_usd</code>, and <code>elapsed_ms</code></li></ul>
+<p>are each read independently.</p>
+<ul><li>A field that is absent or JSON <code>null</code> counts as zero.</li><li>A field present with a JSON type other than number or <code>null</code> (string, boolean, array, object)</li></ul>
+<p>counts as zero and the record is kept (decision Q-004, <code>zero-keep</code>).</p>
+<ul><li>A record with no <code>result.stats</code> object at all is still a record; every numeric field is zero.</li><li><code>result.returncode</code> that is JSON <code>null</code> or absent is recorded as absent, not as zero.</li><li><code>result.timed_out</code> that is absent or not a boolean is recorded as <code>false</code>.</li><li>Numbers are decoded with <code>encoding/json</code>; integer fields tolerate values written like <code>12.0</code></li></ul>
+<p>only if they are whole numbers, otherwise they count as zero.</p>
+<ul><li>Nothing here writes to the log being read.</li></ul>
+<h2>Required Go Tests</h2>
+<p>The build writes these tests in package <code>./internal/logread</code>, each asserting the behavior its name states against a log or line written by the test itself:</p>
+<ul><li><code>TestAbsentStatsIsStillRecord</code></li><li><code>TestNullCostCountsZero</code></li><li><code>TestAbsentNumbersCountZero</code></li><li><code>TestWrongTypedNumbersCountZero</code></li><li><code>TestReturncodeNullOrAbsentIsAbsent</code></li><li><code>TestTimedOutDefaultsFalse</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC absent-numbers-no-stats ===<br>Intent: A record with no result.stats object is kept as a record with zero numeric fields.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestAbsentStatsIsStillRecord&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC absent-numbers-no-stats ===</p>
+<p>=== AC absent-numbers-null-cost ===<br>Intent: A null cost_usd counts as zero while the other numeric fields of the record are still summed.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestNullCostCountsZero&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC absent-numbers-null-cost ===</p>
+<p>=== AC absent-numbers-absent-fields ===<br>Intent: Each absent token count, cost, and duration counts as zero independently of the others.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestAbsentNumbersCountZero&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC absent-numbers-absent-fields ===</p>
+<p>=== AC absent-numbers-wrong-type ===<br>Intent: A numeric field with a JSON type other than number or null counts as zero and keeps the record.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestWrongTypedNumbersCountZero&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC absent-numbers-wrong-type ===</p>
+<p>=== AC absent-numbers-returncode ===<br>Intent: A null or absent returncode is recorded as absent rather than zero.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestReturncodeNullOrAbsentIsAbsent&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC absent-numbers-returncode ===</p>
+<p>=== AC absent-numbers-timed-out ===<br>Intent: An absent timed_out defaults to false.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/logread&quot;, &quot;TestTimedOutDefaultsFalse&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC absent-numbers-timed-out ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>A record is never dropped because a numeric field is missing, null, or of the wrong type.</li><li>Never write to the log being read.</li><li>No value is hardcoded; every number comes from the log being read.</li></ul></article>
+</main>
+</body>
+</html>

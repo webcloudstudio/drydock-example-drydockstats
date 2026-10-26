@@ -1,0 +1,24 @@
+Some code already exists from the earlier block. I'll read it before changing anything.The scaffold from the earlier block already has `Run`, the interspersed-argument parser, and some tests. This step needs the typed `Options` and `Parse` that the spec names, so I'll build those on top of the existing parser and leave the rest alone.Next, the four unit tests the spec names, plus negative-path tests for unknown reports and positional counts. Each reads the parsed `Options` back and compares fields.Now I'll run the project's own test launcher, gofmt, and build the executable. Then I'll check the spec's CLI behavior directly against the binary.Build and test suite pass. I'll confirm the four spec-named tests ran rather than being skipped or missing.RESULT: SUCCESS
+
+FILES CHANGED:
+- internal/cli/cli.go
+- internal/cli/cli_test.go
+
+SUMMARY:
+- **`internal/cli/cli.go`**: Added the typed `Options` struct from ARCHITECTURE.md and `Parse(args []string) (Options, error)`. `Parse` reuses the existing interspersed `flag.FlagSet` parser (`ContinueOnError`, output discarded), so options can appear in any order between the report and the log. It requires exactly two positionals, validates the report name against the six reports, and sets `HasTarget` via `fs.Visit` so an explicit `--target ""` still counts as given. `Run` now calls `Parse`, so a usage error returns 2 with the usage line on stderr and stdout empty. A valid command line still returns 1 with the "not implemented yet" message, since the report logic belongs to later blocks.
+- **`internal/cli/cli_test.go`**: Added the four spec-named tests (`TestParseAcceptsEveryReport`, `TestParseOptionsFollowReport`, `TestParseLogPathIsLast`, `TestParseRepeatedOptionLastWins`), which read back the `Options` struct and compare fields. I also added `TestParseHasTargetFalseWhenAbsent`, `TestParseRejectsUnknownReport`, and `TestParseRejectsWrongPositionalCount`.
+
+Checks run:
+- `sh bin/test.sh` (go vet and go test ./...): exit 0. The four named tests ran and passed.
+- `gofmt -l`: clean.
+- `go build -o ... ./cmd/ddkstat`: succeeds with the standard library only.
+- Binary behavior: all six reports and the option orderings from `cli-parse-options` return exit 1, not 2. `frobnicate` and `--target` with no value return 2.
+- `sh sources/run.sh`: exits 1 as expected. Its checks cover aggregation, filters, and usage errors that belong to later blocks.
+
+Choices I made:
+- I kept the existing flag-based parser instead of rewriting it as a hand parser.
+- Parse rejects unknown report names with an error. The spec says the parser must reject argument lists it cannot accept, and the report name is part of that.
+- Date values are not validated in `Parse`. The spec puts date validation in a separate feature.
+
+BLOCKERS:
+- None for this block. I did not run the `drydock_go` helpers (`cli_runner`, `run_test`) because they are not on disk here. I reproduced their checks directly with `go test -run` and by running the built binary.

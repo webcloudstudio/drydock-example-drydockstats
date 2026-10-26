@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-CommandLine.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-CommandLine.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-CommandLine.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Command Line</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Parse the ddkstat command line into a report name, the three options, and exactly one trailing log path.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>ddkstat &lt;report&gt; [--target &lt;name&gt;] [--since &lt;YYYY-MM-DD&gt;] [--until &lt;YYYY-MM-DD&gt;] &lt;log&gt;</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>The command is <code>ddkstat &lt;report&gt; [--target &lt;name&gt;] [--since &lt;date&gt;] [--until &lt;date&gt;] &lt;log&gt;</code>. The report comes first, options follow it, and the log path is last. This feature delivers the parser and the executable entry point at <code>./cmd/ddkstat</code>; date validation, usage-error exit codes, and unreadable-log handling belong to their own features.</p>
+<h2>Behavior</h2>
+<ul><li><code>&lt;report&gt;</code> is one of <code>summary</code>, <code>commands</code>, <code>targets</code>, <code>models</code>, <code>daily</code>, <code>failures</code>.</li><li>The accepted options are <code>--target &lt;name&gt;</code>, <code>--since &lt;date&gt;</code>, and <code>--until &lt;date&gt;</code>, each taking</li></ul>
+<p>one value, in any order, between the report and the log path.</p>
+<ul><li>Exactly one log path is the final argument.</li><li>A repeated option keeps its last occurrence.</li><li><code>cli.Parse(args []string) (Options, error)</code> returns the typed <code>Options</code> from <code>ARCHITECTURE.md</code>,</li></ul>
+<p>and returns a non-nil error for any argument list it cannot accept. <code>cli.Run</code> maps that error to the usage-error exit code in the usage-errors feature.</p>
+<ul><li><code>go build ./cmd/ddkstat</code> produces the executable using only the standard library.</li></ul>
+<h2>Required Unit Tests</h2>
+<p>The build writes these tests in <code>internal/cli</code>, each against real parser output:</p>
+<div class="scroll"><table><thead><tr><th>Test</th><th>Behavior</th></tr></thead><tbody><tr><td><code>TestParseAcceptsEveryReport</code></td><td>Each of the six report names parses with a log path.</td></tr><tr><td><code>TestParseOptionsFollowReport</code></td><td>The three options parse in any order and populate <code>Options</code>.</td></tr><tr><td><code>TestParseLogPathIsLast</code></td><td>The final argument becomes <code>Options.Log</code>.</td></tr><tr><td><code>TestParseRepeatedOptionLastWins</code></td><td>A repeated option keeps its last value.</td></tr></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-parse-every-report ===<br>Intent: Every one of the six report names with a log path is accepted as a valid command line, so none exits with the usage-error code.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>record = { &quot;execution_id&quot;: &quot;20261014.020414.582Z-db1fe4ea&quot;, &quot;started_at&quot;: &quot;2026-10-14T02:04:14.582Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;analyze&quot;, &quot;target&quot;: &quot;Toml&quot;, &quot;llm&quot;: &quot;gemini&quot;, &quot;model&quot;: &quot;gemini-3-flash&quot;}, } usage_error = 2 reports = [&quot;summary&quot;, &quot;commands&quot;, &quot;targets&quot;, &quot;models&quot;, &quot;daily&quot;, &quot;failures&quot;]</p>
+<p>with tempfile.TemporaryDirectory() as workdir: log = os.path.join(workdir, &quot;llm.jsonl&quot;) with open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;) as handle: handle.write(json.dumps(record) + &quot;\n&quot;) for report in reports: code, out, err = cli_runner(report, log) print(report, code, err) assert code != usage_error, (report, code, out, err) === END AC cli-parse-every-report ===</p>
+<p>=== AC cli-parse-options ===<br>Intent: The three options between the report and the log path, in either order, are accepted and do not exit with the usage-error code.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>import json import os import tempfile</p>
+<p>from drydock_go import cli_runner</p>
+<p>record = { &quot;execution_id&quot;: &quot;20261015.061132.155Z-a5a1d0d4&quot;, &quot;started_at&quot;: &quot;2026-10-15T06:11:32.155Z&quot;, &quot;status&quot;: &quot;succeeded&quot;, &quot;job&quot;: {&quot;command_name&quot;: &quot;analyze&quot;, &quot;target&quot;: &quot;CommonMark&quot;, &quot;llm&quot;: &quot;claude&quot;, &quot;model&quot;: &quot;sonnet&quot;}, } usage_error = 2</p>
+<p>with tempfile.TemporaryDirectory() as workdir: log = os.path.join(workdir, &quot;llm.jsonl&quot;) with open(log, &quot;w&quot;, encoding=&quot;utf-8&quot;) as handle: handle.write(json.dumps(record) + &quot;\n&quot;) orders = [ [&quot;--target&quot;, &quot;CommonMark&quot;, &quot;--since&quot;, &quot;2026-10-01&quot;, &quot;--until&quot;, &quot;2026-10-31&quot;], [&quot;--until&quot;, &quot;2026-10-31&quot;, &quot;--since&quot;, &quot;2026-10-01&quot;, &quot;--target&quot;, &quot;CommonMark&quot;], [&quot;--since&quot;, &quot;2026-10-01&quot;], [&quot;--until&quot;, &quot;2026-10-31&quot;], [&quot;--target&quot;, &quot;CommonMark&quot;], ] for options in orders: code, out, err = cli_runner(&quot;summary&quot;, *options, log) print(options, code, err) assert code != usage_error, (options, code, out, err) === END AC cli-parse-options ===</p>
+<p>=== AC cli-parse-unit-tests ===<br>Intent: The parser unit tests required by this feature exist and pass.<br>Suite: scoped<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>names = [ &quot;TestParseAcceptsEveryReport&quot;, &quot;TestParseOptionsFollowReport&quot;, &quot;TestParseLogPathIsLast&quot;, &quot;TestParseRepeatedOptionLastWins&quot;, ] for name in names: result = run_test(&quot;./internal/cli&quot;, name) print(name, result.status) print(result.stdout) assert result.passed, (name, result.status, result.stdout, result.stderr) === END AC cli-parse-unit-tests ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The report name is positional and comes first; the log path is positional and comes last.</li><li><code>--help</code> is not special: it is an unknown option.</li><li>The parser uses a local flag set or hand parser with <code>ContinueOnError</code> semantics and never the global flag set; only <code>cmd/ddkstat</code> calls <code>os.Exit</code>.</li><li>Standard library only.</li></ul></article>
+</main>
+</body>
+</html>

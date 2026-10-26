@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/ERRORS.md</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/ERRORS.md</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/DrydockStats/ERRORS.md">Raw file</a></div></header>
+<article class="doc"><h1>BIG ERRORS — action required</h1>
+<ul><li>Command: <code>build</code></li><li>Phase: build step</li><li>State: Failed</li><li>Timestamp: 2026-10-26T01:50:44+00:00</li><li>Execution ID: 20261026.015000.461Z-1930d24a</li><li>Challenge Execution ID: -</li><li>Classification: programmatic acceptance failed: target-summary-counts, target-exact-match, target-no-match, target-every-report, date-since-until-inclusive, date-one-sided-bounds, date-time-of-day-ignored, date-every-report, date-with-target-and-empty-ran…</li><li>Evidence / logs: /mnt/c/Users/barlo/projects/drydock/uat/DrydockStats/runs/20261026.011913/workspace/targets/DrydockStats/evidence/block-4.md</li></ul>
+<h2>Diagnostic</h2>
+<p>Block &quot;Block 4 · Service&quot; [block-4] failed its acceptance criteria. Story &quot;Keep only records whose job.target equals --target exactly.&quot; [filter-target] does not meet its own acceptance criteria:</p>
+<ul><li>AC target-summary-counts — The summary report counts only the named Target&#x27;s records while skipped still counts the whole file.</li></ul>
+<p>assertion: assert code == 0 → AssertionError raised at: target-summary-counts.py:17 process exit code: 1 values at failure: code = 1 check stderr: Traceback (most recent call last): File &quot;target-summary-counts.py&quot;, line 25, in &lt;module&gt; code, out = run(recs + bad_lines, &quot;summary&quot;, &quot;--target&quot;, name) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ … (125 more lines truncated)</p>
+<h2>Recovery</h2>
+<p>Run: drydock build DrydockStats to continue the build. This story resumes where it left off and is retried against the checks it failed.</p></article>
+</main>
+</body>
+</html>

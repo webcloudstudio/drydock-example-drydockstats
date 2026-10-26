@@ -1,0 +1,688 @@
+=== BEGIN ARTIFACT FEATURE-ModelsReport.md ===
+# FEATURE: Models Report
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | The models report groups filtered records by provider and attributed model and ends with a TOTAL row. |
+| Depends On  | FEATURE-SummaryReport.md, FEATURE-ModelAttribution.md, FEATURE-DateFilter.md |
+| Provides    | ddkstat models |
+| Consumes    | logread.Record.Model, report.FilterTarget, report.FilterDates |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat models <log>` answers which providers and models ran the LLM calls, and what they used and cost.
+
+## Report Contract
+
+- Header: `provider,model,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd`.
+- One row per distinct pair of `job.llm` (provider) and the record's attributed model (`result.stats.model` when non-empty, otherwise `job.model`).
+- Rows are ordered by provider ascending, then model ascending, compared by byte value.
+- `calls` counts filtered records in the group; `failed` counts those whose `status` is not `succeeded`.
+- Token columns are sums of `input_tokens`, `cached_input_tokens`, and `output_tokens`; absent or null values count as zero.
+- `cost_usd` is the summed cost written with `%.4f`; a null or absent cost counts as zero.
+- The last row is `TOTAL` with an empty model cell (`TOTAL,,...`) summing every filtered record.
+- With no matching record the output is the header and a `TOTAL` row of zeros, with cost `0.0000`.
+- Output is CSV with `\n` line endings. `--target`, `--since`, and `--until` narrow the records before grouping.
+- Aggregation and formatting are separate, unit-tested functions in `internal/report`.
+
+## Programmatic Acceptance
+
+=== AC models-grouping-order-total ===
+Intent: The models report groups by provider and attributed model, orders by byte value, and totals every record.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from drydock_go import cli_runner
+
+def rec(eid, started, status, llm, jm, stats):
+    result = {"returncode": 0, "timed_out": False}
+    if stats is not None:
+        result["stats"] = stats
+    return {"execution_id": eid, "started_at": started, "status": status,
+            "job": {"command_name": "build", "target": "T", "llm": llm, "model": jm},
+            "result": result}
+
+recs = [
+    rec("m1", "2026-10-14T01:00:00.000Z", "succeeded", "gemini", "Zed",
+        {"input_tokens": 1, "cached_input_tokens": 2, "output_tokens": 3, "cost_usd": 0.25, "elapsed_ms": 10}),
+    rec("m2", "2026-10-14T02:00:00.000Z", "succeeded", "claude", "sonnet",
+        {"model": "claude-sonnet-5-5", "input_tokens": 10, "cached_input_tokens": 20, "output_tokens": 30, "cost_usd": 0.25}),
+    rec("m3", "2026-10-14T03:00:00.000Z", "failed", "claude", "sonnet",
+        {"model": "claude-sonnet-5-5", "input_tokens": 1, "cached_input_tokens": 2, "output_tokens": 3, "cost_usd": 0.5}),
+    rec("m4", "2026-10-14T04:00:00.000Z", "succeeded", "claude", "sonnet", None),
+    rec("m5", "2026-10-14T05:00:00.000Z", "succeeded", "claude", "haiku",
+        {"model": "", "input_tokens": 4, "cached_input_tokens": 5, "output_tokens": 6, "cost_usd": 0.125}),
+    rec("m6", "2026-10-14T06:00:00.000Z", "succeeded", "codex", "gpt-x",
+        {"input_tokens": 7, "cached_input_tokens": 8, "output_tokens": 9, "cost_usd": None}),
+    rec("m7", "2026-10-14T07:00:00.000Z", "error", "gemini", "alpha",
+        {"input_tokens": 2, "cached_input_tokens": 2, "output_tokens": 2, "cost_usd": 0.0625}),
+]
+d = tempfile.mkdtemp()
+path = os.path.join(d, "log.jsonl")
+with open(path, "w") as fh:
+    fh.write("\n".join(json.dumps(r) for r in recs) + "\n")
+
+code, out, err = cli_runner("models", path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+header = ["provider", "model", "calls", "failed", "input_tokens", "cached_tokens", "output_tokens", "cost_usd"]
+assert rows[0] == header
+
+groups = {}
+for r in recs:
+    st = r["result"].get("stats") or {}
+    key = (r["job"]["llm"], st.get("model") or r["job"]["model"])
+    g = groups.setdefault(key, [0, 0, 0, 0, 0, 0.0])
+    g[0] += 1
+    g[1] += 0 if r["status"] == "succeeded" else 1
+    g[2] += st.get("input_tokens") or 0
+    g[3] += st.get("cached_input_tokens") or 0
+    g[4] += st.get("output_tokens") or 0
+    g[5] += st.get("cost_usd") or 0.0
+keys = sorted(groups)
+body, total = rows[1:-1], rows[-1]
+assert len(body) == len(keys)
+for row, key in zip(body, keys):
+    g = groups[key]
+    assert row[0] == key[0] and row[1] == key[1]
+    assert [int(x) for x in row[2:7]] == g[:5]
+    assert len(row[7].split(".")[1]) == 4
+    assert abs(float(row[7]) - g[5]) < 1e-9
+assert total[0] == "TOTAL" and total[1] == ""
+assert [int(x) for x in total[2:7]] == [sum(groups[k][i] for k in keys) for i in range(5)]
+assert len(total[7].split(".")[1]) == 4
+assert abs(float(total[7]) - sum(groups[k][5] for k in keys)) < 1e-9
+=== END AC models-grouping-order-total ===
+
+=== AC models-filters ===
+Intent: Target and date filters narrow the models report to matching records only.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from drydock_go import cli_runner
+
+def rec(eid, started, target, llm, jm):
+    return {"execution_id": eid, "started_at": started, "status": "succeeded",
+            "job": {"command_name": "build", "target": target, "llm": llm, "model": jm},
+            "result": {"returncode": 0, "timed_out": False,
+                       "stats": {"input_tokens": 3, "cached_input_tokens": 4, "output_tokens": 5, "cost_usd": 0.5}}}
+
+recs = [
+    rec("f1", "2026-10-14T01:00:00.000Z", "Alpha", "claude", "one"),
+    rec("f2", "2026-10-15T01:00:00.000Z", "Alpha", "claude", "two"),
+    rec("f3", "2026-10-15T02:00:00.000Z", "Beta", "codex", "three"),
+    rec("f4", "2026-10-16T01:00:00.000Z", "Alpha", "gemini", "four"),
+]
+d = tempfile.mkdtemp()
+path = os.path.join(d, "log.jsonl")
+with open(path, "w") as fh:
+    fh.write("\n".join(json.dumps(r) for r in recs) + "\n")
+
+target, since, until = "Alpha", "2026-10-15", "2026-10-16"
+code, out, err = cli_runner("models", "--target", target, "--since", since, "--until", until, path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+kept = [r for r in recs if r["job"]["target"] == target and since <= r["started_at"][:10] <= until]
+pairs = sorted((r["job"]["llm"], r["job"]["model"]) for r in kept)
+assert [(row[0], row[1]) for row in rows[1:-1]] == pairs
+assert rows[-1][0] == "TOTAL"
+assert int(rows[-1][2]) == len(kept)
+=== END AC models-filters ===
+
+=== AC models-no-match ===
+Intent: A filter matching nothing yields the header and a zero TOTAL row, with exit 0.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from drydock_go import cli_runner
+
+rec = {"execution_id": "n1", "started_at": "2026-10-14T01:00:00.000Z", "status": "succeeded",
+       "job": {"command_name": "build", "target": "Alpha", "llm": "claude", "model": "one"},
+       "result": {"returncode": 0, "timed_out": False,
+                  "stats": {"input_tokens": 3, "cached_input_tokens": 4, "output_tokens": 5, "cost_usd": 0.5}}}
+d = tempfile.mkdtemp()
+path = os.path.join(d, "log.jsonl")
+with open(path, "w") as fh:
+    fh.write(json.dumps(rec) + "\n")
+
+code, out, err = cli_runner("models", "--target", "NoSuchTarget", path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2
+total = rows[1]
+assert total[0] == "TOTAL" and total[1] == ""
+assert [int(x) for x in total[2:7]] == [0, 0, 0, 0, 0]
+assert len(total[7].split(".")[1]) == 4
+assert float(total[7]) == 0.0
+=== END AC models-no-match ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Every value is computed from the log being read; no row, count, or total is hardcoded.
+- The log is never written to, and `sources/run.sh` is never read by application code.
+- Only the Go standard library is used.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-DailyReport.md ===
+# FEATURE: Daily Report
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | The daily report summarizes filtered records per start date and ends with a TOTAL row. |
+| Depends On  | FEATURE-SummaryReport.md, FEATURE-DateFilter.md |
+| Provides    | ddkstat daily |
+| Consumes    | report.FilterTarget, report.FilterDates |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat daily <log>` shows how many calls, failures, tokens, and minutes each day used.
+
+## Report Contract
+
+- Header: `date,calls,failed,tokens,minutes`.
+- One row per start date (the first 10 characters of `started_at`) that has at least one matching record, ordered ascending. Dates with no matching record do not appear.
+- `tokens` is input plus cached plus output tokens, with absent or null counts as zero.
+- `minutes` is the group's summed `elapsed_ms` written in tenths of a minute: `t = (ms + 3000) / 6000` in integer division, written as `t / 10`, a `.`, and `t % 10`.
+- The last row is `TOTAL` over all filtered records, with minutes computed from the summed milliseconds.
+- With no matching record the output is the header and `TOTAL,0,0,0,0.0`.
+- A record without `result.stats` still counts as a call with zero tokens and minutes.
+- Output is CSV with `\n` line endings; `--target`, `--since`, and `--until` narrow the records first.
+
+## Programmatic Acceptance
+
+=== AC daily-rows-and-total ===
+Intent: Daily rows are ascending by date, with tokens and tenth-minute values derived from the fixture records.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from drydock_go import cli_runner
+
+def rec(eid, started, status, stats):
+    result = {"returncode": 0, "timed_out": False}
+    if stats is not None:
+        result["stats"] = stats
+    return {"execution_id": eid, "started_at": started, "status": status,
+            "job": {"command_name": "build", "target": "T", "llm": "claude", "model": "m"},
+            "result": result}
+
+def st(i, c, o, ms):
+    return {"input_tokens": i, "cached_input_tokens": c, "output_tokens": o, "elapsed_ms": ms}
+
+recs = [
+    rec("d1", "2026-10-16T09:00:00.000Z", "succeeded", st(1, 2, 3, 95000)),
+    rec("d2", "2026-10-14T01:00:00.000Z", "succeeded", st(10, 20, 30, 2999)),
+    rec("d3", "2026-10-18T01:00:00.000Z", "failed", None),
+    rec("d4", "2026-10-14T05:00:00.000Z", "failed", st(4, 5, 6, 3000)),
+    rec("d5", "2026-10-16T10:00:00.000Z", "succeeded", st(7, 8, 9, 6000)),
+]
+d = tempfile.mkdtemp()
+path = os.path.join(d, "log.jsonl")
+with open(path, "w") as fh:
+    fh.write("\n".join(json.dumps(r) for r in recs) + "\n")
+
+def tenths(cell):
+    whole, frac = cell.split(".")
+    assert len(frac) == 1
+    return int(whole) * 10 + int(frac)
+
+def tt(ms):
+    return (ms + 3000) // 6000
+
+code, out, err = cli_runner("daily", path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == ["date", "calls", "failed", "tokens", "minutes"]
+days = {}
+for r in recs:
+    s = r["result"].get("stats") or {}
+    g = days.setdefault(r["started_at"][:10], [0, 0, 0, 0])
+    g[0] += 1
+    g[1] += 0 if r["status"] == "succeeded" else 1
+    g[2] += (s.get("input_tokens") or 0) + (s.get("cached_input_tokens") or 0) + (s.get("output_tokens") or 0)
+    g[3] += s.get("elapsed_ms") or 0
+dates = sorted(days)
+assert [row[0] for row in rows[1:-1]] == dates
+for row in rows[1:-1]:
+    g = days[row[0]]
+    assert [int(row[1]), int(row[2]), int(row[3])] == g[:3]
+    assert tenths(row[4]) == tt(g[3])
+total = rows[-1]
+assert total[0] == "TOTAL"
+assert [int(total[1]), int(total[2]), int(total[3])] == [sum(days[k][i] for k in dates) for i in range(3)]
+assert tenths(total[4]) == tt(sum(days[k][3] for k in dates))
+=== END AC daily-rows-and-total ===
+
+=== AC daily-filters ===
+Intent: Target and date filters narrow the daily report and a date with no matching record is not listed.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from drydock_go import cli_runner
+
+def rec(eid, started, target):
+    return {"execution_id": eid, "started_at": started, "status": "succeeded",
+            "job": {"command_name": "build", "target": target, "llm": "claude", "model": "m"},
+            "result": {"returncode": 0, "timed_out": False,
+                       "stats": {"input_tokens": 1, "cached_input_tokens": 1, "output_tokens": 1, "elapsed_ms": 6000}}}
+
+recs = [
+    rec("g1", "2026-10-14T01:00:00.000Z", "Alpha"),
+    rec("g2", "2026-10-15T01:00:00.000Z", "Beta"),
+    rec("g3", "2026-10-16T01:00:00.000Z", "Alpha"),
+    rec("g4", "2026-10-17T01:00:00.000Z", "Alpha"),
+]
+d = tempfile.mkdtemp()
+path = os.path.join(d, "log.jsonl")
+with open(path, "w") as fh:
+    fh.write("\n".join(json.dumps(r) for r in recs) + "\n")
+
+target, since, until = "Alpha", "2026-10-14", "2026-10-16"
+code, out, err = cli_runner("daily", "--target", target, "--since", since, "--until", until, path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+kept = [r for r in recs if r["job"]["target"] == target and since <= r["started_at"][:10] <= until]
+assert [row[0] for row in rows[1:-1]] == sorted({r["started_at"][:10] for r in kept})
+assert "2026-10-15" not in [row[0] for row in rows]
+assert rows[-1][0] == "TOTAL" and int(rows[-1][1]) == len(kept)
+=== END AC daily-filters ===
+
+=== AC daily-no-match ===
+Intent: A filter matching nothing yields the header and a zero TOTAL row, with exit 0.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from drydock_go import cli_runner
+
+rec = {"execution_id": "z1", "started_at": "2026-10-14T01:00:00.000Z", "status": "succeeded",
+       "job": {"command_name": "build", "target": "Alpha", "llm": "claude", "model": "m"},
+       "result": {"returncode": 0, "timed_out": False}}
+d = tempfile.mkdtemp()
+path = os.path.join(d, "log.jsonl")
+with open(path, "w") as fh:
+    fh.write(json.dumps(rec) + "\n")
+
+code, out, err = cli_runner("daily", "--since", "2027-01-01", path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2
+assert rows[1][0] == "TOTAL"
+assert [int(x) for x in rows[1][1:4]] == [0, 0, 0]
+whole, frac = rows[1][4].split(".")
+assert int(whole) == 0 and len(frac) == 1 and int(frac) == 0
+=== END AC daily-no-match ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Every value is computed from the log being read; no row, count, or total is hardcoded.
+- The log is never written to, and `sources/run.sh` is never read by application code.
+- Only the Go standard library is used.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-FailuresReport.md ===
+# FEATURE: Failures Report
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | The failures report lists each filtered record whose status is not succeeded, in start order. |
+| Depends On  | FEATURE-SummaryReport.md, FEATURE-ModelAttribution.md, FEATURE-DateFilter.md |
+| Provides    | ddkstat failures |
+| Consumes    | logread.Record.Model, report.FilterTarget, report.FilterDates |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat failures <log>` shows which calls failed, when, and how.
+
+## Report Contract
+
+- Header: `started_at,target,command,model,returncode,timed_out`.
+- One row per filtered record whose `status` is not `succeeded`, whatever the status value.
+- Rows are ordered by `started_at` ascending, then `execution_id` ascending, by byte value.
+- `target` is `job.target`, `command` is `job.command_name`, and `model` is the attributed model (`result.stats.model` when non-empty, otherwise `job.model`).
+- `returncode` is the integer, or empty when `result.returncode` is null or absent.
+- `timed_out` is `true` or `false`.
+- There is no `TOTAL` row. With no failed record the output is the header only.
+- Output is CSV with `\n` line endings; `--target`, `--since`, and `--until` narrow the records first.
+
+## Programmatic Acceptance
+
+=== AC failures-rows-order-and-fields ===
+Intent: Failures lists only non-succeeded records, ordered by start then id, with attributed model and blank null return codes.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from drydock_go import cli_runner
+
+ABSENT = object()
+
+def rec(eid, started, status, cmd, target, jm, rc, timed, stats=None):
+    result = {"timed_out": timed}
+    if rc is not ABSENT:
+        result["returncode"] = rc
+    if stats is not None:
+        result["stats"] = stats
+    return {"execution_id": eid, "started_at": started, "status": status,
+            "job": {"command_name": cmd, "target": target, "llm": "claude", "model": jm},
+            "result": result}
+
+recs = [
+    rec("e2", "2026-10-14T02:00:00.000Z", "failed", "build", "Alpha", "mA", 1, False),
+    rec("ok", "2026-10-14T01:00:00.000Z", "succeeded", "build", "Alpha", "mA", 0, False),
+    rec("e1", "2026-10-14T02:00:00.000Z", "failed", "plan", "Beta", "mB", 2, True, {"model": "executed-model"}),
+    rec("e3", "2026-10-13T09:00:00.000Z", "failed", "diagnose", "Alpha", "mC", None, True),
+    rec("e4", "2026-10-15T09:00:00.000Z", "error", "analyze", "Beta", "mD", ABSENT, False, {"model": ""}),
+    rec("e5", "2026-10-16T09:00:00.000Z", "timeout", "build", "Alpha", "mE", 137, False),
+]
+d = tempfile.mkdtemp()
+path = os.path.join(d, "log.jsonl")
+with open(path, "w") as fh:
+    fh.write("\n".join(json.dumps(r) for r in recs) + "\n")
+
+code, out, err = cli_runner("failures", path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == ["started_at", "target", "command", "model", "returncode", "timed_out"]
+failed = sorted((r for r in recs if r["status"] != "succeeded"),
+                key=lambda r: (r["started_at"], r["execution_id"]))
+expected = []
+for r in failed:
+    s = r["result"].get("stats") or {}
+    rc = r["result"].get("returncode")
+    expected.append([r["started_at"], r["job"]["target"], r["job"]["command_name"],
+                     s.get("model") or r["job"]["model"],
+                     "" if rc is None else str(rc),
+                     json.dumps(bool(r["result"]["timed_out"]))])
+assert rows[1:] == expected
+=== END AC failures-rows-order-and-fields ===
+
+=== AC failures-filters ===
+Intent: Target and date filters narrow the failures report.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from drydock_go import cli_runner
+
+def rec(eid, started, target):
+    return {"execution_id": eid, "started_at": started, "status": "failed",
+            "job": {"command_name": "build", "target": target, "llm": "claude", "model": "m"},
+            "result": {"returncode": 1, "timed_out": False}}
+
+recs = [
+    rec("a1", "2026-10-14T01:00:00.000Z", "Alpha"),
+    rec("a2", "2026-10-15T01:00:00.000Z", "Alpha"),
+    rec("a3", "2026-10-15T02:00:00.000Z", "Beta"),
+    rec("a4", "2026-10-16T01:00:00.000Z", "Alpha"),
+]
+d = tempfile.mkdtemp()
+path = os.path.join(d, "log.jsonl")
+with open(path, "w") as fh:
+    fh.write("\n".join(json.dumps(r) for r in recs) + "\n")
+
+target, since, until = "Alpha", "2026-10-15", "2026-10-15"
+code, out, err = cli_runner("failures", "--target", target, "--since", since, "--until", until, path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+kept = [r for r in recs if r["job"]["target"] == target and since <= r["started_at"][:10] <= until]
+assert [row[0] for row in rows[1:]] == [r["started_at"] for r in kept]
+=== END AC failures-filters ===
+
+=== AC failures-none ===
+Intent: With no failed record the failures report is only the header and exits 0.
+Requires: executable=go; scope=test
+
+import csv
+import io
+import json
+import os
+import tempfile
+from drydock_go import cli_runner
+
+rec = {"execution_id": "s1", "started_at": "2026-10-14T01:00:00.000Z", "status": "succeeded",
+       "job": {"command_name": "build", "target": "Alpha", "llm": "claude", "model": "m"},
+       "result": {"returncode": 0, "timed_out": False}}
+d = tempfile.mkdtemp()
+path = os.path.join(d, "log.jsonl")
+with open(path, "w") as fh:
+    fh.write(json.dumps(rec) + "\n")
+
+code, out, err = cli_runner("failures", path)
+print(out)
+print(err)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 1
+assert rows[0] == ["started_at", "target", "command", "model", "returncode", "timed_out"]
+=== END AC failures-none ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Every value is computed from the log being read; no row is hardcoded.
+- The log is never written to, and `sources/run.sh` is never read by application code.
+- Only the Go standard library is used.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-TestEntryPoint.md ===
+# FEATURE: Test Entry Point
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | A POSIX-compatible bin/test.sh runs go vet and go test from the application root. |
+| Depends On  | FEATURE-CommandsReport.md, FEATURE-TargetsReport.md, FEATURE-ModelsReport.md, FEATURE-DailyReport.md, FEATURE-FailuresReport.md, FEATURE-UsageErrors.md, FEATURE-UnreadableLog.md |
+| Provides    | bin/test.sh |
+| Consumes    | ddkstat summary, ddkstat commands, ddkstat targets, ddkstat models, ddkstat daily, ddkstat failures |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`bin/test.sh` is the project's single test entry point. It lets an operator or the build prove the application is healthy.
+
+## Behavior
+
+- POSIX `sh` only; no bashisms.
+- Changes to the application root (the parent of `bin/`) regardless of the caller's working directory.
+- Runs `go vet ./...` and then `go test ./...`, and exits zero only when both pass.
+- A failure of either command makes the script exit non-zero.
+- The Go test suite covers each report, each filter, each skip rule, and each exit code, using logs the tests write themselves. It never reads `sources/run.sh`.
+
+## Programmatic Acceptance
+
+=== AC test-script-runs-clean ===
+Intent: bin/test.sh run from an unrelated directory exits zero, proving it locates the application root and that vet and tests pass.
+Requires: executable=go; scope=test
+
+import os
+import subprocess
+import sys
+import tempfile
+
+script = os.path.abspath(os.path.join("bin", "test.sh"))
+assert os.path.isfile(script)
+elsewhere = tempfile.mkdtemp()
+result = subprocess.run(["sh", script], cwd=elsewhere, capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0
+=== END AC test-script-runs-clean ===
+
+=== AC test-script-posix-syntax ===
+Intent: bin/test.sh parses under POSIX sh.
+
+import os
+import subprocess
+import sys
+
+script = os.path.abspath(os.path.join("bin", "test.sh"))
+result = subprocess.run(["sh", "-n", script], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0
+=== END AC test-script-posix-syntax ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The script never uses a vendored toolchain; it runs the installed `go`.
+- The script never modifies anything under `sources/`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-GraderVerification.md ===
+# FEATURE: Grader Verification
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Terminal assembly that proves the supplied grader and the project test entry point both pass against the finished application. |
+| Depends On  | FEATURE-TestEntryPoint.md, FEATURE-SummaryReport.md, FEATURE-DateFilter.md, FEATURE-ModelAttribution.md, FEATURE-UnreadableLog.md |
+| Provides    | sh sources/run.sh passing |
+| Consumes    | bin/test.sh, cmd/ddkstat |
+
+## Questions
+
+- None.
+
+## Purpose
+
+With every member story closed, the finished `ddkstat` is graded by the supplied `sources/run.sh`, which builds `./cmd/ddkstat` and makes 20 checks of exit code and standard output over `sources/llm_sample.jsonl`. This story is the integration seam: any defect the grader reveals is fixed in the application, never in `sources/`.
+
+## Assembly and Intent
+
+- Run `sh sources/run.sh` unfiltered from the application root; it must exit zero.
+- Run `sh bin/test.sh` unfiltered; it must exit zero.
+- Application code never reads `sources/run.sh` and never embeds a report answer; every value comes from the log being read.
+- The module uses the Go standard library only, with no `require` entries in `go.mod`.
+- `sources/run.sh` and `sources/llm_sample.jsonl` are read-only scoring assets and remain unmodified.
+
+## Programmatic Acceptance
+
+=== AC grader-passes ===
+Intent: The supplied grader builds ddkstat and passes all of its checks, so it exits zero.
+Suite: full
+Requires: executable=go; scope=test
+
+import subprocess
+import sys
+
+result = subprocess.run(["sh", "sources/run.sh"], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0
+=== END AC grader-passes ===
+
+=== AC project-suite-passes ===
+Intent: The project test entry point exits zero over the complete application.
+Suite: full
+Requires: executable=go; scope=test
+
+import subprocess
+import sys
+
+result = subprocess.run(["sh", "bin/test.sh"], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0
+=== END AC project-suite-passes ===
+
+=== AC application-independent-of-grader ===
+Intent: Application code does not reference the grader and the module has no third-party requirements.
+
+from pathlib import Path
+
+sources = []
+for root in ("cmd", "internal"):
+    for p in Path(root).rglob("*.go"):
+        if not p.name.endswith("_test.go"):
+            sources.append(p)
+assert sources
+for p in sources:
+    assert "run.sh" not in p.read_text(encoding="utf-8"), str(p)
+mod = Path("go.mod").read_text(encoding="utf-8").splitlines()
+assert not [line for line in mod if line.strip().startswith("require")]
+=== END AC application-independent-of-grader ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not modify, rewrite, regenerate, or substitute any file under `sources/`.
+- Do not hardcode a report row, a count, or a total in application code.
+- Never write to the log being read.
+=== END ARTIFACT ===

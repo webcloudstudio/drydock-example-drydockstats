@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-DateOptions.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-DateOptions.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-DateOptions.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Date Options</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>The --since and --until option values are accepted only as real calendar dates written YYYY-MM-DD.</td></tr><tr><td>Depends On</td><td>FEATURE-CommandLine.md</td></tr><tr><td>Provides</td><td>cli date validation</td></tr><tr><td>Consumes</td><td>ddkstat &lt;report&gt; [--target] [--since] [--until] &lt;log&gt;</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Date filters compare against the first 10 characters of <code>started_at</code>, so an option value must be exactly that shape and must name a day that exists.</p>
+<h2>Behavior</h2>
+<ul><li>A valid value is exactly ten characters: four-digit year, <code>-</code>, two-digit month, <code>-</code>, two-digit day.</li><li>The value must also be a real calendar date, checked with <code>time.Parse</code> and the <code>2006-01-02</code></li></ul>
+<p>layout; leap days are honored (<code>02-29</code> is valid only in a leap year).</p>
+<ul><li>Rejected: month 13, day 30 in February, non-padded forms such as <code>2026-1-5</code>, compact forms such</li></ul>
+<p>as <code>20261014</code>, trailing or leading characters, an empty value, and any non-date text.</p>
+<ul><li>The validator is a pure function in <code>internal/cli</code> returning the date text and an error; the</li></ul>
+<p>parser maps its error to a usage error (exit handling is owned by FEATURE-UsageErrors.md).</p>
+<h2>Required Go Tests</h2>
+<p>The build writes these tests in package <code>./internal/cli</code>:</p>
+<ul><li><code>TestParseDateAcceptsRealDates</code></li><li><code>TestParseDateRejectsMalformed</code></li><li><code>TestParseDateRejectsImpossibleDates</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC date-options-accepts-real ===<br>Intent: Real YYYY-MM-DD dates, including a leap day, are accepted by the date validator.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestParseDateAcceptsRealDates&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC date-options-accepts-real ===</p>
+<p>=== AC date-options-rejects-malformed ===<br>Intent: Non-padded, compact, padded, empty, and non-date values are rejected by the date validator.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestParseDateRejectsMalformed&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC date-options-rejects-malformed ===</p>
+<p>=== AC date-options-rejects-impossible ===<br>Intent: Well-formed but impossible dates such as month 13 or 30 February are rejected.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestParseDateRejectsImpossibleDates&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC date-options-rejects-impossible ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Only the standard library is used for date validation.</li><li>A date is never silently normalized; an invalid value is rejected, not corrected.</li></ul></article>
+</main>
+</body>
+</html>

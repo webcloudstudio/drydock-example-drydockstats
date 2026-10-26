@@ -1,0 +1,14 @@
+
+
+--- stderr ---
+--- drydock: values at failure ---
+  code = 1
+--- drydock: end values ---
+Traceback (most recent call last):
+  File "date-with-target-and-empty-range.py", line 24, in <module>
+    code, out = run(recs, "commands", "--target", name, "--since", day, "--until", day)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "date-with-target-and-empty-range.py", line 17, in run
+    assert code == 0
+           ^^^^^^^^^
+AssertionError

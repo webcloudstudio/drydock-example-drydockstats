@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.012948.755Z_drydockstats_lineage_attribute_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.012948.755Z_drydockstats_lineage_attribute_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.012948.755Z_drydockstats_lineage_attribute_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>&lt;requirement name=&quot;go-stdlib-module&quot; stories=&quot;foundation&quot;&gt;
+Implement in Go 1.22 or newer using only the standard library. The application root is a Go module, and its executable is the main package at `./cmd/ddkstat`. Tests run under `go test`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;run-harness-passes&quot; stories=&quot;grader-verification&quot;&gt;
+The harness runs `go build -o &lt;temporary path&gt; ./cmd/ddkstat` and then runs 20 checks against
+`sources/llm_sample.jsonl`. Each check compares one command&#x27;s exit code and standard output with a
+known answer.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;command-line-syntax&quot; stories=&quot;cli-parse&quot;&gt;
+`&lt;report&gt;` comes first, options follow it, and the log path is last. Exactly one log path is
+required. `&lt;report&gt;` is one of `summary`, `commands`, `targets`, `models`, `daily`, `failures`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;target-filter&quot; stories=&quot;filter-target&quot;&gt;
+`--target &lt;name&gt;` | Keep only records whose `job.target` equals `&lt;name&gt;` exactly.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;date-filter&quot; stories=&quot;filter-dates&quot;&gt;
+`--since &lt;date&gt;` | Keep only records whose start date is on or after `&lt;date&gt;`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;date-option-validation&quot; stories=&quot;cli-dates&quot;&gt;
+A date option must be a real calendar date written `YYYY-MM-DD`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;read-jsonl-log&quot; stories=&quot;log-read&quot;&gt;
+The log is JSON Lines in UTF-8: one JSON object per line.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;ignore-blank-lines&quot; stories=&quot;log-read&quot;&gt;
+**Blank lines** are ignored and not counted.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;skip-malformed-lines&quot; stories=&quot;log-skip-malformed&quot;&gt;
+**Skipped lines.** A line is skipped when it is not a JSON object, when any of `execution_id`,
+`started_at`, `status`, `job.command_name`, or `job.target` is absent or not a non-empty
+string, or when its `execution_id` already appeared on an earlier line.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;skip-duplicate-ids&quot; stories=&quot;log-skip-duplicates&quot;&gt;
+The first occurrence of
+an `execution_id` is kept.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;skip-warning-exit-zero&quot; stories=&quot;log-skip-malformed,log-skip-duplicates&quot;&gt;
+Each skipped line writes one warning to standard error naming its
+line number. Skipping never changes the exit code.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;missing-numbers-zero&quot; stories=&quot;log-absent-numbers&quot;&gt;
+**Missing numbers.** An absent or `null` token count, cost, or duration counts as zero. A
+record with no `result.stats` object at all is still a record.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;record-model&quot; stories=&quot;log-model&quot;&gt;
+**Model.** A record&#x27;s model is `result.stats.model` when present and non-empty, otherwise
+`job.model`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;filters-apply-all-reports&quot; stories=&quot;filter-target,filter-dates,report-summary&quot;&gt;
+**Filters** apply to every report. The `skipped` count in `summary` counts skipped lines in the
+whole file regardless of filters.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;minutes-format&quot; stories=&quot;report-summary&quot;&gt;
+**Minutes.** A minutes column is the group&#x27;s summed `elapsed_ms` written in tenths of a minute:
+`t = (ms + 3000) / 6000` in integer division, written as `t / 10`, a `.`, and `t % 10`.
+`95000` ms is `1.6`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;cost-format&quot; stories=&quot;report-summary&quot;&gt;
+**Cost.** A cost column is the group&#x27;s summed `cost_usd` written with exactly four decimal
+places, as Go&#x27;s `%.4f` writes a `float64`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;byte-ordering&quot; stories=&quot;report-commands,report-targets,report-models,report-daily,report-failures&quot;&gt;
+**Ordering.** Text is compared by byte value.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;csv-output&quot; stories=&quot;report-summary&quot;&gt;
+Every report writes CSV to standard output: one header row, then data rows, comma-separated, `\n`
+line endings.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;total-row&quot; stories=&quot;report-commands,report-targets,report-models,report-daily&quot;&gt;
+Every report except `summary` and `failures` ends with a `TOTAL` row over all
+filtered records. When no record matches, a report writes its header and, where it has one, a
+`TOTAL` row of zeros (`0.0` minutes, `0.0000` cost).
+&lt;/requirement&gt;
+&lt;requirement name=&quot;summary-report&quot; stories=&quot;report-summary&quot;&gt;
+`summary` | `records,skipped,succeeded,failed,first,last,input_tokens,cached_tokens,output_tokens,cost_usd,minutes` | One row. `first` and `last` are the earliest and latest start dates, empty when no record matches.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;commands-report&quot; stories=&quot;report-commands&quot;&gt;
+`commands` | `command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes` | One per command, by calls descending, then command ascending. Then `TOTAL,…`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;targets-report&quot; stories=&quot;report-targets&quot;&gt;
+`targets` | `target,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd,minutes` | One per Target, by Target ascending. Then `TOTAL,…`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;models-report&quot; stories=&quot;report-models&quot;&gt;
+`models` | `provider,model,calls,failed,input_tokens,cached_tokens,output_tokens,cost_usd` | One per provider and model pair, by provider then model ascending. Then `TOTAL,,…`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;daily-report&quot; stories=&quot;report-daily&quot;&gt;
+`daily` | `date,calls,failed,tokens,minutes` | One per start date, ascending. `tokens` is input plus cached plus output. Then `TOTAL,…`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;failures-report&quot; stories=&quot;report-failures&quot;&gt;
+`failures` | `started_at,target,command,model,returncode,timed_out` | One per failed record, by `started_at` then `execution_id` ascending. `returncode` is empty when `null` or absent. `timed_out` is `true` or `false`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;failed-definition&quot; stories=&quot;report-summary,report-failures,report-commands,report-targets,report-models,report-daily&quot;&gt;
+**Failed.** A record is failed when `status` is not `succeeded`.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;failure-diagnostic&quot; stories=&quot;cli-usage-errors,cli-unreadable-log&quot;&gt;
+A failing command writes nothing to standard output and one diagnostic line to standard error.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;exit-operational-failure&quot; stories=&quot;cli-unreadable-log&quot;&gt;
+`1` | Operational failure: the log cannot be opened or read.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;exit-usage-error&quot; stories=&quot;cli-usage-errors,cli-dates,cli-parse&quot;&gt;
+`2` | Usage error: unknown report or option, missing option value, invalid date, missing or extra log path.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;exit-success&quot; stories=&quot;log-skip-malformed,log-skip-duplicates&quot;&gt;
+`0` | Success, including a log with skipped lines or no matching records.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;test-script&quot; stories=&quot;test-entry-point&quot;&gt;
+The completed application provides a POSIX-compatible `bin/test.sh` that runs `go vet ./...` and
+`go test ./...` from the application root and exits zero only when both pass. The suite covers
+each report, each filter, each skip rule, and each exit code using logs written by the tests.
+&lt;/requirement&gt;</pre></article>
+</main>
+</body>
+</html>

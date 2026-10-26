@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/DrydockStats/blueprint/FEATURE-UnreadableLog.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/DrydockStats/blueprint/FEATURE-UnreadableLog.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/DrydockStats/blueprint/FEATURE-UnreadableLog.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Unreadable Log</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>A log that cannot be opened or read exits 1 with nothing on standard output.</td></tr><tr><td>Depends On</td><td>FEATURE-LogReading.md, FEATURE-CommandLine.md</td></tr><tr><td>Provides</td><td>exit code 1</td></tr><tr><td>Consumes</td><td>logread.Read, ddkstat &lt;report&gt; [--target] [--since] [--until] &lt;log&gt;</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>An operational failure reading the log is reported differently from a usage error so that callers can tell a bad invocation from a bad environment.</p>
+<h2>Behavior</h2>
+<ul><li>A log path that does not exist, cannot be opened, or cannot be read exits 1.</li><li>A directory named as the log path is unreadable and exits 1 (decision Q-003, <code>exit-1</code>).</li><li>One diagnostic line is written to standard error; standard output stays empty.</li><li>Report output is buffered until the whole log has been read, so a read error after some lines</li></ul>
+<p>were consumed cannot leave partial standard output.</p>
+<ul><li>This applies to every report name.</li><li>The log is only ever opened for reading.</li></ul>
+<h2>Required Go Tests</h2>
+<p>The build writes this test in package <code>./internal/cli</code>, using a reader that fails partway through:</p>
+<ul><li><code>TestReadErrorLeavesStdoutEmpty</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC unreadable-log-missing-file ===<br>Intent: A missing log exits 1 with empty standard output for every report.<br>Requires: executable=go; scope=test</p>
+<p>import os import tempfile from drydock_go import cli_runner</p>
+<p>missing = os.path.join(tempfile.gettempdir(), &quot;ddkstat-no-such-log-unreadable.jsonl&quot;) assert not os.path.exists(missing)</p>
+<p>for report in (&quot;summary&quot;, &quot;commands&quot;, &quot;targets&quot;, &quot;models&quot;, &quot;daily&quot;, &quot;failures&quot;): code, out, err = cli_runner(report, missing) print(report, code) print(err) assert code == 1, (report, code, out, err) assert out == &quot;&quot;, (report, out) === END AC unreadable-log-missing-file ===</p>
+<p>=== AC unreadable-log-directory ===<br>Intent: A directory named as the log exits 1 with empty standard output.<br>Requires: executable=go; scope=test</p>
+<p>import os import tempfile from drydock_go import cli_runner</p>
+<p>directory = tempfile.mkdtemp() try: code, out, err = cli_runner(&quot;summary&quot;, directory) print(code) print(err) assert code == 1, (code, out, err) assert out == &quot;&quot;, out finally: os.rmdir(directory) === END AC unreadable-log-directory ===</p>
+<p>=== AC unreadable-log-no-partial-output ===<br>Intent: A read error partway through the log leaves standard output empty.<br>Requires: executable=go; scope=test</p>
+<p>from drydock_go import run_test</p>
+<p>result = run_test(&quot;./internal/cli&quot;, &quot;TestReadErrorLeavesStdoutEmpty&quot;) print(result.stdout) print(result.stderr) assert result.passed, (result.status, result.stdout, result.stderr) === END AC unreadable-log-no-partial-output ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The log is never opened for writing and is never modified.</li><li>An unreadable log never writes to standard output.</li><li>An unreadable log exits 1, never 0 or 2.</li></ul></article>
+</main>
+</body>
+</html>

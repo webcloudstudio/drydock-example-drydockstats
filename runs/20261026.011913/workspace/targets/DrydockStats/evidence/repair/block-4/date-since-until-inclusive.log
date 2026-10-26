@@ -1,0 +1,14 @@
+
+
+--- stderr ---
+--- drydock: values at failure ---
+  code = 1
+--- drydock: end values ---
+Traceback (most recent call last):
+  File "date-since-until-inclusive.py", line 25, in <module>
+    code, out = run(recs, "daily", "--since", since, "--until", until)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "date-since-until-inclusive.py", line 17, in run
+    assert code == 0
+           ^^^^^^^^^
+AssertionError

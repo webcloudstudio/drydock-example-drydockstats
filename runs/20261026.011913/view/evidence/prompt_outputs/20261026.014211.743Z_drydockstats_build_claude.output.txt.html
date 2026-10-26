@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.014211.743Z_drydockstats_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.014211.743Z_drydockstats_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.014211.743Z_drydockstats_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>Block 3 covers the log reader (`internal/logread`) and the CLI&#x27;s date validation, unreadable-log and usage-error exits. The report package belongs to a later block, so a readable log still ends in the existing &quot;not implemented&quot; path. I&#x27;ll start with the CLI.I added an `os` import that the CLI doesn&#x27;t use, so I&#x27;ll remove it and then write the logread package.`record.go` uses `bytes` and `math` without importing them, so I&#x27;ll fix the import block.Next, the logread tests. Each named test from the feature specs goes in, plus a shared helper that builds records as maps so each test can change one field.Now the CLI tests: the three named date tests, the usage-line test, and the read-failure test.Now I&#x27;ll format, vet, and run the full suite with the project&#x27;s own test script, then the grader.The one failure is a bad test case on my side: `2026-10-14` on its own does begin with a real date, which is what the spec requires, so it should be kept. I&#x27;ll remove that case from the skip table.The 20-check grader fails only where a report is requested: the report package belongs to a later block, so those checks cannot pass yet. The parts this block owns pass (E1, U1–U6), and the skip counts on the sample match the expected `skipped` value of 3. I&#x27;ll confirm each named acceptance test exists and ran.RESULT: SUCCESS
+
+Block 3 (Service) is built. Every declared acceptance test in the log-reading, malformed-line, duplicate, absent-number, model, date, unreadable-log and usage-error specs runs and passes, and `sh bin/test.sh` (vet plus `go test ./...`) is green. Nothing was committed.
+
+The grader `sources/run.sh` is not green yet: 7 of 20 pass, and the 13 failures are all report output. The report package is a later block, so those checks can&#x27;t pass here. The skip counts on the sample match what the grader expects (3 skipped).
+
+**Choices I made**
+- **Readable log, report not implemented:** after a successful read, `ddkstat` still prints &quot;not implemented&quot; and exits 1. That is the existing placeholder, kept until the report block lands.
+- **Date validation:** `--since` and `--until` are validated in `Parse` only when given, so `--since &quot;&quot;` is a usage error and only the last occurrence of a repeated option is checked.
+- **Testable CLI:** `Run` delegates to `execute`, which takes a loader function, so the partial-read test can feed a reader that fails midway.
+- **Warnings:** written as `ddkstat: line N: skipped: &lt;reason&gt;`.
+
+**Files changed**
+- `internal/cli/cli.go`: date validation in `Parse`, unreadable-log handling via `execute`.
+- `internal/logread/read.go`: `Read`, `ReadFile`, `Result`, skip and duplicate rules.
+- `internal/logread/record.go`: `Record`, JSON field decoding, model fallback, numeric fields that count as zero.
+- Tests: `internal/logread/{helpers,read,skip,duplicate,absent,model}_test.go`, `internal/cli/{dates,run}_test.go`.
+
+`gofmt` is clean and `go vet` reports nothing.
+
+&lt;reusable-compact filename=&quot;ARCHITECTURE.md&quot;&gt;
+logread: Read(io.Reader, io.Writer) (Result, error); ReadFile(path, io.Writer) (Result, error); Result{Records []Record; Skipped int}; Record{ExecutionID, StartedAt, Status, Command, Target, Provider, Model string; InputTokens, CachedTokens, OutputTokens, ElapsedMS int64; CostUSD float64; ReturnCode *int; TimedOut bool}; Record.Date(), Record.Failed(). Skip when not a JSON object, invalid UTF-8, a required string (execution_id, started_at, status, job.command_name, job.target) absent/empty/non-string, or started_at not starting with a real YYYY-MM-DD. Duplicate execution_id keeps first; only kept records register ids. Numeric fields absent/null/wrong-typed/fractional are 0. Model = result.stats.model if non-empty, else job.model; Provider = job.llm.
+cli: Run(args, stdout, stderr) int; exit 0/1/2; --since/--until must be real YYYY-MM-DD when given.
+&lt;/reusable-compact&gt;</pre></article>
+</main>
+</body>
+</html>

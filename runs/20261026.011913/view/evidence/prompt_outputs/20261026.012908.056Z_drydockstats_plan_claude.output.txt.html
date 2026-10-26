@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.012908.056Z_drydockstats_plan_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.012908.056Z_drydockstats_plan_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.012908.056Z_drydockstats_plan_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT FEATURE-CommandsReport.md ===
+# FEATURE: Commands Report
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Write one CSV row per Drydock command, ordered by calls then name, followed by a TOTAL row. |
+| Depends On  | FEATURE-SummaryReport.md |
+| Provides    | ddkstat commands |
+| Consumes    | report.FilterTarget, report.FilterDates, shared CSV, minutes, and cost formatters |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ddkstat commands &lt;log&gt;` shows which Drydock commands made the most LLM calls and what they used.
+
+## Output
+
+Header, exactly:
+
+```text
+command,calls,failed,input_tokens,cached_tokens,output_tokens,minutes
+```
+
+- One row per distinct `job.command_name` among filtered records.
+- Rows are ordered by `calls` descending, then `command` ascending by byte value.
+- `failed` counts records whose status is not `succeeded`.
+- Token columns are sums; `minutes` is the group&#x27;s summed `elapsed_ms` formatted by the shared minutes rule.
+- The final row is `TOTAL` with the same columns summed over all filtered records.
+- With no matching record: the header and `TOTAL,0,0,0,0,0,0.0`.
+
+## Programmatic Acceptance
+
+=== AC commands-rows-and-order ===
+Intent: Rows are ordered by calls descending then command ascending, with per-command counts derived from the fixture.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import csv, io, json, os, tempfile
+from collections import Counter
+from drydock_go import cli_runner
+
+def rec(i, target=&quot;T1&quot;, day=&quot;2026-10-14&quot;, status=&quot;succeeded&quot;, cmd=&quot;build&quot;, llm=&quot;claude&quot;, model=&quot;m&quot;, inp=10, cached=20, out=30, ms=60000, cost=0.25, ts=None):
+    return {&quot;execution_id&quot;: f&quot;id-{i}&quot;, &quot;started_at&quot;: ts or f&quot;{day}T01:02:03.004Z&quot;, &quot;status&quot;: status,
+            &quot;job&quot;: {&quot;command_name&quot;: cmd, &quot;target&quot;: target, &quot;llm&quot;: llm, &quot;model&quot;: model},
+            &quot;result&quot;: {&quot;returncode&quot;: 0 if status == &quot;succeeded&quot; else 1, &quot;timed_out&quot;: False,
+                       &quot;stats&quot;: {&quot;input_tokens&quot;: inp, &quot;cached_input_tokens&quot;: cached, &quot;output_tokens&quot;: out, &quot;elapsed_ms&quot;: ms, &quot;cost_usd&quot;: cost}}}
+
+def run(lines, *args):
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, &quot;llm.jsonl&quot;)
+        with open(p, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+            for l in lines:
+                f.write((l if isinstance(l, str) else json.dumps(l)) + &quot;\n&quot;)
+        code, out, err = cli_runner(*args, p)
+        print(out)
+        print(err)
+        return code, out
+
+cmds = [&quot;build&quot;] * 3 + [&quot;plan&quot;] * 2 + [&quot;analyze&quot;] * 2 + [&quot;diagnose&quot;]
+recs = [rec(i, cmd=c) for i, c in enumerate(cmds)]
+code, out = run(recs, &quot;commands&quot;)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+assert rows[0] == [&quot;command&quot;, &quot;calls&quot;, &quot;failed&quot;, &quot;input_tokens&quot;, &quot;cached_tokens&quot;, &quot;output_tokens&quot;, &quot;minutes&quot;]
+counts = Counter(cmds)
+expected = sorted(counts, key=lambda c: (-counts[c], c.encode()))
+data = rows[1:-1]
+assert [r[0] for r in data] == expected
+for r in data:
+    assert int(r[1]) == counts[r[0]]
+assert rows[-1][0] == &quot;TOTAL&quot;
+=== END AC commands-rows-and-order ===
+
+=== AC commands-byte-order-ties ===
+Intent: Commands with equal calls are ordered by byte value, so uppercase precedes lowercase.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import csv, io, json, os, tempfile
+from collections import Counter
+from drydock_go import cli_runner
+
+def rec(i, target=&quot;T1&quot;, day=&quot;2026-10-14&quot;, status=&quot;succeeded&quot;, cmd=&quot;build&quot;, llm=&quot;claude&quot;, model=&quot;m&quot;, inp=10, cached=20, out=30, ms=60000, cost=0.25, ts=None):
+    return {&quot;execution_id&quot;: f&quot;id-{i}&quot;, &quot;started_at&quot;: ts or f&quot;{day}T01:02:03.004Z&quot;, &quot;status&quot;: status,
+            &quot;job&quot;: {&quot;command_name&quot;: cmd, &quot;target&quot;: target, &quot;llm&quot;: llm, &quot;model&quot;: model},
+            &quot;result&quot;: {&quot;returncode&quot;: 0 if status == &quot;succeeded&quot; else 1, &quot;timed_out&quot;: False,
+                       &quot;stats&quot;: {&quot;input_tokens&quot;: inp, &quot;cached_input_tokens&quot;: cached, &quot;output_tokens&quot;: out, &quot;elapsed_ms&quot;: ms, &quot;cost_usd&quot;: cost}}}
+
+def run(lines, *args):
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, &quot;llm.jsonl&quot;)
+        with open(p, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+            for l in lines:
+                f.write((l if isinstance(l, str) else json.dumps(l)) + &quot;\n&quot;)
+        code, out, err = cli_runner(*args, p)
+        print(out)
+        print(err)
+        return code, out
+
+cmds = [&quot;plan repair&quot;, &quot;Zeta&quot;, &quot;alpha&quot;, &quot;plan&quot;, &quot;Beta&quot;]
+recs = [rec(i, cmd=c) for i, c in enumerate(cmds)]
+code, out = run(recs, &quot;commands&quot;)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+counts = Counter(cmds)
+expected = sorted(counts, key=lambda c: (-counts[c], c.encode()))
+assert [r[0] for r in rows[1:-1]] == expected
+=== END AC commands-byte-order-ties ===
+
+=== AC commands-total-and-failed ===
+Intent: The failed column and the TOTAL row equal sums over the fixture records.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import csv, io, json, os, tempfile
+from drydock_go import cli_runner
+
+def rec(i, target=&quot;T1&quot;, day=&quot;2026-10-14&quot;, status=&quot;succeeded&quot;, cmd=&quot;build&quot;, llm=&quot;claude&quot;, model=&quot;m&quot;, inp=10, cached=20, out=30, ms=60000, cost=0.25, ts=None):
+    return {&quot;execution_id&quot;: f&quot;id-{i}&quot;, &quot;started_at&quot;: ts or f&quot;{day}T01:02:03.004Z&quot;, &quot;status&quot;: status,
+            &quot;job&quot;: {&quot;command_name&quot;: cmd, &quot;target&quot;: target, &quot;llm&quot;: llm, &quot;model&quot;: model},
+            &quot;result&quot;: {&quot;returncode&quot;: 0 if status == &quot;succeeded&quot; else 1, &quot;timed_out&quot;: False,
+                       &quot;stats&quot;: {&quot;input_tokens&quot;: inp, &quot;cached_input_tokens&quot;: cached, &quot;output_tokens&quot;: out, &quot;elapsed_ms&quot;: ms, &quot;cost_usd&quot;: cost}}}
+
+def run(lines, *args):
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, &quot;llm.jsonl&quot;)
+        with open(p, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+            for l in lines:
+                f.write((l if isinstance(l, str) else json.dumps(l)) + &quot;\n&quot;)
+        code, out, err = cli_runner(*args, p)
+        print(out)
+        print(err)
+        return code, out
+
+recs = [
+    rec(1, cmd=&quot;build&quot;, inp=1, cached=2, out=3, ms=70000),
+    rec(2, cmd=&quot;build&quot;, inp=4, cached=5, out=6, ms=80000, status=&quot;failed&quot;),
+    rec(3, cmd=&quot;plan&quot;, inp=7, cached=8, out=9, ms=90000, status=&quot;timeout&quot;),
+]
+code, out = run(recs, &quot;commands&quot;)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+by = {r[0]: r for r in rows[1:-1]}
+for c in {r[&quot;job&quot;][&quot;command_name&quot;] for r in recs}:
+    grp = [r for r in recs if r[&quot;job&quot;][&quot;command_name&quot;] == c]
+    row = by[c]
+    st = lambda r: r[&quot;result&quot;][&quot;stats&quot;]
+    assert int(row[2]) == len([r for r in grp if r[&quot;status&quot;] != &quot;succeeded&quot;])
+    assert int(row[3]) == sum(st(r)[&quot;input_tokens&quot;] for r in grp)
+    assert int(row[4]) == sum(st(r)[&quot;cached_input_tokens&quot;] for r in grp)
+    assert int(row[5]) == sum(st(r)[&quot;output_tokens&quot;] for r in grp)
+    assert float(row[6]) == ((sum(st(r)[&quot;elapsed_ms&quot;] for r in grp) + 3000) // 6000) / 10
+total = rows[-1]
+st = lambda r: r[&quot;result&quot;][&quot;stats&quot;]
+assert total[0] == &quot;TOTAL&quot;
+assert int(total[1]) == len(recs)
+assert int(total[2]) == len([r for r in recs if r[&quot;status&quot;] != &quot;succeeded&quot;])
+assert int(total[3]) == sum(st(r)[&quot;input_tokens&quot;] for r in recs)
+assert int(total[4]) == sum(st(r)[&quot;cached_input_tokens&quot;] for r in recs)
+assert int(total[5]) == sum(st(r)[&quot;output_tokens&quot;] for r in recs)
+assert float(total[6]) == ((sum(st(r)[&quot;elapsed_ms&quot;] for r in recs) + 3000) // 6000) / 10
+=== END AC commands-total-and-failed ===
+
+=== AC commands-empty-total ===
+Intent: With no matching record the report is a header plus a zero TOTAL row.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import csv, io, json, os, tempfile
+from drydock_go import cli_runner
+
+def run(lines, *args):
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, &quot;llm.jsonl&quot;)
+        with open(p, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+            for l in lines:
+                f.write((l if isinstance(l, str) else json.dumps(l)) + &quot;\n&quot;)
+        code, out, err = cli_runner(*args, p)
+        print(out)
+        print(err)
+        return code, out
+
+code, out = run([], &quot;commands&quot;)
+assert code == 0
+assert out.endswith(&quot;\n&quot;) and &quot;\r&quot; not in out
+rows = list(csv.reader(io.StringIO(out)))
+assert len(rows) == 2
+assert rows[1][0] == &quot;TOTAL&quot;
+assert [int(x) for x in rows[1][1:6]] == [0, 0, 0, 0, 0]
+assert float(rows[1][6]) == 0.0 and len(rows[1][6].split(&quot;.&quot;)[1]) == 1
+=== END AC commands-empty-total ===
+
+=== AC commands-filters-apply ===
+Intent: Target and date filters narrow the commands report.
+Suite: scoped
+Requires: executable=go; scope=test
+
+import csv, io, json, os, tempfile
+from drydock_go import cli_runner
+
+def rec(i, target=&quot;T1&quot;, day=&quot;2026-10-14&quot;, status=&quot;succeeded&quot;, cmd=&quot;build&quot;, llm=&quot;claude&quot;, model=&quot;m&quot;, inp=10, cached=20, out=30, ms=60000, cost=0.25, ts=None):
+    return {&quot;execution_id&quot;: f&quot;id-{i}&quot;, &quot;started_at&quot;: ts or f&quot;{day}T01:02:03.004Z&quot;, &quot;status&quot;: status,
+            &quot;job&quot;: {&quot;command_name&quot;: cmd, &quot;target&quot;: target, &quot;llm&quot;: llm, &quot;model&quot;: model},
+            &quot;result&quot;: {&quot;returncode&quot;: 0 if status == &quot;succeeded&quot; else 1, &quot;timed_out&quot;: False,
+                       &quot;stats&quot;: {&quot;input_tokens&quot;: inp, &quot;cached_input_tokens&quot;: cached, &quot;output_tokens&quot;: out, &quot;elapsed_ms&quot;: ms, &quot;cost_usd&quot;: cost}}}
+
+def run(lines, *args):
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, &quot;llm.jsonl&quot;)
+        with open(p, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+            for l in lines:
+                f.write((l if isinstance(l, str) else json.dumps(l)) + &quot;\n&quot;)
+        code, out, err = cli_runner(*args, p)
+        print(out)
+        print(err)
+        return code, out
+
+name, day = &quot;Alpha&quot;, &quot;2026-10-15&quot;
+recs = [rec(1, name, day, cmd=&quot;build&quot;), rec(2, &quot;Beta&quot;, day, cmd=&quot;plan&quot;), rec(3, name, &quot;2026-10-16&quot;, cmd=&quot;analyze&quot;), rec(4, name, day, cmd=&quot;build&quot;)]
+code, out = run(recs, &quot;commands&quot;, &quot;--target&quot;, name, &quot;--since&quot;, day, &quot;--until&quot;, day)
+assert code == 0
+rows = list(csv.reader(io.StringIO(out)))
+kept = [r for r in recs if r[&quot;job&quot;][&quot;target&quot;] == name and r[&quot;started_at&quot;][:10] == day]
+assert sorted(r[0] for r in rows[1:-1]) == sorted({r[&quot;job&quot;][&quot;command_name&quot;] for r in kept})
+assert int(rows[-1][1]) == len(kept)
+=== END AC commands-filters-apply ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Every value is computed from the log being read; no row, count, or total is hardcoded.
+- Ordering compares text by byte value, never by locale collation.
+- The log is never written to.
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>
