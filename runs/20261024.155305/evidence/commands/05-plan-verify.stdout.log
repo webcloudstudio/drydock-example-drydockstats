@@ -1,5 +1,0 @@
-Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
-plan verify: DrydockStats
-  39 acceptance criteria in 23 files: every one can run
-  ⚠  FEATURE-ReportFormat.md [report-format-cost-four-places]: expects "f'{usd:.4f}'", a value re-typed rather than derived from the input or read back from the system
-  ⚠  FEATURE-ReportFormat.md [report-format-cost-four-places]: expects "f'{0.0:.4f}'", a value re-typed rather than derived from the input or read back from the system
